@@ -20,7 +20,7 @@ var _changing: bool = false
 
 func _ready() -> void:
 	_fade.modulate.a = 1.0
-	_swap_place(FIRST_PLACE)
+	_swap_place(GameState.take_start_place(FIRST_PLACE))
 	if GameState.has_flag(Dog.JOIN_FLAG):
 		_dog.join(_player)
 	await _fade_to(0.0)
@@ -40,6 +40,14 @@ func dog() -> Dog:
 
 func dialogue_box() -> DialogueBox:
 	return $Overlay/DialogueBox
+
+
+func map_screen() -> MapScreen:
+	return $Overlay/MapScreen
+
+
+func pause_menu() -> PauseMenu:
+	return $Overlay/PauseMenu
 
 
 func go_to(path: String) -> void:
@@ -73,6 +81,7 @@ func _swap_place(path: String) -> void:
 	_dog.place_behind(_player)
 
 	GameState.current_place = _place.place_id
+	GameState.save_game(path)
 	_place_label.text = _place.display_name
 	place_changed.emit(_place.place_id)
 

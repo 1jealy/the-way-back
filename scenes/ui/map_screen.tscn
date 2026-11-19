@@ -1,0 +1,64 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/map_screen.gd" id="1_map"]
+[ext_resource type="Script" path="res://scripts/ui/map_canvas.gd" id="2_canvas"]
+
+[node name="MapScreen" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_map")
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.55)
+
+[node name="Paper" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Sheet" type="ColorRect" parent="Paper"]
+layout_mode = 0
+offset_left = 90.0
+offset_top = 70.0
+offset_right = 1830.0
+offset_bottom = 1010.0
+mouse_filter = 2
+color = Color(0.87, 0.81, 0.68, 1)
+
+[node name="Canvas" type="Control" parent="Paper"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_canvas")
+
+[node name="Hint" type="Label" parent="Paper"]
+layout_mode = 0
+offset_left = 1610.0
+offset_top = 960.0
+offset_right = 1810.0
+offset_bottom = 996.0
+theme_override_colors/font_color = Color(0.3, 0.27, 0.22, 0.75)
+theme_override_font_sizes/font_size = 22
+text = "[M] 접기"
+horizontal_alignment = 2

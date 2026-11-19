@@ -111,16 +111,50 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - `play(lines)` → 한 줄씩 글자가 찍히고(초당 30자) E로 넘긴다 → 다 넘기면 `finished`.
 - 열려 있는 동안 하윤 조작을 막는다.
 
+## 지도 (MapScreen)
+
+- `scenes/ui/map_screen.tscn` + `scripts/ui/map_screen.gd`(펼치기·접기·체크), `scripts/ui/map_canvas.gd`(그리기), `scripts/game/map_data.gd`(자리·메모).
+- `has_map` 플래그가 서야 M이 먹는다 → 1-5의 서랍 조사 대상에 `grants_flag = has_map`을 준다.
+- **동그라미 체크는 조사 대상의 `map_circle`(1~5)** 로 한다. E → 지도가 펼쳐지고 그 동그라미에 체크 → 하윤이 접으면 그 조사 대상의 `lines`가 나온다. 플래그 `map_circle_1`~`map_circle_5`. 장면 2-2, 3-1, 4-3, 5-4, 7-2.
+- 지나온 길은 지금 장소의 `place_id`와 그 안에서의 위치로 그린다. 새 장소를 만들면 `MapData.PLACES`에도 넣어야 지도에 나온다.
+- 메모 문구는 `map_data.gd` 한 곳에 있다. 고치면 `docs/design.md` "지도의 다섯 동그라미" 표도 같이 고친다(글꼴 도구가 둘 다에서 글자를 모은다).
+- 지도 그림이 오면: 종이·길·장소 그림은 텍스처로 바꾸고, 동그라미·메모·체크·지나온 길만 코드로 그린다. 좌표는 그림에 맞춰 `map_data.gd`만 고친다.
+
+## 저장·타이틀
+
+- 시작 씬은 타이틀(`scenes/ui/title_screen.tscn`): "이어하기"(저장이 없으면 꺼짐) / "처음부터".
+- **장소에 들어갈 때 자동 저장**(`main._swap_place` → `GameState.save_game`). 저장하는 것은 그 장소 씬과 그 순간의 플래그뿐이다. 이어하기는 그 장소 처음부터 한다.
+  그래서 **장소 안의 진행은 플래그로 남겨야** 이어하기 뒤에도 유지된다(조사 대상 `grants_flag`, 부탁 자리 `grants_flag`, 지도 `map_circle_N`, `dog_joined`).
+- 저장 파일 `user://save.cfg`. 헤드리스(검사·CI)에서는 자동 저장이 꺼져 있다(`GameState.autosave`). 저장을 시험하는 검사는 `save_path`를 바꾸고 켠다.
+
+## 일시정지 메뉴
+
+- `scenes/ui/pause_menu.tscn`, Esc(`pause`). 열면 `get_tree().paused = true`로 게임 전체가 멈추고 메뉴만 돈다(`PROCESS_MODE_ALWAYS`).
+- "계속하기" / Esc → 풀림. "타이틀로" → 멈춤을 풀고 타이틀로.
+- 지도가 펼쳐져 있으면 지도가 Esc를 먼저 가져간다(지도의 `_input`). 새로 Esc를 쓰는 화면을 만들면 같은 방식으로 `_input`에서 가져갈 것.
+- 멈춘 동안에도 돌아야 하는 것(메뉴 소리 등)만 `PROCESS_MODE_ALWAYS`로 둔다. 연출용 `create_timer`는 멈춘 동안에도 흐르므로(기본값) 본편 연출에는 `create_timer(t, false)`를 쓴다.
+
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 하늘이
 
 - `scenes/characters/dog.tscn` + `scripts/dog/dog.gd`. 하윤처럼 `main.tscn`이 들고 있다.
-- 합류 전에는 보이지 않는다. `dog.join(player)`가 합류시키고 `dog_joined` 플래그를 세운다(3-4 만남 장면에서 부를 것).
+- 합류 전에는 보이지 않는다. 합류는 만남 부품(아래)이 시킨다. 코드로는 `dog.join(player)`이고 `dog_joined` 플래그를 세운다.
+
+### 하늘이 만남 (DogMeeting, 장면표 3-4)
+
+- **B가 간이역 씬의 3-4 자리에 놓는다.** `Node2D`에 `scripts/dog/dog_meeting.gd`를 붙이고 땅 위(y = 810)에 둔다. 이름은 `DogMeeting_3-4`.
+- 하늘이가 그 자리에 앉아 있다 → 하윤이 다가가면 두 번 물러난다(`retreats`, `retreat_distance`) → 세 번째에 `[E] 쪼그려 앉기` → 하윤이 쪼그려 앉고 하늘이가 다가옴 → 이름표 글 "하늘", "하윤: 하늘이…?" → 합류.
+- 물러날 자리가 장소 안에 있어야 한다: 놓는 자리 + `retreats × retreat_distance`(기본 600px)가 장소 끝 지점보다 왼쪽이어야 한다.
+- 3-5의 첫 부탁 자리(가져와)는 이 자리보다 오른쪽에 둔다. 합류 전에는 F가 먹지 않는다.
+- 이미 합류했으면 아무 일도 하지 않는다. 만남 중에 장소를 떠나면 하늘이는 다시 숨는다.
 - 하윤 뒤 80~120px, 멈추면 2초 뒤 앉는다. 장소를 옮기면 하윤 뒤에 다시 선다(하던 부탁은 취소).
+- **힌트**: 하윤이 조작할 수 있는 채로 8초 가만히 있으면, 하늘이가 다음 목표 쪽으로 최대 160px 앞서 가서 1.5초 바라보다 돌아온다(같은 정지 동안 한 번).
+  다음 목표 = 하윤보다 오른쪽의, 아직 안 쓴 부탁 자리 · `map_circle` 조사 대상 · `one_shot` 조사 대상 중 가장 가까운 것. 없으면 장소 끝 지점.
+  그래서 **진행에 필요한 조사 대상은 `one_shot`으로** 두면 힌트가 가리킨다(되풀이 조사용 분위기 대상은 안 가리킨다).
 
 ## 하윤
 
