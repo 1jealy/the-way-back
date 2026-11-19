@@ -1,0 +1,64 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/dog/dog.gd" id="1_dog"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dog"]
+size = Vector2(90, 60)
+
+[node name="Dog" type="CharacterBody2D"]
+collision_layer = 4
+script = ExtResource("1_dog")
+
+[node name="Shape" type="CollisionShape2D" parent="."]
+position = Vector2(0, -30)
+shape = SubResource("RectangleShape2D_dog")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Stand" type="Node2D" parent="Visual"]
+
+[node name="Body" type="Polygon2D" parent="Visual/Stand"]
+color = Color(0.92, 0.92, 0.9, 1)
+polygon = PackedVector2Array(-50, -30, 30, -30, 30, -80, -50, -80)
+
+[node name="LegBack" type="Polygon2D" parent="Visual/Stand"]
+color = Color(0.85, 0.85, 0.83, 1)
+polygon = PackedVector2Array(-46, 0, -34, 0, -34, -30, -46, -30)
+
+[node name="LegFront" type="Polygon2D" parent="Visual/Stand"]
+color = Color(0.85, 0.85, 0.83, 1)
+polygon = PackedVector2Array(14, 0, 26, 0, 26, -30, 14, -30)
+
+[node name="Head" type="Polygon2D" parent="Visual/Stand"]
+color = Color(0.95, 0.95, 0.93, 1)
+polygon = PackedVector2Array(22, -70, 58, -70, 58, -104, 22, -104)
+
+[node name="Ear" type="Polygon2D" parent="Visual/Stand"]
+color = Color(0.62, 0.45, 0.3, 1)
+polygon = PackedVector2Array(26, -104, 36, -104, 31, -118)
+
+[node name="Sit" type="Node2D" parent="Visual"]
+visible = false
+
+[node name="Body" type="Polygon2D" parent="Visual/Sit"]
+color = Color(0.92, 0.92, 0.9, 1)
+polygon = PackedVector2Array(-40, 0, 24, 0, 24, -64, -40, -40)
+
+[node name="Head" type="Polygon2D" parent="Visual/Sit"]
+color = Color(0.95, 0.95, 0.93, 1)
+polygon = PackedVector2Array(10, -60, 46, -60, 46, -94, 10, -94)
+
+[node name="Ear" type="Polygon2D" parent="Visual/Sit"]
+color = Color(0.62, 0.45, 0.3, 1)
+polygon = PackedVector2Array(14, -94, 24, -94, 19, -108)
+
+[node name="PawMark" type="Label" parent="."]
+visible = false
+offset_left = -16.0
+offset_top = -170.0
+offset_right = 16.0
+offset_bottom = -134.0
+theme_override_colors/font_color = Color(1, 0.93, 0.7, 1)
+theme_override_font_sizes/font_size = 28
+text = "F"
+horizontal_alignment = 1
