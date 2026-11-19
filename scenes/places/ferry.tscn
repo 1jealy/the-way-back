@@ -1,29 +1,72 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_sky.png" id="2_0t58y"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_far.png" id="3_qn10e"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_mid.png" id="4_r1owm"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_ground.png" id="5_4cyny"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_props.png" id="6_0tiiu"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_front.png" id="7_34ljx"]
 
-[node name="Ferry" instance=ExtResource("1_tpl")]
+[node name="Ferry" unique_id=1705164281 instance=ExtResource("1_tpl")]
 place_id = &"ferry"
 display_name = "나루터"
 width = 3840.0
+greybox = false
 
-[node name="7-1" type="Marker2D" parent="Markers"]
+[node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=951593821]
+
+[node name="bg_ferry_sky" type="Sprite2D" parent="Layers/Sky/Art" index="0" unique_id=765231291]
+texture = ExtResource("2_0t58y")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=808451845]
+
+[node name="bg_ferry_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=592987691]
+texture = ExtResource("3_qn10e")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=16507917]
+
+[node name="bg_ferry_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=14742131]
+texture = ExtResource("4_r1owm")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1352217790]
+
+[node name="bg_ferry_ground" type="Sprite2D" parent="Layers/Ground/Art" index="0" unique_id=1244600667]
+texture = ExtResource("5_4cyny")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Props" index="0" unique_id=1410514940]
+
+[node name="bg_ferry_props" type="Sprite2D" parent="Layers/Props/Art" index="0" unique_id=1588150213]
+texture = ExtResource("6_0tiiu")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=490612569]
+
+[node name="bg_ferry_front" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=1971236732]
+texture = ExtResource("7_34ljx")
+centered = false
+
+[node name="7-1" type="Marker2D" parent="Markers" index="0" unique_id=1260902235]
 position = Vector2(450, 810)
 
-[node name="7-2" type="Marker2D" parent="Markers"]
+[node name="7-2" type="Marker2D" parent="Markers" index="1" unique_id=1870315403]
 position = Vector2(800, 810)
 
-[node name="7-3" type="Marker2D" parent="Markers"]
+[node name="7-3" type="Marker2D" parent="Markers" index="2" unique_id=435092928]
 position = Vector2(1220, 810)
 
-[node name="7-4" type="Marker2D" parent="Markers"]
+[node name="7-4" type="Marker2D" parent="Markers" index="3" unique_id=485138240]
 position = Vector2(1780, 810)
 
-[node name="7-5" type="Marker2D" parent="Markers"]
+[node name="7-5" type="Marker2D" parent="Markers" index="4" unique_id=1488085778]
 position = Vector2(2200, 810)
 
-[node name="7-6" type="Marker2D" parent="Markers"]
+[node name="7-6" type="Marker2D" parent="Markers" index="5" unique_id=319312310]
 position = Vector2(2830, 810)
 
-[node name="7-7" type="Marker2D" parent="Markers"]
+[node name="7-7" type="Marker2D" parent="Markers" index="6" unique_id=928338011]
 position = Vector2(3460, 810)

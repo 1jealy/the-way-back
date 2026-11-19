@@ -1,21 +1,82 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_sky.png" id="2_hekkq"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_far.png" id="3_eqluu"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_mid.png" id="4_1gp4a"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_ground_01.png" id="5_1l7lr"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_ground_02.png" id="6_k6ejp"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_props_01.png" id="7_avhum"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_props_02.png" id="8_5ibt5"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_front_01.png" id="9_8c2du"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_front_02.png" id="10_edoyo"]
 
-[node name="Forest" instance=ExtResource("1_tpl")]
+[node name="Forest" unique_id=2086477153 instance=ExtResource("1_tpl")]
 place_id = &"forest"
 display_name = "빛이 많은 숲"
 next_place = "res://scenes/places/riverside.tscn"
 width = 9600.0
+greybox = false
 
-[node name="4-1" type="Marker2D" parent="Markers"]
+[node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=765063256]
+
+[node name="bg_forest_sky" type="Sprite2D" parent="Layers/Sky/Art" index="0" unique_id=1028781892]
+texture = ExtResource("2_hekkq")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=1607461077]
+
+[node name="bg_forest_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=2071833613]
+texture = ExtResource("3_eqluu")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=825047084]
+
+[node name="bg_forest_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=1599037306]
+texture = ExtResource("4_1gp4a")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1583224145]
+
+[node name="bg_forest_ground_01" type="Sprite2D" parent="Layers/Ground/Art" index="0" unique_id=1317500786]
+texture = ExtResource("5_1l7lr")
+centered = false
+
+[node name="bg_forest_ground_02" type="Sprite2D" parent="Layers/Ground/Art" index="1" unique_id=480558142]
+position = Vector2(4808, 0)
+texture = ExtResource("6_k6ejp")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Props" index="0" unique_id=5902417]
+
+[node name="bg_forest_props_01" type="Sprite2D" parent="Layers/Props/Art" index="0" unique_id=1103224511]
+texture = ExtResource("7_avhum")
+centered = false
+
+[node name="bg_forest_props_02" type="Sprite2D" parent="Layers/Props/Art" index="1" unique_id=17199588]
+position = Vector2(4808, 0)
+texture = ExtResource("8_5ibt5")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=1582970992]
+
+[node name="bg_forest_front_01" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=175861931]
+texture = ExtResource("9_8c2du")
+centered = false
+
+[node name="bg_forest_front_02" type="Sprite2D" parent="Layers/Front/Art" index="1" unique_id=1446877372]
+position = Vector2(5768, 0)
+texture = ExtResource("10_edoyo")
+centered = false
+
+[node name="4-1" type="Marker2D" parent="Markers" index="0" unique_id=1673788466]
 position = Vector2(891, 810)
 
-[node name="4-2" type="Marker2D" parent="Markers"]
+[node name="4-2" type="Marker2D" parent="Markers" index="1" unique_id=2055815117]
 position = Vector2(3171, 810)
 
-[node name="4-3" type="Marker2D" parent="Markers"]
+[node name="4-3" type="Marker2D" parent="Markers" index="2" unique_id=1609794696]
 position = Vector2(6266, 810)
 
-[node name="4-4" type="Marker2D" parent="Markers"]
+[node name="4-4" type="Marker2D" parent="Markers" index="3" unique_id=493480513]
 position = Vector2(8546, 810)

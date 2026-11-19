@@ -1,27 +1,88 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_sky.png" id="2_t5rhc"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_far.png" id="3_x6j8v"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_mid.png" id="4_4l6tm"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_ground_01.png" id="5_dd10l"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_ground_02.png" id="6_dawgu"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_props_01.png" id="7_w0dms"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_props_02.png" id="8_xfxxh"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_front_01.png" id="9_7a7fx"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_front_02.png" id="10_b582e"]
 
-[node name="Station" instance=ExtResource("1_tpl")]
+[node name="Station" unique_id=83172775 instance=ExtResource("1_tpl")]
 place_id = &"station"
 display_name = "버려진 간이역"
 next_place = "res://scenes/places/forest.tscn"
 width = 9600.0
+greybox = false
 
-[node name="3-1" type="Marker2D" parent="Markers"]
+[node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=1182210153]
+
+[node name="bg_station_sky" type="Sprite2D" parent="Layers/Sky/Art" index="0" unique_id=52369413]
+texture = ExtResource("2_t5rhc")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=630578905]
+
+[node name="bg_station_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=2006969794]
+texture = ExtResource("3_x6j8v")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=96949525]
+
+[node name="bg_station_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=1103930574]
+texture = ExtResource("4_4l6tm")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=784282282]
+
+[node name="bg_station_ground_01" type="Sprite2D" parent="Layers/Ground/Art" index="0" unique_id=1391969145]
+texture = ExtResource("5_dd10l")
+centered = false
+
+[node name="bg_station_ground_02" type="Sprite2D" parent="Layers/Ground/Art" index="1" unique_id=1172469273]
+position = Vector2(4808, 0)
+texture = ExtResource("6_dawgu")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Props" index="0" unique_id=975302418]
+
+[node name="bg_station_props_01" type="Sprite2D" parent="Layers/Props/Art" index="0" unique_id=1457845806]
+texture = ExtResource("7_w0dms")
+centered = false
+
+[node name="bg_station_props_02" type="Sprite2D" parent="Layers/Props/Art" index="1" unique_id=80648644]
+position = Vector2(4808, 0)
+texture = ExtResource("8_xfxxh")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=1937488445]
+
+[node name="bg_station_front_01" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=674495410]
+texture = ExtResource("9_7a7fx")
+centered = false
+
+[node name="bg_station_front_02" type="Sprite2D" parent="Layers/Front/Art" index="1" unique_id=771227213]
+position = Vector2(5768, 0)
+texture = ExtResource("10_b582e")
+centered = false
+
+[node name="3-1" type="Marker2D" parent="Markers" index="0" unique_id=132638462]
 position = Vector2(776, 810)
 
-[node name="3-2" type="Marker2D" parent="Markers"]
+[node name="3-2" type="Marker2D" parent="Markers" index="1" unique_id=737042328]
 position = Vector2(2118, 810)
 
-[node name="3-3" type="Marker2D" parent="Markers"]
+[node name="3-3" type="Marker2D" parent="Markers" index="2" unique_id=1907558354]
 position = Vector2(3325, 810)
 
-[node name="3-4" type="Marker2D" parent="Markers"]
+[node name="3-4" type="Marker2D" parent="Markers" index="3" unique_id=522234026]
 position = Vector2(4934, 810)
 
-[node name="3-5" type="Marker2D" parent="Markers"]
+[node name="3-5" type="Marker2D" parent="Markers" index="4" unique_id=1869494999]
 position = Vector2(6946, 810)
 
-[node name="3-6" type="Marker2D" parent="Markers"]
+[node name="3-6" type="Marker2D" parent="Markers" index="5" unique_id=702006309]
 position = Vector2(8555, 810)
