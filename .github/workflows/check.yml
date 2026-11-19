@@ -12,7 +12,7 @@ env:
 jobs:
   smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -47,3 +47,10 @@ jobs:
           # 파싱 오류에도 종료 코드가 0일 수 있다(CLAUDE.md). 로그도 본다.
           ! grep -E "SCRIPT ERROR|Parse Error|FAIL" smoke.log
           grep -q "스모크 검사 통과" smoke.log
+
+      - name: 부품 흐름 검사 (하늘이 만남·부탁·문, 약 3분)
+        run: |
+          set -o pipefail
+          ~/godot/godot --headless --path . --script res://tools/parts_flow_test.gd 2>&1 | tee flow.log
+          ! grep -E "SCRIPT ERROR|Parse Error|FAIL" flow.log
+          grep -q "부품 흐름 검사 통과" flow.log

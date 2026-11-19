@@ -8,6 +8,8 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_props.png" id="6_sws2n"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_front_01.png" id="7_5vltc"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_front_02.png" id="8_q62ua"]
+[ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="9_fnntt"]
+[ext_resource type="Script" path="res://scripts/game/interactable.gd" id="10_862vo"]
 
 [node name="Riverside" unique_id=22785897 instance=ExtResource("1_tpl")]
 place_id = &"riverside"
@@ -68,3 +70,20 @@ position = Vector2(3990, 810)
 
 [node name="5-4" type="Marker2D" parent="Markers" index="3" unique_id=1584425897]
 position = Vector2(6390, 810)
+
+[node name="AskSpot_5-3" type="Area2D" parent="." index="5" unique_id=618331451]
+position = Vector2(3450, 810)
+script = ExtResource("9_fnntt")
+action = 2
+size = Vector2(400, 300)
+target_offset = Vector2(120, 0)
+grants_flag = &"river_stone_held"
+release_offset = 900.0
+
+[node name="Look_5-4_Shallows" type="Area2D" parent="." index="6" unique_id=1268407135]
+position = Vector2(6390, 810)
+script = ExtResource("10_862vo")
+prompt = "지도 펼치기"
+lines = PackedStringArray("하윤: …다섯 번은 어렵다.")
+one_shot = true
+map_circle = 4

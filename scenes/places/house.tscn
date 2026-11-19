@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_ground.png" id="5_mxv64"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_props.png" id="6_bdaxg"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_front.png" id="7_i8y7p"]
+[ext_resource type="Script" path="res://scripts/game/interactable.gd" id="8_sauk6"]
 
 [node name="House" unique_id=721323629 instance=ExtResource("1_tpl")]
 place_id = &"house"
@@ -64,7 +65,30 @@ position = Vector2(2220, 810)
 position = Vector2(3320, 810)
 
 [node name="1-5" type="Marker2D" parent="Markers" index="4" unique_id=404954012]
-position = Vector2(4420, 810)
+position = Vector2(3500, 810)
 
 [node name="1-6" type="Marker2D" parent="Markers" index="5" unique_id=1839811503]
 position = Vector2(5190, 810)
+
+[node name="Look_1-3_Album" type="Area2D" parent="." index="5" unique_id=821322420]
+position = Vector2(2220, 810)
+script = ExtResource("8_sauk6")
+prompt = "앨범 넘기기"
+lines = PackedStringArray("하윤: …할아버지.")
+
+[node name="Look_1-4_Frame" type="Area2D" parent="." index="6" unique_id=2028437250]
+position = Vector2(3430, 810)
+script = ExtResource("8_sauk6")
+prompt = "액자 살펴보기"
+lines = PackedStringArray()
+grants_flag = &"house_drawer_key"
+one_shot = true
+
+[node name="Look_1-5_Drawer" type="Area2D" parent="." index="7" unique_id=1434765049]
+position = Vector2(3220, 810)
+script = ExtResource("8_sauk6")
+prompt = "서랍 열기"
+lines = PackedStringArray("하윤: …같이 가자며.")
+grants_flag = &"has_map"
+requires_flag = &"house_drawer_key"
+one_shot = true
