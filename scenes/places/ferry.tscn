@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_props.png" id="6_0tiiu"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_front.png" id="7_34ljx"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="8_qn10e"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_ferry.ogg" id="9_r1owm"]
 
 [node name="Ferry" unique_id=1705164281 instance=ExtResource("1_tpl")]
 place_id = &"ferry"
@@ -79,3 +80,9 @@ prompt = "지도 펼치기"
 lines = PackedStringArray()
 one_shot = true
 map_circle = 5
+
+[node name="Sound" type="Node2D" parent="." index="6" unique_id=1851906641]
+
+[node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=1085038037]
+stream = ExtResource("9_r1owm")
+autoplay = true
