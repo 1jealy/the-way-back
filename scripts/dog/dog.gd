@@ -1,13 +1,16 @@
 class_name Dog
 extends CharacterBody2D
 ## 하늘이. 하윤 뒤를 따라다니고, 부탁 자리(AskSpot)에서 F를 누르면 그 자리의 행동을 한다.
-## 합류 전(HIDDEN)에는 보이지도 움직이지도 않는다. 담당: A(게임플레이).
+## 합류 전(HIDDEN)에는 보이지도 움직이지도 않는다. 만남 장면(DogMeeting) 동안은 MEETING:
+## 보이지만 따라오지 않고, 만남 부품이 정해 준 자리로만 움직인다. 담당: A(게임플레이).
 
 signal joined
 signal task_started(spot: AskSpot)
 signal task_finished(spot: AskSpot)
+## MEETING에서 meet_move_to로 보낸 자리에 닿았을 때.
+signal meet_arrived
 
-enum State { HIDDEN, FOLLOW, SIT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN }
+enum State { HIDDEN, MEETING, FOLLOW, SIT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN }
 
 const JOIN_FLAG := &"dog_joined"
 ## 하윤 뒤 이 거리에 서려고 한다. 설 자리에서 DEADBAND 안이면 멈춘다 → 80~120px.
@@ -17,6 +20,7 @@ const FOLLOW_MAX_SPEED := 300.0
 ## 멀어진 거리에 비례해 빨라진다(가까우면 천천히 붙는다).
 const FOLLOW_GAIN := 3.0
 const TASK_SPEED := 260.0
+const MEET_SPEED := 340.0
 const SIT_DELAY := 2.0
 const ACT_SECONDS := 0.8
 ## 하윤 조작을 막는 이유 이름(Player.lock).
@@ -32,6 +36,8 @@ var _player: Player
 var _spot: AskSpot
 var _idle: float = 0.0
 var _act_left: float = 0.0
+var _meet_goal_x: float = 0.0
+var _meet_moving: bool = false
 
 @onready var _visual: Node2D = $Visual
 @onready var _stand: Node2D = $Visual/Stand
@@ -45,16 +51,42 @@ func _ready() -> void:
 
 
 ## 하윤과 함께 다니기 시작한다. 플래그를 세워 장소를 옮겨도 유지된다.
-func join(player: Player) -> void:
+## teleport가 false면 지금 자리에서 걸어서 하윤 뒤로 간다(만남 장면 끝).
+func join(player: Player, teleport: bool = true) -> void:
 	_player = player
 	state = State.FOLLOW
+	_idle = 0.0
 	GameState.set_flag(JOIN_FLAG)
-	place_behind(player)
+	if teleport:
+		place_behind(player)
 	joined.emit()
 
 
 func is_joined() -> bool:
-	return state != State.HIDDEN
+	return state != State.HIDDEN and state != State.MEETING
+
+
+## 만남 장면을 시작한다. at에 앉아서 하윤 쪽(왼쪽)을 본다.
+func begin_meeting(at: Vector2) -> void:
+	if is_joined():
+		return
+	state = State.MEETING
+	global_position = at
+	velocity = Vector2.ZERO
+	facing = -1
+	_meet_goal_x = at.x
+	_meet_moving = false
+	_refresh_visuals()
+
+
+## MEETING에서 x까지 달려간다. 닿으면 앉고 meet_arrived가 온다.
+func meet_move_to(x: float) -> void:
+	_meet_goal_x = x
+	_meet_moving = true
+
+
+func is_meet_moving() -> bool:
+	return _meet_moving
 
 
 func is_busy() -> bool:
@@ -65,6 +97,12 @@ func is_busy() -> bool:
 func place_behind(player: Player) -> void:
 	_player = player
 	if state == State.HIDDEN:
+		return
+	if state == State.MEETING:
+		# 만남 장면이 있던 장소를 떠났다. 그 장소에 다시 오면 만남 부품이 다시 부른다.
+		state = State.HIDDEN
+		_meet_moving = false
+		_refresh_visuals()
 		return
 	if is_busy():
 		_player.unlock(LOCK)
@@ -78,7 +116,7 @@ func place_behind(player: Player) -> void:
 
 ## 지금 F를 누르면 쓸 수 있는 부탁 자리. 없으면 null.
 func available_spot() -> AskSpot:
-	if state == State.HIDDEN or is_busy():
+	if not is_joined() or is_busy():
 		return null
 	for node in get_tree().get_nodes_in_group("ask_spot"):
 		var spot := node as AskSpot
@@ -111,6 +149,13 @@ func _physics_process(delta: float) -> void:
 	var goal_x := global_position.x
 	var max_speed := 0.0
 	match state:
+		State.MEETING:
+			if _meet_moving:
+				goal_x = _meet_goal_x
+				max_speed = MEET_SPEED
+				if absf(goal_x - global_position.x) < 2.0:
+					_meet_moving = false
+					meet_arrived.emit()
 		State.FOLLOW, State.SIT:
 			goal_x = _follow_x()
 			if absf(goal_x - global_position.x) > DEADBAND:
@@ -182,11 +227,16 @@ func _move_toward_x(goal_x: float, max_speed: float, delta: float) -> void:
 		facing = 1 if velocity.x > 0.0 else -1
 	elif state in [State.FOLLOW, State.SIT] and _player:
 		facing = 1 if _player.global_position.x >= global_position.x else -1
+	elif state == State.MEETING:
+		var p := get_tree().get_first_node_in_group("player") as Node2D
+		if p:
+			facing = 1 if p.global_position.x >= global_position.x else -1
 
 
 func _refresh_visuals() -> void:
 	visible = state != State.HIDDEN
 	_visual.scale.x = facing
-	_stand.visible = state != State.SIT
-	_sit.visible = state == State.SIT
+	var sitting := state == State.SIT or (state == State.MEETING and not _meet_moving)
+	_stand.visible = not sitting
+	_sit.visible = sitting
 	_paw.visible = available_spot() != null
