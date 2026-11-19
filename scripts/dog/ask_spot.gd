@@ -1,14 +1,14 @@
 class_name AskSpot
 extends Area2D
-## 부탁 자리. 하윤이 이 안에 있을 때만 F(ask_dog)가 먹고, 구름이가 정해진 행동을 한다.
+## 부탁 자리. 하윤이 이 안에 있을 때만 F(ask_dog)가 먹고, 하늘이가 정해진 행동을 한다.
 ## 장소 씬에 B가 놓는다. 노드 하나(이 스크립트를 붙인 Area2D)면 되고, 충돌 모양은 size로 여기서 만든다.
 ## 약속은 CLAUDE.md "부탁 자리" 참고. 담당: A(게임플레이).
 
-## 구름이가 행동을 시작할 때.
+## 하늘이가 행동을 시작할 때.
 signal started
 ## 행동의 핵심 순간: 물건을 물었을 때 / 짖을 때 / 버티기 시작할 때.
 signal acted
-## 구름이가 하윤에게 돌아와 부탁이 끝났을 때.
+## 하늘이가 하윤에게 돌아와 부탁이 끝났을 때.
 signal completed
 
 enum Action {
@@ -20,11 +20,11 @@ enum Action {
 @export var action: Action = Action.FETCH
 ## 하윤이 이 안에 들어오면 F가 먹는다. 원점은 땅(발밑) 가운데.
 @export var size: Vector2 = Vector2(320.0, 300.0)
-## 구름이가 가는 곳(이 노드 기준). x만 쓴다.
+## 하늘이가 가는 곳(이 노드 기준). x만 쓴다.
 @export var target_offset: Vector2 = Vector2(240.0, 0.0)
 ## 행동의 핵심 순간(acted)에 세우는 GameState 플래그.
 @export var grants_flag: StringName = &""
-## HOLD에서, 하윤이 target보다 이만큼 오른쪽으로 가면 구름이가 놓고 따라온다.
+## HOLD에서, 하윤이 target보다 이만큼 오른쪽으로 가면 하늘이가 놓고 따라온다.
 @export var release_offset: float = 300.0
 @export var one_shot: bool = true
 

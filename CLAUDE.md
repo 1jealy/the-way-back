@@ -16,7 +16,7 @@
 
 | | A: 게임플레이 | B: 월드·연출·도구 |
 | --- | --- | --- |
-| 맡는 것 | 하윤 이동·조사, 구름이 따라오기·부탁하기, 지도 화면, 퍼즐 로직, 진행 상태·저장, 장소 전환, 메뉴 | 장소 씬 배치, 패럴랙스·앞 층, 색 보정, 빛 알갱이·안개·물 반사, 바람 셰이더, 컷신 재생, 웹 내보내기·CI, 그림·소리 가져오기 도구 |
+| 맡는 것 | 하윤 이동·조사, 하늘이 따라오기·부탁하기, 지도 화면, 퍼즐 로직, 진행 상태·저장, 장소 전환, 메뉴 | 장소 씬 배치, 패럴랙스·앞 층, 색 보정, 빛 알갱이·안개·물 반사, 바람 셰이더, 컷신 재생, 웹 내보내기·CI, 그림·소리 가져오기 도구 |
 | 고치는 곳 | `project.godot`, `scripts/player/`, `scripts/dog/`, `scripts/ui/`, `scripts/game/`, `scenes/main.tscn`, `scenes/characters/`, `scenes/ui/`, `tests/` | `scenes/places/`(템플릿 제외), `shaders/`, `tools/`, `.github/`, `export_presets.cfg`, `assets/` |
 | 건드리지 않는 곳 | `scenes/places/`의 배치 | `project.godot`, `scripts/`, `scenes/places/place_template.tscn` |
 
@@ -50,7 +50,7 @@
 └─ Markers   장면 위치 표시. 이름은 장면표 번호(예: "2-3")
 ```
 
-- 하윤·구름이는 장소 씬 안에 두지 않는다. `main.tscn`이 들고 있고 z 0이다. 그래서 z가 0보다 크면 하윤 앞, 작으면 뒤에 그려진다.
+- 하윤·하늘이는 장소 씬 안에 두지 않는다. `main.tscn`이 들고 있고 z 0이다. 그래서 z가 0보다 크면 하윤 앞, 작으면 뒤에 그려진다.
 - **땅 높이 `Place.GROUND_Y` = 810**(화면 아래 1/4). 모든 장소에서 같다.
 - 루트에서 정하는 값: `place_id`, `display_name`, `next_place`, `width`(장면표의 화면 길이 × 1920), `greybox`.
 - `greybox = true`면 `place.gd`가 회색 네모 배경을 만든다. 그림이 들어오면 끈다.
@@ -62,13 +62,13 @@
 | --- | --- | --- |
 | 1 | world | 바닥·벽·발판 (StaticBody2D) |
 | 2 | player | 하윤 |
-| 3 | dog | 구름이 (world와만 부딪힌다. 하윤과 안 부딪힌다) |
+| 3 | dog | 하늘이 (world와만 부딪힌다. 하윤과 안 부딪힌다) |
 
-하윤을 감지하는 Area2D(끝 지점, 부탁 자리, 조사 대상)는 `collision_layer = 0`, `collision_mask = 2`로 둔다. 그래야 구름이나 바닥에 반응하지 않는다.
+하윤을 감지하는 Area2D(끝 지점, 부탁 자리, 조사 대상)는 `collision_layer = 0`, `collision_mask = 2`로 둔다. 그래야 하늘이나 바닥에 반응하지 않는다.
 
 ## 부탁 자리 (AskSpot)
 
-구름이에게 F로 부탁하는 자리. **B가 장소 씬에 놓고, 동작은 A가 만든다.**
+하늘이에게 F로 부탁하는 자리. **B가 장소 씬에 놓고, 동작은 A가 만든다.**
 
 - 장소 씬에 `Area2D`를 하나 놓고 `scripts/dog/ask_spot.gd`를 붙인다. 위치는 땅 위(y = 810). 충돌 모양은 스크립트가 `size`로 만든다(자식 노드 필요 없음).
 - 이름은 장면표 번호로: `AskSpot_3-5`.
@@ -77,15 +77,15 @@
 | --- | --- |
 | `action` | `FETCH` 가져와 / `SNIFF` 냄새 / `HOLD` 기다려 |
 | `size` | 하윤이 이 안에 있어야 F가 먹는다 (기본 320x300) |
-| `target_offset` | 구름이가 가는 곳, 자리 기준 (x만 쓴다) |
+| `target_offset` | 하늘이가 가는 곳, 자리 기준 (x만 쓴다) |
 | `grants_flag` | 행동의 핵심 순간에 세우는 플래그 (예: `station_key`) |
-| `release_offset` | HOLD에서, 하윤이 target보다 이만큼 오른쪽으로 가면 구름이가 놓고 따라온다 |
+| `release_offset` | HOLD에서, 하윤이 target보다 이만큼 오른쪽으로 가면 하늘이가 놓고 따라온다 |
 
 - 신호: `started`(출발) / `acted`(물었다·짖었다·버티기 시작) / `completed`(돌아왔다). 퍼즐 반응(문이 열린다, 길이 열린다)은 `grants_flag`나 이 신호를 받아 만든다.
 - 한 번 쓰면 다시 안 먹는다(`one_shot`).
 - 가져와·냄새 동안에는 하윤 조작이 멈춘다. 기다려는 하윤이 움직일 수 있다.
 
-## 구름이
+## 하늘이
 
 - `scenes/characters/dog.tscn` + `scripts/dog/dog.gd`. 하윤처럼 `main.tscn`이 들고 있다.
 - 합류 전에는 보이지 않는다. `dog.join(player)`가 합류시키고 `dog_joined` 플래그를 세운다(3-4 만남 장면에서 부를 것).

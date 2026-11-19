@@ -1,6 +1,6 @@
 class_name Dog
 extends CharacterBody2D
-## 구름이. 하윤 뒤를 따라다니고, 부탁 자리(AskSpot)에서 F를 누르면 그 자리의 행동을 한다.
+## 하늘이. 하윤 뒤를 따라다니고, 부탁 자리(AskSpot)에서 F를 누르면 그 자리의 행동을 한다.
 ## 합류 전(HIDDEN)에는 보이지도 움직이지도 않는다. 담당: A(게임플레이).
 
 signal joined

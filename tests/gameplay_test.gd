@@ -100,19 +100,19 @@ func _run() -> void:
 	_dog = _main.dog()
 
 	# 합류 전
-	_check(not _dog.visible and not _dog.is_joined(), "합류 전에는 구름이가 보이지 않는다")
+	_check(not _dog.visible and not _dog.is_joined(), "합류 전에는 하늘이가 보이지 않는다")
 
 	# 합류와 따라오기
 	_dog.join(_player)
 	await _wait(0.2)
-	_check(_dog.visible and _dog.is_joined(), "합류하면 구름이가 보인다")
+	_check(_dog.visible and _dog.is_joined(), "합류하면 하늘이가 보인다")
 	_check(_state.has_flag(_dog_consts["JOIN_FLAG"]), "합류 플래그가 선다")
 
 	await _hold(&"move_right", 2.0)
 	await _wait(0.8)
 	_check(_gap() >= 80.0 and _gap() <= 120.0, "오른쪽으로 걸은 뒤 80~120px 거리 (%.0f)" % _gap())
-	_check(_is_behind(), "구름이가 하윤 뒤(왼쪽)에 있다")
-	_check(absf(_dog.global_position.y - 810.0) < 4.0, "구름이가 땅 위에 서 있다")
+	_check(_is_behind(), "하늘이가 하윤 뒤(왼쪽)에 있다")
+	_check(absf(_dog.global_position.y - 810.0) < 4.0, "하늘이가 땅 위에 서 있다")
 
 	await _hold(&"move_left", 1.5)
 	await _wait(0.8)
@@ -187,7 +187,7 @@ func _run() -> void:
 	await _hold(&"move_right", 2.0)
 	await _wait(1.3)
 	_check(_state.current_place == &"field", "들판으로 넘어갔다")
-	_check(_dog.visible and _gap() <= 150.0, "장소를 옮겨도 구름이가 하윤 곁에 있다 (%.0f)" % _gap())
+	_check(_dog.visible and _gap() <= 150.0, "장소를 옮겨도 하늘이가 하윤 곁에 있다 (%.0f)" % _gap())
 
 	if _failures == 0:
 		print("게임플레이 검사 통과")
