@@ -56,6 +56,29 @@ func _press_ask() -> void:
 	await process_frame
 
 
+func _press(action: StringName) -> void:
+	var down := InputEventAction.new()
+	down.action = action
+	down.pressed = true
+	Input.parse_input_event(down)
+	await process_frame
+	await process_frame
+	var up := InputEventAction.new()
+	up.action = action
+	up.pressed = false
+	Input.parse_input_event(up)
+	await process_frame
+
+
+func _add_interactable(lines: PackedStringArray, flag: StringName, offset_x: float = 0.0) -> Area2D:
+	var it: Area2D = load("res://scripts/game/interactable.gd").new()
+	it.lines = lines
+	it.grants_flag = flag
+	it.position = Vector2(_player.global_position.x + offset_x, 810.0)
+	_main.current_place().add_child(it)
+	return it
+
+
 ## 조건이 참이 될 때까지 최대 seconds 기다린다.
 func _wait_until(cond: Callable, seconds: float) -> bool:
 	var left := seconds
@@ -180,6 +203,77 @@ func _run() -> void:
 	var released := await _wait_until(func(): return hold.used, 6.0)
 	_check(released, "기다려: 하윤이 지나가면 따라온다")
 	hold.queue_free()
+
+	# 조작 잠금은 이유별로 따로 걸리고 풀린다
+	_player.lock(&"test_a")
+	_player.lock(&"test_b")
+	_player.unlock(&"test_a")
+	_check(not _player.controls_enabled, "잠금 이유 하나를 풀어도 다른 잠금이 남아 있으면 못 걷는다")
+	_player.unlock(&"test_b")
+	_check(_player.controls_enabled, "잠금 이유를 다 풀면 걷는다")
+
+	# 조사(E)와 대사 상자
+	var box: Control = _main.dialogue_box()
+	await _press(&"interact")
+	_check(not box.is_open(), "조사 대상 밖에서 E는 아무 일도 하지 않는다")
+
+	var note := _add_interactable(PackedStringArray(["하윤: 이거 할아버지 글씨다.", "막차 놓치지 말 것"]), &"test_note")
+	var note_done := [false]
+	note.finished.connect(func(): note_done[0] = true)
+	await _wait(0.2)
+	_check(note.get_node("Prompt").visible, "조사 대상 안에서 [E] 안내가 뜬다")
+	await _press(&"interact")
+	_check(box.is_open(), "E를 누르면 대사 상자가 열린다")
+	_check(not _player.controls_enabled, "대사 상자가 열려 있으면 하윤은 걷지 않는다")
+	_check(not note.get_node("Prompt").visible, "대사 중에는 안내가 사라진다")
+	_check(box.current_speaker() == "하윤" and box.current_text() == "이거 할아버지 글씨다.", "대사 줄은 이름과 내용으로 나뉜다")
+	_check(not box.is_line_complete(), "글자가 찍히는 중이다")
+	var x_before := _player.global_position.x
+	await _hold(&"move_right", 0.15)
+	_check(is_equal_approx(_player.global_position.x, x_before), "대사 중에 방향키를 눌러도 움직이지 않는다")
+	await _press(&"interact")
+	_check(box.is_line_complete() and box.current_text() == "이거 할아버지 글씨다.", "찍히는 중에 E를 누르면 그 줄이 다 보인다")
+	await _press(&"interact")
+	_check(box.current_speaker() == "" and box.current_text() == "막차 놓치지 말 것", "다음 줄로 넘어간다. 글은 이름이 없다")
+	await _wait(1.0)
+	await _press(&"interact")
+	_check(not box.is_open() and note_done[0], "마지막 줄 뒤 E로 닫히고 finished가 온다")
+	_check(_player.controls_enabled, "닫히면 다시 걷는다")
+	_check(_state.has_flag(&"test_note"), "조사하면 플래그가 선다")
+	await _wait(0.2)
+	_check(note.get_node("Prompt").visible, "한 번만이 아니면 다시 조사할 수 있다")
+	note.queue_free()
+	await _wait(0.2)
+
+	var once := _add_interactable(PackedStringArray(), &"test_once")
+	once.one_shot = true
+	await _wait(0.2)
+	await _press(&"interact")
+	_check(_state.has_flag(&"test_once") and not box.is_open(), "줄이 없는 조사는 상자 없이 끝난다")
+	await _wait(0.2)
+	_check(not once.get_node("Prompt").visible, "한 번만인 조사는 다시 안 된다")
+	once.queue_free()
+
+	var locked := _add_interactable(PackedStringArray(["열렸다"]), &"")
+	locked.requires_flag = &"test_need"
+	await _wait(0.2)
+	await _press(&"interact")
+	_check(not box.is_open() and not locked.get_node("Prompt").visible, "필요한 플래그가 없으면 조사할 수 없다")
+	_state.set_flag(&"test_need")
+	await _wait(0.2)
+	await _press(&"interact")
+	_check(box.is_open(), "필요한 플래그가 서면 조사할 수 있다")
+	await _press(&"interact")
+	await _press(&"interact")
+	locked.queue_free()
+
+	var near := _add_interactable(PackedStringArray(), &"", 30.0)
+	var far2 := _add_interactable(PackedStringArray(), &"", 90.0)
+	await _wait(0.2)
+	_check(near.get_node("Prompt").visible and not far2.get_node("Prompt").visible, "겹치면 가장 가까운 것 하나만 안내가 뜬다")
+	near.queue_free()
+	far2.queue_free()
+	await _wait(0.2)
 
 	# 장소 전환
 	var place: Node2D = _main.current_place()
