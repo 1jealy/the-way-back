@@ -53,7 +53,8 @@
 
 - 하윤·하늘이는 장소 씬 안에 두지 않는다. `main.tscn`이 들고 있고 z 0이다. 그래서 z가 0보다 크면 하윤 앞, 작으면 뒤에 그려진다.
 - **땅 높이 `Place.GROUND_Y` = 810**(화면 아래 1/4). 모든 장소에서 같다.
-- 루트에서 정하는 값: `place_id`, `display_name`, `next_place`, `width`(장면표의 화면 길이 × 1920), `greybox`.
+- 루트에서 정하는 값: `place_id`, `display_name`, `next_place`, `width`(장면표의 화면 길이 × 1920), `greybox`, `footstep_surface`(발소리 바닥), `footstep_changes`(`{x: 바닥}`, 그 x부터 바닥이 바뀜).
+- 장소 소리는 장소 씬 `Sound/` 아래에 둔다(`Ambience` = 환경음, 그 밖 `AudioStreamPlayer2D` = 자리 소리). 버스는 씬에 적지 않는다 — `main`이 들어올 때 `Ambience` 버스로 보낸다(에디터에는 코드로 만든 버스가 없어 씬에 적으면 Master로 바뀐다).
 - `greybox = true`면 `place.gd`가 회색 네모 배경을 만든다. 그림이 들어오면 끈다.
 - 패럴랙스 층의 내용 폭은 `1920 + (width - 1920) × scroll` 이상이어야 끝까지 덮인다.
 
@@ -134,6 +135,13 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - "계속하기" / Esc → 풀림. "타이틀로" → 멈춤을 풀고 타이틀로.
 - 지도가 펼쳐져 있으면 지도가 Esc를 먼저 가져간다(지도의 `_input`). 새로 Esc를 쓰는 화면을 만들면 같은 방식으로 `_input`에서 가져갈 것.
 - 멈춘 동안에도 돌아야 하는 것(메뉴 소리 등)만 `PROCESS_MODE_ALWAYS`로 둔다. 연출용 `create_timer`는 멈춘 동안에도 흐르므로(기본값) 본편 연출에는 `create_timer(t, false)`를 쓴다.
+
+## 소리
+
+- 이름 규칙·도구는 `assets/audio/README.md`. 파일은 `SoundBank`(`scripts/game/sound_bank.gd`)로 이름으로 찾는다: `SoundBank.pick("step_wood_")`는 step_wood_NN 중 하나(바로 앞과 다른 것). 진짜 소리가 placeholder보다 먼저다.
+- 버스: `Master` / `Ambience`(장소 소리) / `Sfx`(발소리·효과음) / `Music`. `GameState`가 시작할 때 `bus_count`로 만든다(`add_bus()` 금지, 아래 #877).
+- 장소를 옮길 때 `Ambience` 버스가 화면 페이드와 같이 줄었다 커진다(`main._fade_to`).
+- 하윤 발소리는 110px마다, 바닥은 장소의 `surface_at(x)`. 하늘이 발톱은 **간이역·숲에서만**(`Dog.CLAW_PLACES`, 장면표 복선).
 
 ## 하윤 조작 잠금
 

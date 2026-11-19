@@ -15,6 +15,10 @@ place_id = &"ferry"
 display_name = "나루터"
 width = 3840.0
 greybox = false
+footstep_surface = &"grass"
+footstep_changes = {
+960.0: &"deck"
+}
 
 [node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=951593821]
 

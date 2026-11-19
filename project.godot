@@ -30,6 +30,10 @@ window/stretch/aspect="keep"
 2d_physics/layer_2="player"
 2d_physics/layer_3="dog"
 
+[gui]
+
+theme/custom_font="res://assets/fonts/noto_sans_kr_regular_subset.ttf"
+
 [input]
 
 move_left={

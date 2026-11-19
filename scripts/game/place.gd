@@ -19,6 +19,10 @@ const SCREEN_H := 1080.0
 @export var width: float = SCREEN_W
 ## 그림이 들어오기 전까지 회색 네모 배경을 만든다.
 @export var greybox: bool = true
+## 하윤 발소리 바닥(assets/audio의 step_<바닥>_NN). wood dirt grass concrete soil pebble metal deck.
+@export var footstep_surface: StringName = &"dirt"
+## x에서 바닥이 바뀌는 곳. {x: 바닥} — 그 x부터 오른쪽은 그 바닥(예: 집 마루 → 마당 흙).
+@export var footstep_changes: Dictionary = {}
 
 @onready var _spawn: Marker2D = $Spawn
 @onready var _exit: Area2D = $Exit
@@ -34,6 +38,17 @@ func _ready() -> void:
 	_exit.body_entered.connect(_on_exit_body_entered)
 	if greybox:
 		_build_greybox()
+
+
+## x 자리의 발소리 바닥.
+func surface_at(x: float) -> StringName:
+	var surface := footstep_surface
+	var best := -INF
+	for at in footstep_changes:
+		if float(at) <= x and float(at) > best:
+			best = float(at)
+			surface = StringName(footstep_changes[at])
+	return surface
 
 
 func spawn_position() -> Vector2:

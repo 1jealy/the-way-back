@@ -17,11 +17,22 @@ var controls_enabled: bool:
 var facing: int = 1
 var crouching: bool = false
 
+## 이만큼 걸을 때마다 발소리 하나(px). 250px/초면 약 0.44초.
+const STEP_DISTANCE := 110.0
+
+var _step_left: float = STEP_DISTANCE * 0.5
+var _steps: AudioStreamPlayer
+
 @onready var _visual: Node2D = $Visual
 
 
 func _ready() -> void:
 	add_to_group("player")
+	_steps = AudioStreamPlayer.new()
+	_steps.name = "Steps"
+	_steps.bus = SoundBank.BUS_SFX
+	_steps.volume_db = -4.0
+	add_child(_steps)
 
 
 ## reason 이름으로 조작을 막는다. 같은 reason으로 unlock해야 풀린다.
@@ -64,3 +75,21 @@ func _physics_process(delta: float) -> void:
 	if direction != 0.0:
 		facing = 1 if direction > 0.0 else -1
 		_visual.scale.x = facing
+	_update_steps(delta)
+
+
+func _update_steps(delta: float) -> void:
+	if not is_on_floor() or absf(velocity.x) < 1.0:
+		_step_left = STEP_DISTANCE * 0.5  # 다시 걸으면 반 걸음 만에 첫 소리
+		return
+	_step_left -= absf(velocity.x) * delta
+	if _step_left > 0.0:
+		return
+	_step_left += STEP_DISTANCE
+	var place := get_tree().get_first_node_in_group("place") as Place
+	var surface := place.surface_at(global_position.x) if place else &"dirt"
+	var stream := SoundBank.pick("step_%s_" % surface)
+	if stream:
+		_steps.stream = stream
+		_steps.pitch_scale = randf_range(0.94, 1.06)
+		_steps.play()

@@ -20,6 +20,7 @@ var _changing: bool = false
 
 func _ready() -> void:
 	_fade.modulate.a = 1.0
+	_set_ambience_volume(0.0)
 	_swap_place(GameState.take_start_place(FIRST_PLACE))
 	if GameState.has_flag(Dog.JOIN_FLAG):
 		_dog.join(_player)
@@ -70,6 +71,13 @@ func _swap_place(path: String) -> void:
 	_place = scene.instantiate()
 	_place_slot.add_child(_place)
 	_place.exit_reached.connect(_on_exit_reached)
+	# 장소 소리(Sound/ 아래)는 환경음 버스로. 씬 파일에 버스 이름을 적어 두면 에디터에는
+	# 그 버스가 없어서(코드로 만든다) Master로 바뀌어 버린다 — 그래서 여기서 정한다.
+	var sound := _place.get_node_or_null("Sound")
+	if sound:
+		for node in sound.find_children("*", "", true, false):
+			if node is AudioStreamPlayer or node is AudioStreamPlayer2D:
+				node.bus = SoundBank.BUS_AMBIENCE
 
 	_player.global_position = _place.spawn_position()
 	_player.velocity = Vector2.ZERO
@@ -92,7 +100,15 @@ func _on_exit_reached() -> void:
 	go_to(_place.next_place)
 
 
+## 화면이 어두워지는 만큼 장소 소리도 줄인다(장소를 옮길 때 소리가 뚝 끊기지 않게).
 func _fade_to(alpha: float) -> void:
 	var tween := create_tween()
 	tween.tween_property(_fade, "modulate:a", alpha, FADE_SECONDS)
+	tween.parallel().tween_method(_set_ambience_volume, 1.0 - _fade.modulate.a, 1.0 - alpha, FADE_SECONDS)
 	await tween.finished
+
+
+func _set_ambience_volume(linear: float) -> void:
+	var bus := AudioServer.get_bus_index(SoundBank.BUS_AMBIENCE)
+	if bus != -1:
+		AudioServer.set_bus_volume_db(bus, linear_to_db(maxf(linear, 0.0001)))

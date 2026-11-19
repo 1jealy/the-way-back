@@ -17,6 +17,10 @@ display_name = "산 아래 할아버지 집"
 next_place = "res://scenes/places/field.tscn"
 width = 5760.0
 greybox = false
+footstep_surface = &"wood"
+footstep_changes = {
+4750.0: &"dirt"
+}
 
 [node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=1872650011]
 

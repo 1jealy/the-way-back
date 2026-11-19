@@ -21,6 +21,10 @@ display_name = "버려진 간이역"
 next_place = "res://scenes/places/forest.tscn"
 width = 9600.0
 greybox = false
+footstep_surface = &"concrete"
+footstep_changes = {
+7855.0: &"wood"
+}
 
 [node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=1182210153]
 
