@@ -20,7 +20,7 @@ var _changing: bool = false
 
 func _ready() -> void:
 	_fade.modulate.a = 1.0
-	_swap_place(FIRST_PLACE)
+	_swap_place(GameState.take_start_place(FIRST_PLACE))
 	if GameState.has_flag(Dog.JOIN_FLAG):
 		_dog.join(_player)
 	await _fade_to(0.0)
@@ -77,6 +77,7 @@ func _swap_place(path: String) -> void:
 	_dog.place_behind(_player)
 
 	GameState.current_place = _place.place_id
+	GameState.save_game(path)
 	_place_label.text = _place.display_name
 	place_changed.emit(_place.place_id)
 

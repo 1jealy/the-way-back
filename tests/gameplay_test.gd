@@ -420,8 +420,71 @@ func _run() -> void:
 	await _press(&"open_map")
 	await _wait(0.5)
 
+	await _check_save()
+
 	if _failures == 0:
 		print("게임플레이 검사 통과")
 	else:
 		print("게임플레이 검사 실패 %d건" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+
+## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.
+func _check_save() -> void:
+	const HOUSE := "res://scenes/places/house.tscn"
+	_check(not _state.autosave, "저장: 헤드리스에서는 자동 저장이 꺼져 있다")
+	_state.save_path = "user://test_save.cfg"
+	_state.delete_save()
+	_main.go_to(HOUSE)
+	await _wait(1.6)
+	_check(not _state.has_save(), "저장: 자동 저장이 꺼져 있으면 파일을 쓰지 않는다")
+
+	_state.autosave = true
+	_main.go_to(HOUSE)
+	await _wait(1.6)
+	_check(_state.has_save(), "저장: 장소에 들어가면 저장한다")
+	var had_dog: bool = _state.has_flag(_dog_consts["JOIN_FLAG"])
+	var had_check: bool = _state.has_flag(StringName("map_circle_2"))
+
+	_state.reset()
+	_check(_state.flags.is_empty(), "저장: (진행을 지운 상태)")
+	var loaded: bool = _state.load_game()
+	_check(loaded and _state.start_place == HOUSE, "저장: 이어하기는 저장한 장소에서 시작한다")
+	_check(had_dog and _state.has_flag(_dog_consts["JOIN_FLAG"]), "저장: 하늘이 합류가 돌아온다")
+	_check(had_check and _state.has_flag(StringName("map_circle_2")), "저장: 지도 체크가 돌아온다")
+
+	_main.queue_free()
+	await process_frame
+	await process_frame
+	_main = load("res://scenes/main.tscn").instantiate()
+	root.add_child(_main)
+	await _wait(1.2)
+	_check(_main.current_place().place_id == &"house", "이어하기: 저장한 장소로 들어간다")
+	var dog: CharacterBody2D = _main.dog()
+	_check(dog.is_joined() and dog.visible, "이어하기: 하늘이가 곁에 있다")
+	_check(_state.start_place.is_empty(), "이어하기: 시작 장소는 한 번만 쓴다")
+
+	var title: Control = load("res://scenes/ui/title_screen.tscn").instantiate()
+	root.add_child(title)
+	await process_frame
+	_check(not title.get_node("Menu/Continue").disabled, "타이틀: 저장이 있으면 이어하기가 켜져 있다")
+	title.queue_free()
+	_state.delete_save()
+	title = load("res://scenes/ui/title_screen.tscn").instantiate()
+	root.add_child(title)
+	await process_frame
+	await process_frame
+	_check(title.get_node("Menu/Continue").disabled, "타이틀: 저장이 없으면 이어하기가 꺼져 있다")
+	_check(title.get_node("Menu/New").has_focus(), "타이틀: 저장이 없으면 처음부터에 초점이 있다")
+
+	_main.queue_free()
+	_state.set_flag(&"test_leftover")
+	_state.autosave = false
+	title.start_new()
+	await process_frame
+	_check(_state.flags.is_empty() and not _state.has_save(), "타이틀: 처음부터는 진행과 저장을 지운다")
+	await _wait(0.5)
+	var started: Node = current_scene
+	_check(started != null and started.scene_file_path == "res://scenes/main.tscn", "타이틀: 처음부터를 누르면 본편이 시작된다")
+	_state.delete_save()
+	_state.save_path = _state.SAVE_PATH
