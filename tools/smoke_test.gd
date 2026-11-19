@@ -97,6 +97,7 @@ func _check_places() -> void:
 
 func _run() -> void:
 	print("스모크 검사 시작")
+	_check_font()
 	var main: Node = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	await _wait(1.0)
@@ -148,3 +149,29 @@ func _run() -> void:
 	else:
 		print("스모크 검사 실패 %d건" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+
+## 웹에는 OS 글꼴이 없다. 장소 이름과 화면 문구의 글자가 한글 글꼴에 다 있는지 본다.
+## 글자를 모으는 전체 검사는 tools/font_subset.py --check (CI).
+func _check_font() -> void:
+	var font: FontFile = load("res://assets/fonts/noto_sans_kr_regular_subset.ttf")
+	_check(font != null, "한글 글꼴을 불러온다")
+	if font == null:
+		return
+	_check(not font.allow_system_fallback, "글꼴이 OS 글꼴로 대신하지 않는다(웹과 같게)")
+	var texts: Array[String] = []
+	for file in DirAccess.get_files_at("res://scenes/places"):
+		if file.ends_with(".tscn") and file != "place_template.tscn":
+			var place: Node = load("res://scenes/places/" + file).instantiate()
+			texts.append(place.display_name)
+			place.free()
+	var main: Node = load("res://scenes/main.tscn").instantiate()
+	for label in main.find_children("*", "Label", true, false):
+		texts.append(label.text)
+	main.free()
+	var missing := ""
+	for text in texts:
+		for i in text.length():
+			if not font.has_char(text.unicode_at(i)) and not missing.contains(text[i]):
+				missing += text[i]
+	_check(missing.is_empty(), "장소 이름·화면 문구 글자가 글꼴에 있다" + ("" if missing.is_empty() else " (빠짐: %s)" % missing))
