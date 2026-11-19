@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+
+[node name="Riverside" instance=ExtResource("1_tpl")]
+place_id = &"riverside"
+display_name = "강가"
+next_place = "res://scenes/places/bridge.tscn"
+width = 7680.0
+
+[node name="5-1" type="Marker2D" parent="Markers"]
+position = Vector2(840, 810)
+
+[node name="5-2" type="Marker2D" parent="Markers"]
+position = Vector2(2040, 810)
+
+[node name="5-3" type="Marker2D" parent="Markers"]
+position = Vector2(3990, 810)
+
+[node name="5-4" type="Marker2D" parent="Markers"]
+position = Vector2(6390, 810)

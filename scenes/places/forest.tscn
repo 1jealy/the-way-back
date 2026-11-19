@@ -1,0 +1,21 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+
+[node name="Forest" instance=ExtResource("1_tpl")]
+place_id = &"forest"
+display_name = "빛이 많은 숲"
+next_place = "res://scenes/places/riverside.tscn"
+width = 9600.0
+
+[node name="4-1" type="Marker2D" parent="Markers"]
+position = Vector2(891, 810)
+
+[node name="4-2" type="Marker2D" parent="Markers"]
+position = Vector2(3171, 810)
+
+[node name="4-3" type="Marker2D" parent="Markers"]
+position = Vector2(6266, 810)
+
+[node name="4-4" type="Marker2D" parent="Markers"]
+position = Vector2(8546, 810)

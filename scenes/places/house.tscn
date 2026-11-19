@@ -7,3 +7,21 @@ place_id = &"house"
 display_name = "산 아래 할아버지 집"
 next_place = "res://scenes/places/field.tscn"
 width = 5760.0
+
+[node name="1-1" type="Marker2D" parent="Markers"]
+position = Vector2(570, 810)
+
+[node name="1-2" type="Marker2D" parent="Markers"]
+position = Vector2(1340, 810)
+
+[node name="1-3" type="Marker2D" parent="Markers"]
+position = Vector2(2220, 810)
+
+[node name="1-4" type="Marker2D" parent="Markers"]
+position = Vector2(3320, 810)
+
+[node name="1-5" type="Marker2D" parent="Markers"]
+position = Vector2(4420, 810)
+
+[node name="1-6" type="Marker2D" parent="Markers"]
+position = Vector2(5190, 810)
