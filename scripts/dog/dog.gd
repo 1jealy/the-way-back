@@ -9,8 +9,10 @@ signal task_started(spot: AskSpot)
 signal task_finished(spot: AskSpot)
 ## MEETING에서 meet_move_to로 보낸 자리에 닿았을 때.
 signal meet_arrived
+## 하윤이 오래 서 있어서 다음 목표 쪽을 알려 줄 때. target_x는 그 목표.
+signal hinted(target_x: float)
 
-enum State { HIDDEN, MEETING, FOLLOW, SIT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN }
+enum State { HIDDEN, MEETING, FOLLOW, SIT, HINT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN }
 
 const JOIN_FLAG := &"dog_joined"
 ## 하윤 뒤 이 거리에 서려고 한다. 설 자리에서 DEADBAND 안이면 멈춘다 → 80~120px.
@@ -21,6 +23,12 @@ const FOLLOW_MAX_SPEED := 300.0
 const FOLLOW_GAIN := 3.0
 const TASK_SPEED := 260.0
 const MEET_SPEED := 340.0
+## 하윤이 이만큼 가만히 있으면 다음 목표 쪽을 알려 준다(같은 정지 동안 한 번).
+const HINT_DELAY := 8.0
+## 목표 쪽으로 하윤보다 최대 이만큼 앞서 간다.
+const HINT_STEP := 160.0
+const HINT_LOOK_SECONDS := 1.5
+const HINT_SPEED := 170.0
 const SIT_DELAY := 2.0
 const ACT_SECONDS := 0.8
 ## 하윤 조작을 막는 이유 이름(Player.lock).
@@ -38,6 +46,10 @@ var _idle: float = 0.0
 var _act_left: float = 0.0
 var _meet_goal_x: float = 0.0
 var _meet_moving: bool = false
+var _player_still: float = 0.0
+var _hinted: bool = false
+var _hint_x: float = 0.0
+var _hint_left: float = 0.0
 
 @onready var _visual: Node2D = $Visual
 @onready var _stand: Node2D = $Visual/Stand
@@ -146,6 +158,7 @@ func _start_task(spot: AskSpot) -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.HIDDEN:
 		return
+	_track_player_still(delta)
 	var goal_x := global_position.x
 	var max_speed := 0.0
 	match state:
@@ -167,6 +180,18 @@ func _physics_process(delta: float) -> void:
 				_idle = _idle + delta if is_zero_approx(_player.velocity.x) else 0.0
 				if _idle >= SIT_DELAY:
 					state = State.SIT
+			if _player_still >= HINT_DELAY and not _hinted:
+				_start_hint()
+		State.HINT:
+			if absf(_player.velocity.x) > 1.0:
+				state = State.FOLLOW
+			else:
+				goal_x = _hint_x
+				max_speed = HINT_SPEED
+				if absf(goal_x - global_position.x) < 2.0:
+					_hint_left -= delta
+					if _hint_left <= 0.0:
+						state = State.FOLLOW
 		State.TASK_GO:
 			goal_x = _spot.target_position().x
 			max_speed = TASK_SPEED
@@ -187,6 +212,46 @@ func _physics_process(delta: float) -> void:
 
 	_move_toward_x(goal_x, max_speed, delta)
 	_refresh_visuals()
+
+
+## 하윤이 움직이지 않고(조작 가능한 채로) 서 있는 시간. 움직이면 다시 알려 줄 수 있다.
+func _track_player_still(delta: float) -> void:
+	if _player == null or not is_joined():
+		return
+	if absf(_player.velocity.x) > 1.0:
+		_player_still = 0.0
+		_hinted = false
+	elif _player.controls_enabled:
+		_player_still += delta
+
+
+## 다음 목표: 하윤보다 오른쪽에 있는, 아직 쓰지 않은 부탁 자리 · 지도 체크 · 한 번만 조사 대상 중 가장 가까운 것.
+## 없으면 장소 끝 지점.
+func hint_target_x() -> float:
+	var px := _player.global_position.x
+	var best := INF
+	for node in get_tree().get_nodes_in_group("ask_spot"):
+		var spot := node as AskSpot
+		if spot and not (spot.one_shot and spot.used) and spot.global_position.x > px + 40.0:
+			best = minf(best, spot.global_position.x)
+	for node in get_tree().get_nodes_in_group("interactable"):
+		var it := node as Interactable
+		if it and not it.used and (it.map_circle > 0 or it.one_shot) and it.global_position.x > px + 40.0:
+			best = minf(best, it.global_position.x)
+	if best == INF:
+		var place := get_tree().get_first_node_in_group("place") as Place
+		best = place.width - 120.0 if place else px + HINT_STEP
+	return best
+
+
+func _start_hint() -> void:
+	_hinted = true
+	var target := hint_target_x()
+	var px := _player.global_position.x
+	_hint_x = px + clampf(target - px, -HINT_STEP, HINT_STEP)
+	_hint_left = HINT_LOOK_SECONDS
+	state = State.HINT
+	hinted.emit(target)
 
 
 func _arrive() -> void:
