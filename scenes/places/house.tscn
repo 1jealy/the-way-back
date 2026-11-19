@@ -1,27 +1,70 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_sky.png" id="2_tpxrr"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_far.png" id="3_sauk6"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_mid.png" id="4_idm51"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_ground.png" id="5_mxv64"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_props.png" id="6_bdaxg"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_front.png" id="7_i8y7p"]
 
-[node name="House" instance=ExtResource("1_tpl")]
+[node name="House" unique_id=721323629 instance=ExtResource("1_tpl")]
 place_id = &"house"
 display_name = "산 아래 할아버지 집"
 next_place = "res://scenes/places/field.tscn"
 width = 5760.0
+greybox = false
 
-[node name="1-1" type="Marker2D" parent="Markers"]
+[node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=1872650011]
+
+[node name="bg_house_sky" type="Sprite2D" parent="Layers/Sky/Art" index="0" unique_id=643596921]
+texture = ExtResource("2_tpxrr")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=1027695111]
+
+[node name="bg_house_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=1754682031]
+texture = ExtResource("3_sauk6")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=1509311108]
+
+[node name="bg_house_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=1119011327]
+texture = ExtResource("4_idm51")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1636320466]
+
+[node name="bg_house_ground" type="Sprite2D" parent="Layers/Ground/Art" index="0" unique_id=1587357924]
+texture = ExtResource("5_mxv64")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Props" index="0" unique_id=510371285]
+
+[node name="bg_house_props" type="Sprite2D" parent="Layers/Props/Art" index="0" unique_id=1153198397]
+texture = ExtResource("6_bdaxg")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=1803970321]
+
+[node name="bg_house_front" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=395706871]
+texture = ExtResource("7_i8y7p")
+centered = false
+
+[node name="1-1" type="Marker2D" parent="Markers" index="0" unique_id=18709884]
 position = Vector2(570, 810)
 
-[node name="1-2" type="Marker2D" parent="Markers"]
+[node name="1-2" type="Marker2D" parent="Markers" index="1" unique_id=911353669]
 position = Vector2(1340, 810)
 
-[node name="1-3" type="Marker2D" parent="Markers"]
+[node name="1-3" type="Marker2D" parent="Markers" index="2" unique_id=1434321818]
 position = Vector2(2220, 810)
 
-[node name="1-4" type="Marker2D" parent="Markers"]
+[node name="1-4" type="Marker2D" parent="Markers" index="3" unique_id=1012191522]
 position = Vector2(3320, 810)
 
-[node name="1-5" type="Marker2D" parent="Markers"]
+[node name="1-5" type="Marker2D" parent="Markers" index="4" unique_id=404954012]
 position = Vector2(4420, 810)
 
-[node name="1-6" type="Marker2D" parent="Markers"]
+[node name="1-6" type="Marker2D" parent="Markers" index="5" unique_id=1839811503]
 position = Vector2(5190, 810)
