@@ -12,6 +12,19 @@ func _initialize() -> void:
 	_run()
 
 
+## assets/art/의 배경 그림이 장소 씬에 다 들어가 있는지 (tools/art_import.gd --check와 같다).
+func _check_art() -> void:
+	var lib: RefCounted = load("res://tools/art_import_lib.gd").new()
+	lib.run(false)
+	for w in lib.warnings:
+		print("  경고  ", w)
+	for e in lib.errors:
+		print("        ", e)
+	for s in lib.out_of_sync:
+		print("        %s: 그림과 맞지 않는다" % s)
+	_check(lib.ok(), "배경 그림이 장소 씬과 맞다 (아니면 tools/art_import.gd를 돌린다)")
+
+
 func _check(ok: bool, what: String) -> void:
 	if ok:
 		print("  ok    ", what)
@@ -43,6 +56,7 @@ func _run() -> void:
 	_check(state.current_place == &"house", "첫 장소는 할아버지 집")
 	_check(player.is_on_floor(), "하윤이 바닥에 서 있다")
 	_check(absf(player.global_position.y - 810.0) < 4.0, "하윤의 발이 땅 높이(810)에 있다")
+	_check_art()
 
 	var x0 := player.global_position.x
 	await _hold(&"move_right", 0.5)
@@ -53,7 +67,8 @@ func _run() -> void:
 
 	var front: Node2D = place.get_node("Layers/Front")
 	_check(front.z_index > player.z_index, "앞 층이 하윤보다 앞에 그려진다")
-	_check(front.get_child_count() > 0, "회색 네모 앞 층 물체가 있다")
+	if place.greybox:  # 그림이 들어오면 회색 네모가 꺼진다
+		_check(front.get_child_count() > 0, "회색 네모 앞 층 물체가 있다")
 
 	player.global_position.x = place.width - 320.0
 	await _hold(&"move_right", 2.0)
