@@ -9,6 +9,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_front_01.png" id="7_did7t"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_front_02.png" id="8_kt3x1"]
 [ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="9_qxxtq"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_bridge.ogg" id="10_qs1fr"]
 
 [node name="Bridge" unique_id=943413289 instance=ExtResource("1_tpl")]
 place_id = &"bridge"
@@ -74,3 +75,9 @@ action = 1
 size = Vector2(600, 300)
 target_offset = Vector2(-900, 0)
 grants_flag = &"bridge_bank_path"
+
+[node name="Sound" type="Node2D" parent="." index="6" unique_id=2088730734]
+
+[node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=1470295647]
+stream = ExtResource("10_qs1fr")
+autoplay = true

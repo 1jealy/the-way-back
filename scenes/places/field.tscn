@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_01.png" id="9_yj3y7"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_02.png" id="10_tibpu"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="11_pp4pi"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_field.ogg" id="12_28arl"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
@@ -101,3 +102,9 @@ position = Vector2(9174, 810)
 script = ExtResource("11_pp4pi")
 prompt = "시간표 보기"
 lines = PackedStringArray("막차 놓치지 말 것")
+
+[node name="Sound" type="Node2D" parent="." index="7" unique_id=1877196375]
+
+[node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=2030125144]
+stream = ExtResource("12_28arl")
+autoplay = true

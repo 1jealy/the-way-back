@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_front_02.png" id="8_q62ua"]
 [ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="9_fnntt"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="10_862vo"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_riverside.ogg" id="11_862vo"]
 
 [node name="Riverside" unique_id=22785897 instance=ExtResource("1_tpl")]
 place_id = &"riverside"
@@ -87,3 +88,9 @@ prompt = "지도 펼치기"
 lines = PackedStringArray("하윤: …다섯 번은 어렵다.")
 one_shot = true
 map_circle = 4
+
+[node name="Sound" type="Node2D" parent="." index="7" unique_id=340961919]
+
+[node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=1074764586]
+stream = ExtResource("11_862vo")
+autoplay = true

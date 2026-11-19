@@ -8,6 +8,8 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_props.png" id="6_bdaxg"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_front.png" id="7_i8y7p"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="8_sauk6"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_house.ogg" id="9_idm51"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/pos_house_radio.ogg" id="10_mxv64"]
 
 [node name="House" unique_id=721323629 instance=ExtResource("1_tpl")]
 place_id = &"house"
@@ -92,3 +94,16 @@ lines = PackedStringArray("하윤: …같이 가자며.")
 grants_flag = &"has_map"
 requires_flag = &"house_drawer_key"
 one_shot = true
+
+[node name="Sound" type="Node2D" parent="." index="8" unique_id=1232819768]
+
+[node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=804395505]
+stream = ExtResource("9_idm51")
+autoplay = true
+
+[node name="Radio_1-1" type="AudioStreamPlayer2D" parent="Sound" index="1" unique_id=1209338659]
+position = Vector2(790, 600)
+stream = ExtResource("10_mxv64")
+volume_db = -4.0
+autoplay = true
+max_distance = 1400.0

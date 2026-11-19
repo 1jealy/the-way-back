@@ -110,6 +110,7 @@ func _run() -> void:
 	_check(player.is_on_floor(), "하윤이 바닥에 서 있다")
 	_check(absf(player.global_position.y - 810.0) < 4.0, "하윤의 발이 땅 높이(810)에 있다")
 	_check_art()
+	_check_audio(main)
 
 	var x0 := player.global_position.x
 	await _hold(&"move_right", 0.5)
@@ -292,3 +293,18 @@ func _check_house_puzzle(main: Node, player: CharacterBody2D) -> void:
 		await _press(&"interact")
 	await _wait(0.3)
 	_check(state.has_flag(&"has_map"), "집: 서랍을 열면 지도를 얻는다(has_map)")
+
+
+## assets/audio/ 소리 규칙(이름·반복)과 장소 환경음. 지금 장소의 환경음이 실제로 돌고 있는지도 본다.
+func _check_audio(main: Node) -> void:
+	var lib: RefCounted = load("res://tools/audio_import_lib.gd").new()
+	lib.run(false)
+	for w in lib.warnings:
+		print("  경고  ", w)
+	for e in lib.errors:
+		print("        ", e)
+	for s in lib.out_of_sync:
+		print("        %s: 소리와 맞지 않는다" % s)
+	_check(lib.ok(), "소리가 규칙과 장소 씬에 맞다 (아니면 tools/audio_import.gd를 돌린다)")
+	var amb: AudioStreamPlayer = main.current_place().get_node_or_null("Sound/Ambience")
+	_check(amb != null and amb.playing, "장소에 들어오면 환경음이 돈다")
