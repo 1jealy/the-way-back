@@ -5,4 +5,23 @@
 [node name="Field" instance=ExtResource("1_tpl")]
 place_id = &"field"
 display_name = "억새 들판"
+next_place = "res://scenes/places/station.tscn"
 width = 11520.0
+
+[node name="2-1" type="Marker2D" parent="Markers"]
+position = Vector2(1029, 810)
+
+[node name="2-2" type="Marker2D" parent="Markers"]
+position = Vector2(2803, 810)
+
+[node name="2-3" type="Marker2D" parent="Markers"]
+position = Vector2(5169, 810)
+
+[node name="2-4" type="Marker2D" parent="Markers"]
+position = Vector2(7337, 810)
+
+[node name="2-5" type="Marker2D" parent="Markers"]
+position = Vector2(9309, 810)
+
+[node name="2-6" type="Marker2D" parent="Markers"]
+position = Vector2(10886, 810)

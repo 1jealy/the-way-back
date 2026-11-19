@@ -1,0 +1,18 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+
+[node name="Bridge" instance=ExtResource("1_tpl")]
+place_id = &"bridge"
+display_name = "낡은 철교"
+next_place = "res://scenes/places/ferry.tscn"
+width = 7680.0
+
+[node name="6-1" type="Marker2D" parent="Markers"]
+position = Vector2(1440, 810)
+
+[node name="6-2" type="Marker2D" parent="Markers"]
+position = Vector2(3440, 810)
+
+[node name="6-3" type="Marker2D" parent="Markers"]
+position = Vector2(5840, 810)

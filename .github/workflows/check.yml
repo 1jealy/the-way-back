@@ -1,0 +1,49 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # CLAUDE.md: Godot 4.7.2 고정. 올리지 않는다.
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Godot 캐시
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Godot 받기
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          curl -fsSL -o /tmp/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+
+      - name: 버전 확인
+        run: ~/godot/godot --version | tee /dev/stderr | grep -q "^${GODOT_VERSION}.stable"
+
+      - name: 헤드리스 임포트
+        run: |
+          ~/godot/godot --headless --path . --import 2>&1 | tee import.log
+          ! grep -E "SCRIPT ERROR|Parse Error" import.log
+
+      - name: 스모크 검사 (7곳 씬 로드·걷기·장소 전환)
+        run: |
+          set -o pipefail
+          ~/godot/godot --headless --path . --script res://tools/smoke_test.gd 2>&1 | tee smoke.log
+          # 파싱 오류에도 종료 코드가 0일 수 있다(CLAUDE.md). 로그도 본다.
+          ! grep -E "SCRIPT ERROR|Parse Error|FAIL" smoke.log
+          grep -q "스모크 검사 통과" smoke.log
