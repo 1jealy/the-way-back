@@ -15,6 +15,7 @@ var controls_enabled: bool:
 		return _locks.is_empty()
 ## 1 = 오른쪽, -1 = 왼쪽.
 var facing: int = 1
+var crouching: bool = false
 
 @onready var _visual: Node2D = $Visual
 
@@ -35,6 +36,12 @@ func unlock(reason: StringName) -> void:
 
 func is_locked_by(reason: StringName) -> bool:
 	return _locks.has(reason)
+
+
+## 쪼그려 앉기(회색 네모 단계에서는 키를 줄여 보여 준다). 원점이 발밑이라 발은 그대로다.
+func set_crouching(on: bool) -> void:
+	crouching = on
+	_visual.scale.y = 0.62 if on else 1.0
 
 
 func _unhandled_input(event: InputEvent) -> void:

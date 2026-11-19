@@ -79,6 +79,23 @@ func _add_interactable(lines: PackedStringArray, flag: StringName, offset_x: flo
 	return it
 
 
+## 오른쪽으로 걸으면서 조건이 참이 되면 멈춘다.
+func _walk_right_until(cond: Callable, seconds: float) -> bool:
+	Input.action_press(&"move_right")
+	var ok := await _wait_until(cond, seconds)
+	Input.action_release(&"move_right")
+	await physics_frame
+	return ok
+
+
+func _speak_through(box: Control) -> void:
+	# 대사 상자를 끝까지 넘긴다(줄마다 다 보이게 → 다음).
+	var guard := 20
+	while box.is_open() and guard > 0:
+		await _press(&"interact")
+		guard -= 1
+
+
 ## 조건이 참이 될 때까지 최대 seconds 기다린다.
 func _wait_until(cond: Callable, seconds: float) -> bool:
 	var left := seconds
@@ -124,6 +141,48 @@ func _run() -> void:
 
 	# 합류 전
 	_check(not _dog.visible and not _dog.is_joined(), "합류 전에는 하늘이가 보이지 않는다")
+
+	# 만남 장면(3-4)
+	var meeting: Node2D = load("res://scripts/dog/dog_meeting.gd").new()
+	meeting.position = Vector2(_player.global_position.x + 900.0, 810.0)
+	_main.current_place().add_child(meeting)
+	await _wait(0.3)
+	_check(_dog.visible and _dog.state == _states["MEETING"], "만남: 하늘이가 보이지만 아직 합류하지 않았다")
+	_check(not _dog.is_joined(), "만남: 합류 전이라 따라오지 않는다")
+	var start_x := _dog.global_position.x
+	var first := await _walk_right_until(func(): return meeting.retreats_left() == 1, 8.0)
+	await _wait_until(func(): return not _dog.is_meet_moving(), 3.0)
+	_check(first and _dog.global_position.x > start_x + 250.0, "만남: 다가가면 한 번 물러난다")
+	var second := await _walk_right_until(func(): return meeting.retreats_left() == 0, 8.0)
+	await _wait_until(func(): return not _dog.is_meet_moving(), 3.0)
+	_check(second and _dog.global_position.x > start_x + 550.0, "만남: 다시 다가가면 두 번째로 물러난다")
+	var offered := await _walk_right_until(func(): return meeting.has_node("Crouch"), 8.0)
+	await _wait(0.3)
+	_check(offered, "만남: 세 번째에는 물러나지 않는다")
+	_check(offered and meeting.get_node("Crouch/Prompt").visible, "만남: [E] 쪼그려 앉기 안내가 뜬다")
+	var meet_box: Control = _main.dialogue_box()
+	await _press(&"interact")
+	_check(_player.crouching and not _player.controls_enabled, "만남: E를 누르면 하윤이 쪼그려 앉고 멈춘다")
+	var opened := await _wait_until(func(): return meet_box.is_open(), 5.0)
+	_check(opened and _gap() <= 100.0, "만남: 하늘이가 다가와 곁에 선다 (%.0f)" % _gap())
+	_check(meet_box.current_speaker() == "" and meet_box.current_text() == "하늘", "만남: 이름표 글 '하늘'")
+	await _press(&"interact")
+	await _press(&"interact")
+	_check(meet_box.current_speaker() == "하윤" and meet_box.current_text() == "하늘이…?", "만남: 하윤 '하늘이…?'")
+	await _speak_through(meet_box)
+	await _wait(0.2)
+	_check(_dog.is_joined() and _state.has_flag(_dog_consts["JOIN_FLAG"]), "만남: 대사가 끝나면 하늘이가 합류한다")
+	_check(_player.controls_enabled and not _player.crouching, "만남: 하윤이 일어나 다시 걷는다")
+	_check(not is_instance_valid(meeting), "만남: 끝나면 만남 부품이 사라진다")
+	await _hold(&"move_right", 1.2)
+	await _wait(0.8)
+	_check(_gap() >= 80.0 and _gap() <= 120.0 and _is_behind(), "만남: 합류 뒤 하윤 뒤를 따라온다 (%.0f)" % _gap())
+
+	var again: Node2D = load("res://scripts/dog/dog_meeting.gd").new()
+	again.position = Vector2(_player.global_position.x + 500.0, 810.0)
+	_main.current_place().add_child(again)
+	await _wait(0.3)
+	_check(not is_instance_valid(again) and _dog.is_joined(), "만남: 이미 합류했으면 만남 부품은 아무 일도 하지 않는다")
 
 	# 합류와 따라오기
 	_dog.join(_player)
