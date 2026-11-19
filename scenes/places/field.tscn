@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+
+[node name="Field" instance=ExtResource("1_tpl")]
+place_id = &"field"
+display_name = "억새 들판"
+width = 11520.0

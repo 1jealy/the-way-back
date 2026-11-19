@@ -1,0 +1,53 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/place.gd" id="1_place"]
+
+[node name="Place" type="Node2D"]
+script = ExtResource("1_place")
+
+[node name="Layers" type="Node2D" parent="."]
+
+[node name="Sky" type="Parallax2D" parent="Layers"]
+z_index = -40
+scroll_scale = Vector2(0.1, 1)
+
+[node name="Far" type="Parallax2D" parent="Layers"]
+z_index = -30
+scroll_scale = Vector2(0.3, 1)
+
+[node name="Mid" type="Parallax2D" parent="Layers"]
+z_index = -20
+scroll_scale = Vector2(0.6, 1)
+
+[node name="Ground" type="Node2D" parent="Layers"]
+z_index = -10
+
+[node name="Props" type="Node2D" parent="Layers"]
+z_index = -5
+
+[node name="Front" type="Parallax2D" parent="Layers"]
+z_index = 10
+scroll_scale = Vector2(1.25, 1)
+
+[node name="Spawn" type="Marker2D" parent="."]
+position = Vector2(240, 810)
+
+[node name="Exit" type="Area2D" parent="."]
+
+[node name="Shape" type="CollisionShape2D" parent="Exit"]
+
+[node name="Bounds" type="Node2D" parent="."]
+
+[node name="Floor" type="StaticBody2D" parent="Bounds"]
+
+[node name="Shape" type="CollisionShape2D" parent="Bounds/Floor"]
+
+[node name="LeftWall" type="StaticBody2D" parent="Bounds"]
+
+[node name="Shape" type="CollisionShape2D" parent="Bounds/LeftWall"]
+
+[node name="RightWall" type="StaticBody2D" parent="Bounds"]
+
+[node name="Shape" type="CollisionShape2D" parent="Bounds/RightWall"]
+
+[node name="Markers" type="Node2D" parent="."]
