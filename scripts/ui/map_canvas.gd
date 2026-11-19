@@ -116,12 +116,40 @@ func _draw_route() -> void:
 	for i in MapData.PLACES.size() - 1:
 		var a: Vector2 = MapData.PLACES[i]["pos"]
 		var b: Vector2 = MapData.PLACES[i + 1]["pos"]
+		if MapData.PLACES[i + 1].get("dotted", false):
+			pts.append(a)
+			draw_polyline(pts, PENCIL, 3.0, true)
+			pts = PackedVector2Array()
+			_draw_dotted(a, b)
+			continue
 		for s in 12:
 			pts.append(_wobble(a.lerp(b, s / 12.0), 1.3))
-	pts.append(MapData.PLACES[-1]["pos"])
-	draw_polyline(pts, PENCIL, 3.0, true)
+	if pts.size() > 0:
+		pts.append(MapData.PLACES[-1]["pos"])
+		draw_polyline(pts, PENCIL, 3.0, true)
 	for place in MapData.PLACES:
 		draw_circle(place["pos"], 6.0, PENCIL)
+	_draw_boat()
+
+
+func _draw_dotted(a: Vector2, b: Vector2) -> void:
+	var length := a.distance_to(b)
+	var d := 0.0
+	while d < length:
+		var p0 := a.lerp(b, d / length)
+		var p1 := a.lerp(b, minf(d + 10.0, length) / length)
+		draw_line(p0, p1, PENCIL, 3.0, true)
+		d += 22.0
+
+
+## 나루터에 매인 작은 배. 뱃머리가 오른쪽(강 건너)을 본다.
+func _draw_boat() -> void:
+	var c := MapData.BOAT_POS
+	var hull := PackedVector2Array([
+		c + Vector2(-34.0, -6.0), c + Vector2(-26.0, 8.0), c + Vector2(22.0, 8.0),
+		c + Vector2(40.0, -10.0), c + Vector2(-34.0, -6.0)])
+	draw_polyline(hull, PENCIL, 3.0, true)
+	draw_line(c + Vector2(-60.0, -6.0), c + Vector2(-34.0, -6.0), PENCIL_LIGHT, 2.0, true)
 
 
 func _draw_trail() -> void:
