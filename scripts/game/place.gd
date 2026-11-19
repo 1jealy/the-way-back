@@ -29,6 +29,7 @@ const SCREEN_H := 1080.0
 
 
 func _ready() -> void:
+	add_to_group("place")
 	_layout_bounds()
 	_exit.body_entered.connect(_on_exit_body_entered)
 	if greybox:
