@@ -7,7 +7,12 @@ extends CharacterBody2D
 @export var walk_speed: float = 200.0
 @export var gravity: float = 2400.0
 
-var controls_enabled: bool = true
+## 조작을 막고 있는 이유들. 하나라도 있으면 걷지 않는다.
+## 여러 곳(장소 전환, 하늘이 부탁, 대사 상자)이 각자 걸고 각자 푼다 — 서로 덮어쓰지 않게.
+var _locks: Dictionary = {}
+var controls_enabled: bool:
+	get:
+		return _locks.is_empty()
 ## 1 = 오른쪽, -1 = 왼쪽.
 var facing: int = 1
 
@@ -18,10 +23,27 @@ func _ready() -> void:
 	add_to_group("player")
 
 
-func set_controls_enabled(enabled: bool) -> void:
-	controls_enabled = enabled
-	if not enabled:
-		velocity.x = 0.0
+## reason 이름으로 조작을 막는다. 같은 reason으로 unlock해야 풀린다.
+func lock(reason: StringName) -> void:
+	_locks[reason] = true
+	velocity.x = 0.0
+
+
+func unlock(reason: StringName) -> void:
+	_locks.erase(reason)
+
+
+func is_locked_by(reason: StringName) -> bool:
+	return _locks.has(reason)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("interact") or not controls_enabled:
+		return
+	var target := Interactable.nearest_available(get_tree(), global_position)
+	if target:
+		get_viewport().set_input_as_handled()
+		target.interact()
 
 
 func _physics_process(delta: float) -> void:

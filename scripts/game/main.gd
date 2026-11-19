@@ -38,15 +38,19 @@ func dog() -> Dog:
 	return _dog
 
 
+func dialogue_box() -> DialogueBox:
+	return $Overlay/DialogueBox
+
+
 func go_to(path: String) -> void:
 	if _changing:
 		return
 	_changing = true
-	_player.set_controls_enabled(false)
+	_player.lock(&"place_change")
 	await _fade_to(1.0)
 	_swap_place(path)
 	await _fade_to(0.0)
-	_player.set_controls_enabled(true)
+	_player.unlock(&"place_change")
 	_changing = false
 
 

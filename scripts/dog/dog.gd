@@ -19,6 +19,8 @@ const FOLLOW_GAIN := 3.0
 const TASK_SPEED := 260.0
 const SIT_DELAY := 2.0
 const ACT_SECONDS := 0.8
+## 하윤 조작을 막는 이유 이름(Player.lock).
+const LOCK := &"dog_task"
 
 @export var gravity: float = 2400.0
 
@@ -65,7 +67,7 @@ func place_behind(player: Player) -> void:
 	if state == State.HIDDEN:
 		return
 	if is_busy():
-		_player.set_controls_enabled(true)
+		_player.unlock(LOCK)
 	_spot = null
 	state = State.FOLLOW
 	_idle = 0.0
@@ -98,7 +100,7 @@ func _start_task(spot: AskSpot) -> void:
 	_spot = spot
 	state = State.TASK_GO
 	if spot.action != AskSpot.Action.HOLD:
-		_player.set_controls_enabled(false)
+		_player.lock(LOCK)
 	spot.started.emit()
 	task_started.emit(spot)
 
@@ -160,7 +162,7 @@ func _finish_task() -> void:
 	_spot = null
 	state = State.FOLLOW
 	_idle = 0.0
-	_player.set_controls_enabled(true)
+	_player.unlock(LOCK)
 	spot.completed.emit()
 	task_finished.emit(spot)
 
