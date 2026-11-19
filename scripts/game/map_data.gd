@@ -14,6 +14,7 @@ const HEADER := "하윤이랑 같이 갈 데"
 const HEADER_POS := Vector2(190.0, 150.0)
 
 ## 걷는 순서(왼쪽 → 오른쪽). 길은 이 점들을 잇는다. label_offset은 장소 이름 자리(기본은 점 아래).
+## dotted: 앞 장소에서 여기까지를 점선으로(철교 → 나루터: 하늘이가 찾아 주는 강둑 아래 좁은 길).
 const PLACES := [
 	{"id": &"house", "label": "집", "pos": Vector2(260.0, 660.0)},
 	{"id": &"field", "label": "들판", "pos": Vector2(500.0, 560.0)},
@@ -21,7 +22,7 @@ const PLACES := [
 	{"id": &"forest", "label": "숲", "pos": Vector2(1020.0, 520.0)},
 	{"id": &"riverside", "label": "강가", "pos": Vector2(1260.0, 640.0)},
 	{"id": &"bridge", "label": "철교", "pos": Vector2(1450.0, 540.0), "label_offset": Vector2(-60.0, -62.0)},
-	{"id": &"ferry", "label": "나루터", "pos": Vector2(1490.0, 740.0)},
+	{"id": &"ferry", "label": "나루터", "pos": Vector2(1540.0, 800.0), "label_offset": Vector2(-150.0, -20.0), "dotted": true},
 ]
 
 ## 동그라미 다섯. 번호는 1부터. child = 하윤 글씨.
@@ -37,6 +38,8 @@ const CIRCLES := [
 const RIVER_X := 1580.0
 const RIVER_W := 70.0
 const BRIDGE_END_X := 1720.0
+## 나루터에 매인 작은 배. 뱃머리는 강 건너(빈 종이) 쪽.
+const BOAT_POS := Vector2(1630.0, 870.0)
 
 
 static func circle_flag(n: int) -> StringName:
