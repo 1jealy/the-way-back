@@ -738,6 +738,8 @@ def station(width: float, markers: dict[str, float]) -> dict[str, Layer]:
 
 
 # ---------------------------------------------------------------- 4. 빛이 많은 숲
+# 4-2 갈림길: (이끼 바위 x, [빛줄기 세 개 x]) — 장면 표시 4-2 기준. 장소 씬의 부품 자리와 맞춘다.
+FOREST_FORKS = [(0, [329, 629, 929]), (1529, [300, 600, 900])]
 # 해 진 직후, 청록 그림자와 금빛 빛 알갱이. 빛줄기가 위에서 내린다.
 
 def forest(width: float, markers: dict[str, float]) -> dict[str, Layer]:
@@ -793,12 +795,14 @@ def forest(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         if all(abs(x - mk(k, -9999)) > 500 for k in ("4-2", "4-3")):
             tree(L, rng, x, 790, 900, rng.uniform(46, 80), rgba(34, 60, 56), None)
         x += rng.uniform(500, 1100)
-    # 4-2 이끼 바위와 세 갈래 빛줄기
-    x = mk("4-2", 3171)
-    L.ellipse((x - 180, 620, x + 180, 820), rgba(84, 94, 86))
-    L.ellipse((x - 150, 612, x + 140, 700), rgba(82, 124, 70))
-    L.haze([("poly", [(x + dx - 40, -10), (x + dx + 40, -10), (x + dx * 2.2 + 90, 792), (x + dx * 2.2 - 90, 792)], gold)
-            for dx in (-320, 0, 320)], 18)
+    # 4-2 빛 갈림길 두 번: 이끼 바위 + 앞쪽 세 갈래 빛줄기. 자리는 장소 씬 부품과 같다(FOREST_FORKS).
+    x0 = mk("4-2", 3171)
+    for rock_dx, shaft_dxs in FOREST_FORKS:
+        x = x0 + rock_dx
+        L.ellipse((x - 180, 620, x + 180, 820), rgba(84, 94, 86))
+        L.ellipse((x - 150, 612, x + 140, 700), rgba(82, 124, 70))
+        L.haze([("poly", [(x + dx - 160, -10), (x + dx - 60, -10), (x + dx + 70, 792), (x + dx - 70, 792)], gold)
+                for dx in shaft_dxs], 18)
     # 4-3 빈터: 큰 빛과 떠 있는 빛 알갱이(움직임은 나중에 코드로)
     x = mk("4-3", 6266)
     L.ellipse((x - 520, 770, x + 520, 830), rgba(110, 112, 72))

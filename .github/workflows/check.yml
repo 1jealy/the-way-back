@@ -56,7 +56,7 @@ jobs:
           ! grep -E "SCRIPT ERROR|Parse Error|FAIL" gameplay.log
           grep -q "게임플레이 검사 통과" gameplay.log
 
-      - name: 부품 흐름 검사 (하늘이 만남·부탁·문, 약 3분)
+      - name: 부품 흐름 검사 (집 퍼즐·벤치·만남·부탁·갈림길·문, 약 6분)
         run: |
           set -o pipefail
           ~/godot/godot --headless --path . --script res://tools/parts_flow_test.gd 2>&1 | tee flow.log
