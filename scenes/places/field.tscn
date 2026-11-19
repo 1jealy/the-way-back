@@ -1,27 +1,110 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_sky.png" id="2_dbm2k"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_far.png" id="3_pp4pi"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_mid.png" id="4_28arl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_ground_01.png" id="5_v2r8g"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_ground_02.png" id="6_wrysj"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_props_01.png" id="7_7ppby"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_props_02.png" id="8_n1iab"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_01.png" id="9_yj3y7"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_02.png" id="10_tibpu"]
+[ext_resource type="Script" path="res://scripts/game/interactable.gd" id="11_pp4pi"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_field.ogg" id="12_28arl"]
 
-[node name="Field" instance=ExtResource("1_tpl")]
+[node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
 display_name = "억새 들판"
 next_place = "res://scenes/places/station.tscn"
 width = 11520.0
+greybox = false
 
-[node name="2-1" type="Marker2D" parent="Markers"]
+[node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=137808301]
+
+[node name="bg_field_sky" type="Sprite2D" parent="Layers/Sky/Art" index="0" unique_id=133950964]
+texture = ExtResource("2_dbm2k")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=830495752]
+
+[node name="bg_field_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=486016556]
+texture = ExtResource("3_pp4pi")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=2017687686]
+
+[node name="bg_field_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=1981041882]
+texture = ExtResource("4_28arl")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=389236190]
+
+[node name="bg_field_ground_01" type="Sprite2D" parent="Layers/Ground/Art" index="0" unique_id=1652938542]
+texture = ExtResource("5_v2r8g")
+centered = false
+
+[node name="bg_field_ground_02" type="Sprite2D" parent="Layers/Ground/Art" index="1" unique_id=1110993477]
+position = Vector2(5768, 0)
+texture = ExtResource("6_wrysj")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Props" index="0" unique_id=748013968]
+
+[node name="bg_field_props_01" type="Sprite2D" parent="Layers/Props/Art" index="0" unique_id=322531401]
+texture = ExtResource("7_7ppby")
+centered = false
+
+[node name="bg_field_props_02" type="Sprite2D" parent="Layers/Props/Art" index="1" unique_id=1586084497]
+position = Vector2(5768, 0)
+texture = ExtResource("8_n1iab")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=555507105]
+
+[node name="bg_field_front_01" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=1348725627]
+texture = ExtResource("9_yj3y7")
+centered = false
+
+[node name="bg_field_front_02" type="Sprite2D" parent="Layers/Front/Art" index="1" unique_id=1848900023]
+position = Vector2(6968, 0)
+texture = ExtResource("10_tibpu")
+centered = false
+
+[node name="2-1" type="Marker2D" parent="Markers" index="0" unique_id=247665477]
 position = Vector2(1029, 810)
 
-[node name="2-2" type="Marker2D" parent="Markers"]
+[node name="2-2" type="Marker2D" parent="Markers" index="1" unique_id=689912937]
 position = Vector2(2803, 810)
 
-[node name="2-3" type="Marker2D" parent="Markers"]
+[node name="2-3" type="Marker2D" parent="Markers" index="2" unique_id=2128932431]
 position = Vector2(5169, 810)
 
-[node name="2-4" type="Marker2D" parent="Markers"]
+[node name="2-4" type="Marker2D" parent="Markers" index="3" unique_id=1213211695]
 position = Vector2(7337, 810)
 
-[node name="2-5" type="Marker2D" parent="Markers"]
+[node name="2-5" type="Marker2D" parent="Markers" index="4" unique_id=1293651301]
 position = Vector2(9309, 810)
 
-[node name="2-6" type="Marker2D" parent="Markers"]
+[node name="2-6" type="Marker2D" parent="Markers" index="5" unique_id=144260134]
 position = Vector2(10886, 810)
+
+[node name="Look_2-2_Hill" type="Area2D" parent="." index="5" unique_id=200796614]
+position = Vector2(2803, 810)
+script = ExtResource("11_pp4pi")
+prompt = "지도 펼치기"
+lines = PackedStringArray()
+one_shot = true
+map_circle = 1
+
+[node name="Look_2-5_Timetable" type="Area2D" parent="." index="6" unique_id=647339279]
+position = Vector2(9174, 810)
+script = ExtResource("11_pp4pi")
+prompt = "시간표 보기"
+lines = PackedStringArray("막차 놓치지 말 것")
+
+[node name="Sound" type="Node2D" parent="." index="7" unique_id=1877196375]
+
+[node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=2030125144]
+stream = ExtResource("12_28arl")
+autoplay = true

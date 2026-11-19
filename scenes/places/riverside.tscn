@@ -1,21 +1,96 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_sky.png" id="2_51hdf"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_far.png" id="3_0jycl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_mid.png" id="4_fnntt"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_ground.png" id="5_862vo"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_props.png" id="6_sws2n"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_front_01.png" id="7_5vltc"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_front_02.png" id="8_q62ua"]
+[ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="9_fnntt"]
+[ext_resource type="Script" path="res://scripts/game/interactable.gd" id="10_862vo"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_riverside.ogg" id="11_862vo"]
 
-[node name="Riverside" instance=ExtResource("1_tpl")]
+[node name="Riverside" unique_id=22785897 instance=ExtResource("1_tpl")]
 place_id = &"riverside"
 display_name = "강가"
 next_place = "res://scenes/places/bridge.tscn"
 width = 7680.0
+greybox = false
 
-[node name="5-1" type="Marker2D" parent="Markers"]
+[node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=1597278167]
+
+[node name="bg_riverside_sky" type="Sprite2D" parent="Layers/Sky/Art" index="0" unique_id=358864750]
+texture = ExtResource("2_51hdf")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=1862808514]
+
+[node name="bg_riverside_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=411772376]
+texture = ExtResource("3_0jycl")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=638860926]
+
+[node name="bg_riverside_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=922641410]
+texture = ExtResource("4_fnntt")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1581178133]
+
+[node name="bg_riverside_ground" type="Sprite2D" parent="Layers/Ground/Art" index="0" unique_id=2003298297]
+texture = ExtResource("5_862vo")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Props" index="0" unique_id=1230112573]
+
+[node name="bg_riverside_props" type="Sprite2D" parent="Layers/Props/Art" index="0" unique_id=158951649]
+texture = ExtResource("6_sws2n")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=60158465]
+
+[node name="bg_riverside_front_01" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=1564278060]
+texture = ExtResource("7_5vltc")
+centered = false
+
+[node name="bg_riverside_front_02" type="Sprite2D" parent="Layers/Front/Art" index="1" unique_id=662705895]
+position = Vector2(4568, 0)
+texture = ExtResource("8_q62ua")
+centered = false
+
+[node name="5-1" type="Marker2D" parent="Markers" index="0" unique_id=557079851]
 position = Vector2(840, 810)
 
-[node name="5-2" type="Marker2D" parent="Markers"]
+[node name="5-2" type="Marker2D" parent="Markers" index="1" unique_id=39420205]
 position = Vector2(2040, 810)
 
-[node name="5-3" type="Marker2D" parent="Markers"]
+[node name="5-3" type="Marker2D" parent="Markers" index="2" unique_id=21081561]
 position = Vector2(3990, 810)
 
-[node name="5-4" type="Marker2D" parent="Markers"]
+[node name="5-4" type="Marker2D" parent="Markers" index="3" unique_id=1584425897]
 position = Vector2(6390, 810)
+
+[node name="AskSpot_5-3" type="Area2D" parent="." index="5" unique_id=618331451]
+position = Vector2(3450, 810)
+script = ExtResource("9_fnntt")
+action = 2
+size = Vector2(400, 300)
+target_offset = Vector2(120, 0)
+grants_flag = &"river_stone_held"
+release_offset = 900.0
+
+[node name="Look_5-4_Shallows" type="Area2D" parent="." index="6" unique_id=1268407135]
+position = Vector2(6390, 810)
+script = ExtResource("10_862vo")
+prompt = "지도 펼치기"
+lines = PackedStringArray("하윤: …다섯 번은 어렵다.")
+one_shot = true
+map_circle = 4
+
+[node name="Sound" type="Node2D" parent="." index="7" unique_id=340961919]
+
+[node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=1074764586]
+stream = ExtResource("11_862vo")
+autoplay = true

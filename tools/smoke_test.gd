@@ -110,6 +110,7 @@ func _run() -> void:
 	_check(player.is_on_floor(), "하윤이 바닥에 서 있다")
 	_check(absf(player.global_position.y - 810.0) < 4.0, "하윤의 발이 땅 높이(810)에 있다")
 	_check_art()
+	_check_audio(main)
 
 	var x0 := player.global_position.x
 	await _hold(&"move_right", 0.5)
@@ -124,6 +125,8 @@ func _run() -> void:
 		_check(front.get_child_count() > 0, "회색 네모 앞 층 물체가 있다")
 
 	_check_places()
+	_check_parts()
+	await _check_house_puzzle(main, player)
 
 	# 집에서 나루터까지 끝 지점을 차례로 밟아 7곳을 잇는다.
 	for i in range(1, PLACES.size()):
@@ -175,3 +178,133 @@ func _check_font() -> void:
 			if not font.has_char(text.unicode_at(i)) and not missing.contains(text[i]):
 				missing += text[i]
 	_check(missing.is_empty(), "장소 이름·화면 문구 글자가 글꼴에 있다" + ("" if missing.is_empty() else " (빠짐: %s)" % missing))
+
+
+## 장소에 놓은 부품(조사 대상·부탁 자리·하늘이 만남)이 약속을 지키는지 본다. CLAUDE.md 참고.
+## 지도 동그라미는 장면 2-2, 3-1, 4-3, 5-4, 7-2.
+const CIRCLE_SCENES := {1: ["field", "2-2"], 2: ["station", "3-1"], 3: ["forest", "4-3"], 4: ["riverside", "5-4"], 5: ["ferry", "7-2"]}
+const INTERACTABLE := "res://scripts/game/interactable.gd"
+const ASK_SPOT := "res://scripts/dog/ask_spot.gd"
+const DOG_MEETING := "res://scripts/dog/dog_meeting.gd"
+
+
+func _script_path(node: Node) -> String:
+	var s: Script = node.get_script()
+	return s.resource_path if s else ""
+
+
+func _check_parts() -> void:
+	var granted := {}  # 플래그 → 처음 세우는 [장소 순서, x]
+	var required := []  # [장소 순서, x, 플래그, 이름]
+	var circles := {}
+	var meeting_x := -1.0
+	var fetch_x := -1.0
+	var station_end := 0.0
+	var all_ok := true
+	for i in PLACES.size():
+		var place_id: String = PLACES[i][0]
+		var place: Node2D = load("res://scenes/places/%s.tscn" % place_id).instantiate()
+		var markers := {}
+		for m in place.get_node("Markers").get_children():
+			markers[String(m.name)] = m.position.x
+		for node in place.get_children():
+			var path := _script_path(node)
+			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING]:
+				continue
+			var x: float = node.position.x
+			var on_ground: bool = is_equal_approx(node.position.y, 810.0) and x > 0.0 and x < place.width
+			if not on_ground:
+				all_ok = false
+				print("        %s/%s: 땅 위·장소 안이 아니다 %s" % [place_id, node.name, node.position])
+			var scene_id := String(node.name).get_slice("_", 1)
+			if not markers.has(scene_id):
+				all_ok = false
+				print("        %s/%s: 이름의 장면 번호 '%s'가 Markers에 없다" % [place_id, node.name, scene_id])
+			if path == DOG_MEETING:
+				meeting_x = x
+				station_end = place.width - 120.0
+				continue
+			var flag: StringName = node.get("grants_flag")
+			if not flag.is_empty() and not granted.has(flag):
+				granted[flag] = [i, x]
+			if path == INTERACTABLE:
+				var req: StringName = node.get("requires_flag")
+				if not req.is_empty():
+					required.append([i, x, req, "%s/%s" % [place_id, node.name]])
+				var n: int = node.get("map_circle")
+				if n > 0:
+					circles[n] = [place_id, scene_id]
+			elif String(node.name) == "AskSpot_3-5":
+				fetch_x = x
+		place.free()
+	_check(all_ok, "부품: 모두 땅 위(y = 810), 장소 안, 이름에 장면 번호")
+	var circles_ok := circles.size() == 5
+	for n in CIRCLE_SCENES:
+		circles_ok = circles_ok and circles.get(n, []) == CIRCLE_SCENES[n]
+	_check(circles_ok, "부품: 지도 동그라미 1~5가 장면 2-2, 3-1, 4-3, 5-4, 7-2에 하나씩 %s" % [circles])
+	_check(granted.has(&"has_map") and granted[&"has_map"][0] == 0, "부품: 집에서 지도(has_map)를 얻는다")
+	var chain_ok := true
+	for r in required:
+		var g: Array = granted.get(r[2], [])
+		if g.is_empty() or g[0] > r[0] or (g[0] == r[0] and g[1] > r[1] + 400.0):
+			chain_ok = false
+			print("        %s: requires_flag '%s'를 세우는 곳이 앞에 없다" % [r[3], r[2]])
+	_check(chain_ok, "부품: requires_flag마다 그 앞(왼쪽·앞 장소)에서 세운다")
+	_check(meeting_x > 0.0, "부품: 간이역에 하늘이 만남(3-4)")
+	_check(meeting_x > 0.0 and meeting_x + 600.0 < station_end, "부품: 만남 자리 + 물러날 거리 600px가 끝 지점보다 왼쪽")
+	_check(fetch_x > meeting_x and meeting_x > 0.0, "부품: 첫 부탁(3-5)이 만남 자리보다 오른쪽")
+
+
+## 키를 한 번 누른다. _unhandled_input으로 받는 동작은 Input.action_press로는 안 오고 이벤트여야 한다.
+func _press(action: StringName) -> void:
+	var down := InputEventAction.new()
+	down.action = action
+	down.pressed = true
+	Input.parse_input_event(down)
+	await process_frame
+	var up := InputEventAction.new()
+	up.action = action
+	up.pressed = false
+	Input.parse_input_event(up)
+	await process_frame
+
+
+## 집 퍼즐: 액자 뒤 열쇠 → 서랍 → 지도. 실제로 E를 눌러 본다.
+func _check_house_puzzle(main: Node, player: CharacterBody2D) -> void:
+	var state: Node = root.get_node("GameState")
+	main.go_to("res://scenes/places/house.tscn")
+	await _wait(2.0)
+	var place: Node = main.current_place()
+	var frame: Node = place.get_node("Look_1-4_Frame")
+	var drawer: Node = place.get_node("Look_1-5_Drawer")
+	player.global_position.x = drawer.global_position.x
+	await _wait(0.3)
+	_check(not drawer.is_available(), "집: 열쇠 없이는 서랍을 열 수 없다")
+	player.global_position.x = frame.global_position.x
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.3)
+	_check(state.has_flag(&"house_drawer_key"), "집: 액자를 살펴보면 열쇠를 얻는다")
+	player.global_position.x = drawer.global_position.x
+	await _wait(0.3)
+	await _press(&"interact")
+	for i in 6:  # 대사 넘기기
+		await _wait(0.6)
+		await _press(&"interact")
+	await _wait(0.3)
+	_check(state.has_flag(&"has_map"), "집: 서랍을 열면 지도를 얻는다(has_map)")
+
+
+## assets/audio/ 소리 규칙(이름·반복)과 장소 환경음. 지금 장소의 환경음이 실제로 돌고 있는지도 본다.
+func _check_audio(main: Node) -> void:
+	var lib: RefCounted = load("res://tools/audio_import_lib.gd").new()
+	lib.run(false)
+	for w in lib.warnings:
+		print("  경고  ", w)
+	for e in lib.errors:
+		print("        ", e)
+	for s in lib.out_of_sync:
+		print("        %s: 소리와 맞지 않는다" % s)
+	_check(lib.ok(), "소리가 규칙과 장소 씬에 맞다 (아니면 tools/audio_import.gd를 돌린다)")
+	var amb: AudioStreamPlayer = main.current_place().get_node_or_null("Sound/Ambience")
+	_check(amb != null and amb.playing, "장소에 들어오면 환경음이 돈다")
