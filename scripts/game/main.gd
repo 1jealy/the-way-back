@@ -12,6 +12,7 @@ var _changing: bool = false
 
 @onready var _place_slot: Node2D = $World/PlaceSlot
 @onready var _player: Player = $World/Player
+@onready var _dog: Dog = $World/Dog
 @onready var _camera: Camera2D = $World/Player/Camera
 @onready var _fade: ColorRect = $Overlay/Fade
 @onready var _place_label: Label = $Overlay/PlaceLabel
@@ -20,11 +21,21 @@ var _changing: bool = false
 func _ready() -> void:
 	_fade.modulate.a = 1.0
 	_swap_place(FIRST_PLACE)
+	if GameState.has_flag(Dog.JOIN_FLAG):
+		_dog.join(_player)
 	await _fade_to(0.0)
 
 
 func current_place() -> Place:
 	return _place
+
+
+func player() -> Player:
+	return _player
+
+
+func dog() -> Dog:
+	return _dog
 
 
 func go_to(path: String) -> void:
@@ -55,6 +66,7 @@ func _swap_place(path: String) -> void:
 	_camera.limit_top = 0
 	_camera.limit_bottom = int(Place.SCREEN_H)
 	_camera.reset_smoothing()
+	_dog.place_behind(_player)
 
 	GameState.current_place = _place.place_id
 	_place_label.text = _place.display_name
