@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_props_02.png" id="8_n1iab"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_01.png" id="9_yj3y7"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_02.png" id="10_tibpu"]
+[ext_resource type="Script" path="res://scripts/game/interactable.gd" id="11_pp4pi"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
@@ -86,3 +87,17 @@ position = Vector2(9309, 810)
 
 [node name="2-6" type="Marker2D" parent="Markers" index="5" unique_id=144260134]
 position = Vector2(10886, 810)
+
+[node name="Look_2-2_Hill" type="Area2D" parent="." index="5" unique_id=200796614]
+position = Vector2(2803, 810)
+script = ExtResource("11_pp4pi")
+prompt = "지도 펼치기"
+lines = PackedStringArray()
+one_shot = true
+map_circle = 1
+
+[node name="Look_2-5_Timetable" type="Area2D" parent="." index="6" unique_id=647339279]
+position = Vector2(9174, 810)
+script = ExtResource("11_pp4pi")
+prompt = "시간표 보기"
+lines = PackedStringArray("막차 놓치지 말 것")

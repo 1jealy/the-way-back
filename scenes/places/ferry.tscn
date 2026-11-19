@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_ground.png" id="5_4cyny"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_props.png" id="6_0tiiu"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_front.png" id="7_34ljx"]
+[ext_resource type="Script" path="res://scripts/game/interactable.gd" id="8_qn10e"]
 
 [node name="Ferry" unique_id=1705164281 instance=ExtResource("1_tpl")]
 place_id = &"ferry"
@@ -70,3 +71,11 @@ position = Vector2(2830, 810)
 
 [node name="7-7" type="Marker2D" parent="Markers" index="6" unique_id=928338011]
 position = Vector2(3460, 810)
+
+[node name="Look_7-2_Map" type="Area2D" parent="." index="5" unique_id=800583551]
+position = Vector2(800, 810)
+script = ExtResource("8_qn10e")
+prompt = "지도 펼치기"
+lines = PackedStringArray()
+one_shot = true
+map_circle = 5

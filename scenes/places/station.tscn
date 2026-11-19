@@ -10,6 +10,9 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_props_02.png" id="8_xfxxh"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_front_01.png" id="9_7a7fx"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_front_02.png" id="10_b582e"]
+[ext_resource type="Script" path="res://scripts/game/interactable.gd" id="11_dd10l"]
+[ext_resource type="Script" path="res://scripts/dog/dog_meeting.gd" id="12_dawgu"]
+[ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="13_w0dms"]
 
 [node name="Station" unique_id=83172775 instance=ExtResource("1_tpl")]
 place_id = &"station"
@@ -79,10 +82,47 @@ position = Vector2(2118, 810)
 position = Vector2(3325, 810)
 
 [node name="3-4" type="Marker2D" parent="Markers" index="3" unique_id=522234026]
-position = Vector2(4934, 810)
+position = Vector2(3800, 810)
 
 [node name="3-5" type="Marker2D" parent="Markers" index="4" unique_id=1869494999]
-position = Vector2(6946, 810)
+position = Vector2(4000, 810)
 
 [node name="3-6" type="Marker2D" parent="Markers" index="5" unique_id=702006309]
 position = Vector2(8555, 810)
+
+[node name="Look_3-1_Sign" type="Area2D" parent="." index="5" unique_id=432922346]
+position = Vector2(776, 810)
+script = ExtResource("11_dd10l")
+prompt = "지도 펼치기"
+lines = PackedStringArray()
+one_shot = true
+map_circle = 2
+
+[node name="Look_3-2_Bench" type="Area2D" parent="." index="6" unique_id=2065616624]
+position = Vector2(2414, 810)
+script = ExtResource("11_dd10l")
+prompt = "벤치 밑 보기"
+lines = PackedStringArray("하윤: …안 닿아.")
+grants_flag = &"station_key_seen"
+one_shot = true
+
+[node name="DogMeeting_3-4" type="Node2D" parent="." index="7" unique_id=1120904165]
+position = Vector2(3800, 810)
+script = ExtResource("12_dawgu")
+lines = PackedStringArray("하늘", "하윤: 하늘이…?")
+
+[node name="AskSpot_3-5" type="Area2D" parent="." index="8" unique_id=1596950400]
+position = Vector2(4000, 810)
+script = ExtResource("13_w0dms")
+size = Vector2(900, 300)
+target_offset = Vector2(-1586, 0)
+grants_flag = &"station_key"
+
+[node name="Look_3-6_Door" type="Area2D" parent="." index="9" unique_id=83373555]
+position = Vector2(7855, 810)
+script = ExtResource("11_dd10l")
+prompt = "문 열기"
+lines = PackedStringArray()
+grants_flag = &"station_door_open"
+requires_flag = &"station_key"
+one_shot = true

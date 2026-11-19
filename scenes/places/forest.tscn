@@ -10,6 +10,8 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_props_02.png" id="8_5ibt5"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_front_01.png" id="9_8c2du"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_front_02.png" id="10_edoyo"]
+[ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="11_1gp4a"]
+[ext_resource type="Script" path="res://scripts/game/interactable.gd" id="12_1l7lr"]
 
 [node name="Forest" unique_id=2086477153 instance=ExtResource("1_tpl")]
 place_id = &"forest"
@@ -80,3 +82,18 @@ position = Vector2(6266, 810)
 
 [node name="4-4" type="Marker2D" parent="Markers" index="3" unique_id=493480513]
 position = Vector2(8546, 810)
+
+[node name="AskSpot_4-2" type="Area2D" parent="." index="5" unique_id=1867943429]
+position = Vector2(3171, 810)
+script = ExtResource("11_1gp4a")
+action = 1
+target_offset = Vector2(450, 0)
+grants_flag = &"forest_path"
+
+[node name="Look_4-3_Clearing" type="Area2D" parent="." index="6" unique_id=98402238]
+position = Vector2(6266, 810)
+script = ExtResource("12_1l7lr")
+prompt = "지도 펼치기"
+lines = PackedStringArray()
+one_shot = true
+map_circle = 3

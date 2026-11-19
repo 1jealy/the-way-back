@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_props.png" id="6_lllq7"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_front_01.png" id="7_did7t"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_front_02.png" id="8_kt3x1"]
+[ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="9_qxxtq"]
 
 [node name="Bridge" unique_id=943413289 instance=ExtResource("1_tpl")]
 place_id = &"bridge"
@@ -65,3 +66,11 @@ position = Vector2(3440, 810)
 
 [node name="6-3" type="Marker2D" parent="Markers" index="2" unique_id=2049239677]
 position = Vector2(5840, 810)
+
+[node name="AskSpot_6-3" type="Area2D" parent="." index="5" unique_id=54888425]
+position = Vector2(3500, 810)
+script = ExtResource("9_qxxtq")
+action = 1
+size = Vector2(600, 300)
+target_offset = Vector2(-900, 0)
+grants_flag = &"bridge_bank_path"
