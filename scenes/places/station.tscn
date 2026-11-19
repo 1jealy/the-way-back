@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+
+[node name="Station" instance=ExtResource("1_tpl")]
+place_id = &"station"
+display_name = "버려진 간이역"
+next_place = "res://scenes/places/forest.tscn"
+width = 9600.0
+
+[node name="3-1" type="Marker2D" parent="Markers"]
+position = Vector2(776, 810)
+
+[node name="3-2" type="Marker2D" parent="Markers"]
+position = Vector2(2118, 810)
+
+[node name="3-3" type="Marker2D" parent="Markers"]
+position = Vector2(3325, 810)
+
+[node name="3-4" type="Marker2D" parent="Markers"]
+position = Vector2(4934, 810)
+
+[node name="3-5" type="Marker2D" parent="Markers"]
+position = Vector2(6946, 810)
+
+[node name="3-6" type="Marker2D" parent="Markers"]
+position = Vector2(8555, 810)
