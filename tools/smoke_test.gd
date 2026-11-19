@@ -186,6 +186,8 @@ const CIRCLE_SCENES := {1: ["field", "2-2"], 2: ["station", "3-1"], 3: ["forest"
 const INTERACTABLE := "res://scripts/game/interactable.gd"
 const ASK_SPOT := "res://scripts/dog/ask_spot.gd"
 const DOG_MEETING := "res://scripts/dog/dog_meeting.gd"
+const GATE := "res://scripts/game/gate.gd"
+const PASSAGE := "res://scripts/game/passage.gd"
 
 
 func _script_path(node: Node) -> String:
@@ -209,7 +211,7 @@ func _check_parts() -> void:
 			markers[String(m.name)] = m.position.x
 		for node in place.get_children():
 			var path := _script_path(node)
-			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING]:
+			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE]:
 				continue
 			var x: float = node.position.x
 			var on_ground: bool = is_equal_approx(node.position.y, 810.0) and x > 0.0 and x < place.width
@@ -224,10 +226,15 @@ func _check_parts() -> void:
 				meeting_x = x
 				station_end = place.width - 120.0
 				continue
+			if path == GATE:
+				var opens: StringName = node.get("opens_on_flag")
+				if not opens.is_empty():
+					required.append([i, x, opens, "%s/%s" % [place_id, node.name]])
+				continue
 			var flag: StringName = node.get("grants_flag")
 			if not flag.is_empty() and not granted.has(flag):
 				granted[flag] = [i, x]
-			if path == INTERACTABLE:
+			if path in [INTERACTABLE, PASSAGE]:
 				var req: StringName = node.get("requires_flag")
 				if not req.is_empty():
 					required.append([i, x, req, "%s/%s" % [place_id, node.name]])
@@ -249,7 +256,7 @@ func _check_parts() -> void:
 		if g.is_empty() or g[0] > r[0] or (g[0] == r[0] and g[1] > r[1] + 400.0):
 			chain_ok = false
 			print("        %s: requires_flag '%s'를 세우는 곳이 앞에 없다" % [r[3], r[2]])
-	_check(chain_ok, "부품: requires_flag마다 그 앞(왼쪽·앞 장소)에서 세운다")
+	_check(chain_ok, "부품: requires_flag·막는 벽(Gate)의 플래그마다 그 앞(왼쪽·앞 장소)에서 세운다")
 	_check(meeting_x > 0.0, "부품: 간이역에 하늘이 만남(3-4)")
 	_check(meeting_x > 0.0 and meeting_x + 600.0 < station_end, "부품: 만남 자리 + 물러날 거리 600px가 끝 지점보다 왼쪽")
 	_check(fetch_x > meeting_x and meeting_x > 0.0, "부품: 첫 부탁(3-5)이 만남 자리보다 오른쪽")

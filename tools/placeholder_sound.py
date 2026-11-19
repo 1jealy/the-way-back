@@ -284,6 +284,21 @@ def make_steps(rng):
         for k in range(2):
             place_event(x, one_shot(rng, 0.02, band(2500, 10000), 0.0005, 0.004), int((0.02 + k * rng.uniform(0.03, 0.06)) * RATE), wrap=False)
         out[f"sfx_dog_claw_{i + 1:02d}"] = db_rms(x, -30)
+    for i in range(2):  # 잠겨 있다: 나무 서랍·문이 두세 번 덜컹
+        x = np.zeros(n_samples(0.45))
+        for k in range(int(rng.integers(2, 4))):
+            knock = one_shot(rng, 0.12, band(150, 2200, -4), 0.002, 0.03, ring([(210, 0.5), (470, 0.25)], 0.05))
+            place_event(x, knock * rng.uniform(0.6, 1.0), int((0.02 + k * rng.uniform(0.09, 0.13)) * RATE), wrap=False)
+        out[f"sfx_locked_{i + 1:02d}"] = db_rms(x, -22)
+    for i in range(2):  # 작은 열쇠를 집는다: 쇠붙이가 짤랑
+        x = np.zeros(n_samples(0.6))
+        for k in range(3):
+            n = n_samples(0.5)
+            t = np.arange(n) / RATE
+            f0 = rng.uniform(2600, 3400)
+            tone = sum(np.sin(2 * np.pi * f0 * r * t) * a for r, a in ((1.0, 1.0), (1.48, 0.5), (2.31, 0.3))) * env_ad(n, 0.001, 0.08)
+            place_event(x, tone * rng.uniform(0.5, 1.0), int((0.01 + k * rng.uniform(0.04, 0.07)) * RATE), wrap=False)
+        out[f"sfx_pickup_{i + 1:02d}"] = db_rms(x, -28)
     return out
 
 

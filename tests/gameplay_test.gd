@@ -438,6 +438,7 @@ func _run() -> void:
 
 	await _check_hint()
 	await _check_sound()
+	await _check_gate()
 	await _check_pause()
 	await _check_save()
 
@@ -484,6 +485,24 @@ func _check_sound() -> void:
 	_check(heard["claw"], "소리: 간이역에서는 하늘이 발톱 소리가 난다")
 	_state.current_place = real_place
 	get_root().get_tree().process_frame.disconnect(watch)
+
+
+## 막는 벽(Gate, #32): 플래그가 서기 전에는 하윤만 막고, 서면 지나간다. 하늘이는 안 막는다.
+func _check_gate() -> void:
+	var gate: StaticBody2D = load("res://scripts/game/gate.gd").new()
+	gate.opens_on_flag = &"test_gate_open"
+	_main.current_place().add_child(gate)
+	gate.global_position = Vector2(_player.global_position.x + 200.0, 810.0)
+	await _wait(0.2)
+	await _hold(&"move_right", 1.5)
+	_check(_player.global_position.x < gate.global_position.x, "벽: 플래그 전에는 하윤이 막힌다")
+	_check((_dog.collision_mask & 8) == 0 and (_player.collision_mask & 8) != 0, "벽: 벽 층(4)은 하윤만 부딪힌다(하늘이는 지나간다)")
+	_state.set_flag(&"test_gate_open")
+	await _wait(0.2)
+	await _hold(&"move_right", 1.5)
+	_check(_player.global_position.x > gate.global_position.x, "벽: 플래그가 서면 지나간다")
+	gate.queue_free()
+	await _hold(&"move_left", 1.5)
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.

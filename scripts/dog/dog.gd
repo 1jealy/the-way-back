@@ -289,6 +289,10 @@ func _finish_task() -> void:
 	_player.unlock(LOCK)
 	spot.completed.emit()
 	task_finished.emit(spot)
+	if not spot.lines.is_empty():
+		var box := get_tree().get_first_node_in_group("dialogue_box") as DialogueBox
+		if box:
+			box.play(spot.lines)
 
 
 func _follow_x() -> float:

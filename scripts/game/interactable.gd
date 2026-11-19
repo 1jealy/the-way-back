@@ -8,6 +8,8 @@ extends Area2D
 signal interacted
 ## 대사를 다 넘겼을 때. 줄이 없으면 interacted 바로 뒤에 온다.
 signal finished
+## show_locked인데 아직 requires_flag가 없을 때 조사했다(덜컹).
+signal locked
 
 ## 안내 문구. 앞에 "[E] "가 붙는다.
 @export var prompt: String = "살펴보기"
@@ -21,6 +23,10 @@ signal finished
 @export var requires_flag: StringName = &""
 ## 한 번 조사하면 다시 안 된다.
 @export var one_shot: bool = false
+## requires_flag가 서기 전에도 안내가 뜨고, 조사하면 잠겨 있다는 소리만 난다(잠긴 서랍·문).
+@export var show_locked: bool = false
+## 조사할 때 낼 소리(assets/audio 이름 앞머리, 예: "sfx_pickup_"). 비우면 없음.
+@export var sound: String = ""
 ## 1~5면 조사할 때 지도를 펼치고 그 동그라미에 체크한다(장면 2-2, 3-1, 4-3, 5-4, 7-2).
 ## 하윤이 지도를 접은 뒤에 lines가 나온다.
 @export_range(0, 5) var map_circle: int = 0
@@ -47,6 +53,9 @@ func _ready() -> void:
 	_prompt_label.text = "[E] " + prompt
 	_prompt_label.add_theme_font_size_override("font_size", 24)
 	_prompt_label.add_theme_color_override("font_color", Color(1, 0.95, 0.82, 1))
+	# 밝은 벽 앞에서도 읽히게 테두리(#32)
+	_prompt_label.add_theme_color_override("font_outline_color", Color(0.12, 0.1, 0.09, 0.85))
+	_prompt_label.add_theme_constant_override("outline_size", 6)
 	_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_prompt_label.size = Vector2(320.0, 34.0)
 	_prompt_label.position = Vector2(-160.0, -330.0)
@@ -63,7 +72,18 @@ func is_available() -> bool:
 		return false
 	if one_shot and used:
 		return false
+	return _unlocked()
+
+
+func _unlocked() -> bool:
 	return requires_flag.is_empty() or GameState.has_flag(requires_flag)
+
+
+## 안내를 띄우고 E를 받는가. 잠겨 있어도 show_locked면 받는다(덜컹).
+func is_offered() -> bool:
+	if not player_inside or _busy or (one_shot and used):
+		return false
+	return _unlocked() or show_locked
 
 
 ## 하윤 발밑에서 가장 가까운, 지금 조사할 수 있는 대상. 없으면 null.
@@ -72,7 +92,7 @@ static func nearest_available(tree: SceneTree, from: Vector2) -> Interactable:
 	var best_d := INF
 	for node in tree.get_nodes_in_group("interactable"):
 		var it := node as Interactable
-		if it == null or not it.is_inside_tree() or not it.is_available():
+		if it == null or not it.is_inside_tree() or not it.is_offered():
 			continue
 		var d := absf(it.global_position.x - from.x)
 		if d < best_d:
@@ -82,8 +102,14 @@ static func nearest_available(tree: SceneTree, from: Vector2) -> Interactable:
 
 
 func interact() -> void:
+	if is_offered() and not _unlocked():
+		_play_sound("sfx_locked_")
+		_shake_prompt()
+		locked.emit()
+		return
 	if not is_available():
 		return
+	_play_sound(sound)
 	_busy = true
 	used = true
 	if not grants_flag.is_empty():
@@ -105,7 +131,7 @@ func interact() -> void:
 
 func _process(_delta: float) -> void:
 	var show := false
-	if is_available():
+	if is_offered():
 		var player := get_tree().get_first_node_in_group("player") as Player
 		show = player != null and player.controls_enabled \
 				and nearest_available(get_tree(), player.global_position) == self
@@ -120,3 +146,24 @@ func _on_body_entered(body: Node2D) -> void:
 func _on_body_exited(body: Node2D) -> void:
 	if body.is_in_group("player"):
 		player_inside = false
+
+
+func _play_sound(prefix: String) -> void:
+	if prefix.is_empty():
+		return
+	var stream := SoundBank.pick(prefix)
+	if stream == null:
+		return
+	var p := AudioStreamPlayer.new()
+	p.stream = stream
+	p.bus = SoundBank.BUS_SFX
+	add_child(p)
+	p.finished.connect(p.queue_free)
+	p.play()
+
+
+func _shake_prompt() -> void:
+	var base := _prompt_label.position
+	var tween := create_tween()
+	for dx in [-8.0, 7.0, -5.0, 3.0, 0.0]:
+		tween.tween_property(_prompt_label, "position", base + Vector2(dx, 0.0), 0.04)

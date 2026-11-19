@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/dog/dog_meeting.gd" id="12_dawgu"]
 [ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="13_w0dms"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_station.ogg" id="14_dawgu"]
+[ext_resource type="Script" path="res://scripts/game/gate.gd" id="15_w0dms"]
 
 [node name="Station" unique_id=83172775 instance=ExtResource("1_tpl")]
 place_id = &"station"
@@ -122,6 +123,7 @@ script = ExtResource("13_w0dms")
 size = Vector2(900, 300)
 target_offset = Vector2(-1586, 0)
 grants_flag = &"station_key"
+lines = PackedStringArray("하윤: 고마워.")
 
 [node name="Look_3-6_Door" type="Area2D" parent="." index="9" unique_id=83373555]
 position = Vector2(7855, 810)
@@ -131,9 +133,15 @@ lines = PackedStringArray()
 grants_flag = &"station_door_open"
 requires_flag = &"station_key"
 one_shot = true
+show_locked = true
 
 [node name="Sound" type="Node2D" parent="." index="10" unique_id=2046637401]
 
 [node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=430929028]
 stream = ExtResource("14_dawgu")
 autoplay = true
+
+[node name="Gate_3-6" type="StaticBody2D" parent="." index="11" unique_id=1743144252]
+position = Vector2(7880, 810)
+script = ExtResource("15_w0dms")
+opens_on_flag = &"station_door_open"
