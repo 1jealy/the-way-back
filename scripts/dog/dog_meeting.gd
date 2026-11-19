@@ -17,6 +17,8 @@ const LOCK := &"meeting"
 ## 하늘이가 다가와 서는 거리(하윤 앞).
 @export var sniff_gap: float = 90.0
 @export var prompt: String = "쪼그려 앉기"
+## 이 플래그가 서야 하늘이가 나타난다(3-3 벤치에 앉은 뒤: station_sat). 비우면 처음부터.
+@export var appears_on_flag: StringName = &""
 @export var lines: PackedStringArray = PackedStringArray(["하늘", "하윤: 하늘이…?"])
 
 var _retreats_left: int = 0
@@ -36,11 +38,21 @@ func _begin() -> void:
 	if GameState.has_flag(Dog.JOIN_FLAG):
 		queue_free()
 		return
+	if not appears_on_flag.is_empty() and not GameState.has_flag(appears_on_flag):
+		if not GameState.flag_changed.is_connected(_on_flag_changed):
+			GameState.flag_changed.connect(_on_flag_changed)
+		return
 	_dog = get_tree().get_first_node_in_group("dog") as Dog
 	_player = get_tree().get_first_node_in_group("player") as Player
 	if _dog == null or _player == null:
 		return
 	_dog.begin_meeting(global_position)
+
+
+func _on_flag_changed(flag: StringName) -> void:
+	if flag == appears_on_flag:
+		GameState.flag_changed.disconnect(_on_flag_changed)
+		_begin()
 
 
 func retreats_left() -> int:

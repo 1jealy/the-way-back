@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="13_w0dms"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_station.ogg" id="14_dawgu"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="15_w0dms"]
+[ext_resource type="Script" path="res://scripts/game/bench_sit.gd" id="16_xfxxh"]
 
 [node name="Station" unique_id=83172775 instance=ExtResource("1_tpl")]
 place_id = &"station"
@@ -115,6 +116,7 @@ one_shot = true
 [node name="DogMeeting_3-4" type="Node2D" parent="." index="7" unique_id=1120904165]
 position = Vector2(3800, 810)
 script = ExtResource("12_dawgu")
+appears_on_flag = &"station_sat"
 lines = PackedStringArray("하늘", "하윤: 하늘이…?")
 
 [node name="AskSpot_3-5" type="Area2D" parent="." index="8" unique_id=1596950400]
@@ -145,3 +147,13 @@ autoplay = true
 position = Vector2(7880, 810)
 script = ExtResource("15_w0dms")
 opens_on_flag = &"station_door_open"
+
+[node name="Sit_3-3" type="Area2D" parent="." index="12" unique_id=984574602]
+position = Vector2(3325, 810)
+script = ExtResource("16_xfxxh")
+auto_sit = true
+tint = Color(0.82, 0.66, 0.74, 1)
+end_sound = "sfx_dog_bark_far_"
+ambience_duck_db = -10.0
+lines = PackedStringArray()
+grants_flag = &"station_sat"

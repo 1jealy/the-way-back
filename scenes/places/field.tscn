@@ -12,6 +12,7 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_02.png" id="10_tibpu"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="11_pp4pi"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_field.ogg" id="12_28arl"]
+[ext_resource type="Script" path="res://scripts/game/bench_sit.gd" id="13_v2r8g"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
@@ -108,3 +109,9 @@ lines = PackedStringArray("막차 놓치지 말 것")
 [node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=2030125144]
 stream = ExtResource("12_28arl")
 autoplay = true
+
+[node name="Sit_2-5" type="Area2D" parent="." index="8" unique_id=136521444]
+position = Vector2(9309, 810)
+script = ExtResource("13_v2r8g")
+prompt = "앉기"
+lines = PackedStringArray()

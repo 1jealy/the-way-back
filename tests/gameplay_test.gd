@@ -439,6 +439,7 @@ func _run() -> void:
 	await _check_hint()
 	await _check_sound()
 	await _check_gate()
+	await _check_bench()
 	await _check_pause()
 	await _check_save()
 
@@ -503,6 +504,24 @@ func _check_gate() -> void:
 	_check(_player.global_position.x > gate.global_position.x, "벽: 플래그가 서면 지나간다")
 	gate.queue_free()
 	await _hold(&"move_left", 1.5)
+
+
+## 벤치(BenchSit, 2-5식): [E] 앉기 → 조작이 막힌다 → 방향키로 일어난다.
+func _check_bench() -> void:
+	var bench: Area2D = load("res://scripts/game/bench_sit.gd").new()
+	bench.prompt = "앉기"
+	_main.current_place().add_child(bench)
+	bench.global_position = Vector2(_player.global_position.x + 40.0, 810.0)
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.2)
+	_check(bench.sitting and not _player.controls_enabled, "벤치: E로 앉는다(조작이 막힌다)")
+	_check(is_equal_approx(_player.global_position.x, bench.global_position.x), "벤치: 벤치 가운데에 앉는다")
+	await _press(&"move_right")
+	await _wait(0.2)
+	_check(not bench.sitting and _player.controls_enabled, "벤치: 방향키로 일어난다")
+	bench.queue_free()
+	await _wait(0.2)
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.
