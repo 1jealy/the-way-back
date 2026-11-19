@@ -564,8 +564,17 @@ func _check_hint() -> void:
 	await _hold(&"move_right", 0.3)
 	_check(dog.state != _states["HINT"], "힌트: 하윤이 움직이면 그만두고 따라온다")
 	target.queue_free()
+	# 장소에 B가 놓은 진짜 목표(지도 동그라미 등)가 있으니, 잠깐 다 쓴 것으로 해 두고 본다(#31).
+	var real_targets: Array = []
+	for group in [&"interactable", &"ask_spot"]:
+		for node in get_nodes_in_group(group):
+			if place.is_ancestor_of(node) and not node.used and not node.is_queued_for_deletion():
+				node.used = true
+				real_targets.append(node)
 	await _wait(0.3)
 	var got_exit := await _wait_until(func(): return hints.size() == 2, _dog_consts["HINT_DELAY"] + 2.0)
 	_check(got_exit and is_equal_approx(hints[1], place.width - 120.0), "힌트: 목표가 없으면 장소 끝 지점 쪽")
+	for node in real_targets:
+		node.used = false
 	await _hold(&"move_left", 0.3)
 	await _wait(1.0)

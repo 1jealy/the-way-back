@@ -48,6 +48,14 @@ jobs:
           ! grep -E "SCRIPT ERROR|Parse Error|FAIL" smoke.log
           grep -q "스모크 검사 통과" smoke.log
 
+      - name: 게임플레이 검사
+        run: |
+          set -o pipefail
+          # 한 번 5분 넘게 멈춘 적이 있어(#31) 5분에서 끊는다. 끊기면 실패.
+          timeout 300 ~/godot/godot --headless --path . --script res://tests/gameplay_test.gd 2>&1 | tee gameplay.log
+          ! grep -E "SCRIPT ERROR|Parse Error|FAIL" gameplay.log
+          grep -q "게임플레이 검사 통과" gameplay.log
+
       - name: 부품 흐름 검사 (하늘이 만남·부탁·문, 약 3분)
         run: |
           set -o pipefail
