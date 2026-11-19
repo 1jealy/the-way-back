@@ -277,6 +277,8 @@ func _arrive() -> void:
 			_act_left = ACT_SECONDS
 	if not _spot.grants_flag.is_empty():
 		GameState.set_flag(_spot.grants_flag)
+	if _spot.action == AskSpot.Action.SNIFF:
+		_bark()
 	_spot.acted.emit()
 
 
@@ -338,4 +340,12 @@ func _update_claws(delta: float) -> void:
 	if stream:
 		_claws.stream = stream
 		_claws.pitch_scale = randf_range(0.9, 1.1)
+		_claws.play()
+
+
+func _bark() -> void:
+	var stream := SoundBank.pick("sfx_dog_bark_near_")
+	if stream:
+		_claws.stream = stream
+		_claws.pitch_scale = 1.0
 		_claws.play()

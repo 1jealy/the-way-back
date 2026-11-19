@@ -111,8 +111,16 @@ func _run() -> void:
 	# 간이역: 만남(3-4)
 	var station: Node = await _go("station")
 	var meeting: Node2D = station.get_node("DogMeeting_3-4")
-	await _walk_to(station.get_node("Markers/3-3").position.x)
-	_check(not _state.has_flag(&"dog_joined") and _dog.visible, "간이역: 3-3 벤치에서는 하늘이가 아직 물러나지 않았다")
+	_check(not _dog.visible, "간이역: 3-3 벤치에 앉기 전에는 하늘이가 보이지 않는다")
+	var bench: Node2D = station.get_node("Sit_3-3")
+	await _walk_to(bench.global_position.x - 250.0)
+	Input.action_press(&"move_right")  # 벤치 쪽으로 몇 걸음
+	await _wait(1.0)
+	Input.action_release(&"move_right")
+	_check(bench.sitting and not _player.controls_enabled, "간이역: 3-3 벤치에 닿으면 저절로 앉는다")
+	_check(await _wait_flag(&"station_sat", 17.0), "간이역: 15초 앉아 있다가 일어난다(station_sat)")
+	await _wait(0.5)
+	_check(_player.controls_enabled and _dog.visible, "간이역: 일어나면 하늘이가 나타난다")
 	_check(is_equal_approx(_dog.global_position.x, meeting.global_position.x), "간이역: 하늘이가 3-4 자리에 앉아 있다")
 	for k in 6:
 		await _walk_to(_dog.global_position.x - 300.0)

@@ -255,6 +255,27 @@ def ring(freqs, decay):
     return f
 
 
+def woof(rng, count: int) -> np.ndarray:
+    """개가 짧게 짖는다: 내려가는 음높이의 배음 + 숨소리, count번."""
+    x = np.zeros(n_samples(1.2))
+    pos = 0.05
+    for _ in range(count):
+        dur = rng.uniform(0.16, 0.22)
+        n = n_samples(dur)
+        t = np.arange(n) / RATE
+        f = rng.uniform(420, 520) * (1 - 0.35 * t / dur)
+        ph = 2 * np.pi * np.cumsum(f) / RATE
+        tone = sum(np.sin(k * ph) / k for k in range(1, 8))
+        breath = shaped_noise(rng, dur, band(600, 3000, -3))[:n] * 0.4
+        env = np.clip(t / 0.01, 0, 1) * np.exp(-t / (dur * 0.45))
+        spec = np.fft.rfft((tone + breath) * env)
+        fr = np.fft.rfftfreq(n, 1 / RATE)
+        shaped = np.fft.irfft(spec * band(350, 2600)(np.maximum(fr, 1)), n)
+        place_event(x, shaped, n_samples(pos), wrap=False)
+        pos += dur + rng.uniform(0.12, 0.2)
+    return x
+
+
 STEPS = {
     # 바닥: (모양, 어택, 감쇠, 덧붙임)
     "wood": (band(120, 2500, -4), 0.003, 0.05, ring([(180, 0.6), (420, 0.3)], 0.04)),   # 마루
@@ -299,6 +320,16 @@ def make_steps(rng):
             tone = sum(np.sin(2 * np.pi * f0 * r * t) * a for r, a in ((1.0, 1.0), (1.48, 0.5), (2.31, 0.3))) * env_ad(n, 0.001, 0.08)
             place_event(x, tone * rng.uniform(0.5, 1.0), int((0.01 + k * rng.uniform(0.04, 0.07)) * RATE), wrap=False)
         out[f"sfx_pickup_{i + 1:02d}"] = db_rms(x, -28)
+    for i in range(2):  # 개 짖는 소리: 가까이(냄새 맡고 짖을 때), 멀리(3-3 벤치)
+        near = woof(rng, 2)
+        out[f"sfx_dog_bark_near_{i + 1:02d}"] = db_rms(near, -20)
+        far = woof(rng, 2)
+        spec = np.fft.rfft(far)
+        fr = np.fft.rfftfreq(len(far), 1 / RATE)
+        far = np.fft.irfft(spec * band(200, 1400)(np.maximum(fr, 1)), len(far))
+        tail = shaped_noise(rng, len(far) / RATE, band(200, 1200, -4))[:len(far)] * 0.15 * np.abs(far).max()
+        far = far + tail * np.linspace(0, 1, len(far)) * np.exp(-np.linspace(0, 4, len(far)))
+        out[f"sfx_dog_bark_far_{i + 1:02d}"] = db_rms(far, -34)
     return out
 
 

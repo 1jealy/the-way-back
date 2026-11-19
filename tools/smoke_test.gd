@@ -188,6 +188,7 @@ const ASK_SPOT := "res://scripts/dog/ask_spot.gd"
 const DOG_MEETING := "res://scripts/dog/dog_meeting.gd"
 const GATE := "res://scripts/game/gate.gd"
 const PASSAGE := "res://scripts/game/passage.gd"
+const BENCH := "res://scripts/game/bench_sit.gd"
 
 
 func _script_path(node: Node) -> String:
@@ -211,7 +212,7 @@ func _check_parts() -> void:
 			markers[String(m.name)] = m.position.x
 		for node in place.get_children():
 			var path := _script_path(node)
-			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE]:
+			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE, BENCH]:
 				continue
 			var x: float = node.position.x
 			var on_ground: bool = is_equal_approx(node.position.y, 810.0) and x > 0.0 and x < place.width
@@ -225,6 +226,9 @@ func _check_parts() -> void:
 			if path == DOG_MEETING:
 				meeting_x = x
 				station_end = place.width - 120.0
+				var appears: StringName = node.get("appears_on_flag")
+				if not appears.is_empty():
+					required.append([i, x, appears, "%s/%s" % [place_id, node.name]])
 				continue
 			if path == GATE:
 				var opens: StringName = node.get("opens_on_flag")
@@ -234,7 +238,7 @@ func _check_parts() -> void:
 			var flag: StringName = node.get("grants_flag")
 			if not flag.is_empty() and not granted.has(flag):
 				granted[flag] = [i, x]
-			if path in [INTERACTABLE, PASSAGE]:
+			if path in [INTERACTABLE, PASSAGE, BENCH]:
 				var req: StringName = node.get("requires_flag")
 				if not req.is_empty():
 					required.append([i, x, req, "%s/%s" % [place_id, node.name]])

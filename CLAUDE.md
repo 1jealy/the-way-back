@@ -120,6 +120,14 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
   - 지금 놓인 것: 집 대문 `Gate_1-6`(`has_map`), 대합실 문 `Gate_3-6`(`station_door_open`), 징검다리 `Gate_5-3`(`river_stone_held`), 끊긴 철교 `Gate_6-2`(늘 막음).
 - **Passage**: `Area2D` + `scripts/game/passage.gd`(조사 대상을 이은 것). 조사하면 화면이 어두워졌다 밝아지며 하윤이 같은 장소의 `to_x`로 옮겨 간다(`main.move_player_to`). 바닥 높이로 이어지지 않는 길에 쓴다. 지금은 철교 `Look_6-3_Slope`(냄새 뒤 강둑으로 내려가기).
 
+## 벤치 (BenchSit)
+
+`Area2D` + `scripts/game/bench_sit.gd`(조사 대상을 이은 것). 이름 `Sit_<장면>`, 벤치 가운데 땅 위.
+
+- `auto_sit = true`(3-3): 하윤이 들어오면 저절로 `sit_seconds`(15초) 앉는다. 그동안 장소 층이 `tint`로 물들고 환경음이 `ambience_duck_db`만큼 줄고, 끝 무렵 `end_sound`. 다 앉으면 `grants_flag`(`station_sat`)를 세우고 일어난다. 안내 글 없음.
+- `auto_sit = false`(2-5): "[E] 앉기" → 방향키나 E로 일어난다. 조작 잠금 이유 `sit`.
+- 하늘이 만남은 `appears_on_flag`(`station_sat`)가 서야 하늘이가 나타난다. 그래서 3-3 벤치는 만남 자리보다 왼쪽, 알아채는 거리(360px) 밖에 둔다.
+
 ## 대사 상자 (DialogueBox)
 
 - `scenes/ui/dialogue_box.tscn`, `main.tscn`의 `Overlay` 아래. 그룹 `dialogue_box`로 찾는다.
@@ -160,7 +168,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `sit`(벤치). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 하늘이
 
