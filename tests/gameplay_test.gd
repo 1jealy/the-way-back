@@ -420,6 +420,7 @@ func _run() -> void:
 	await _press(&"open_map")
 	await _wait(0.5)
 
+	await _check_hint()
 	await _check_pause()
 	await _check_save()
 
@@ -523,3 +524,32 @@ func _check_pause() -> void:
 	await _press(&"pause")
 	await _wait(0.5)
 	_check(not map.is_open() and not menu.is_open() and not paused, "일시정지: 지도가 펼쳐져 있으면 Esc는 지도만 접는다")
+
+
+## 하늘이 힌트: 하윤이 오래 서 있으면 다음 목표 쪽으로.
+func _check_hint() -> void:
+	var dog: CharacterBody2D = _main.dog()
+	var player: CharacterBody2D = _main.player()
+	var place: Node2D = _main.current_place()
+	var hints: Array = []
+	dog.hinted.connect(func(x): hints.append(x))
+	await _hold(&"move_left", 0.3)
+	await _wait(0.5)
+	var target := _add_spot(_actions["FETCH"], 200.0, &"test_hint")
+	target.position.x = player.global_position.x + 700.0
+	await _wait(_dog_consts["HINT_DELAY"] - 1.5)
+	_check(hints.is_empty(), "힌트: 금방은 알려 주지 않는다")
+	var got := await _wait_until(func(): return hints.size() == 1, 3.0)
+	_check(got and is_equal_approx(hints[0], target.global_position.x), "힌트: 오래 서 있으면 다음 부탁 자리 쪽을 알려 준다")
+	await _wait(1.2)
+	_check(dog.global_position.x > player.global_position.x + 100.0, "힌트: 하늘이가 목표 쪽으로 앞서 간다 (%.0f)" % (dog.global_position.x - player.global_position.x))
+	await _wait(3.0)
+	_check(hints.size() == 1 and dog.state != _states["HINT"], "힌트: 같은 정지 동안에는 한 번만")
+	await _hold(&"move_right", 0.3)
+	_check(dog.state != _states["HINT"], "힌트: 하윤이 움직이면 그만두고 따라온다")
+	target.queue_free()
+	await _wait(0.3)
+	var got_exit := await _wait_until(func(): return hints.size() == 2, _dog_consts["HINT_DELAY"] + 2.0)
+	_check(got_exit and is_equal_approx(hints[1], place.width - 120.0), "힌트: 목표가 없으면 장소 끝 지점 쪽")
+	await _hold(&"move_left", 0.3)
+	await _wait(1.0)
