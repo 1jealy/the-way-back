@@ -6,6 +6,9 @@ extends Node
 const SAVE_PATH := "user://save.cfg"
 const SAVE_VERSION := 1
 
+## 플래그가 바뀔 때(막는 벽 Gate 등이 듣는다).
+signal flag_changed(flag: StringName)
+
 ## 지금 있는 장소의 place_id.
 var current_place: StringName = &""
 
@@ -27,6 +30,7 @@ func _ready() -> void:
 
 func set_flag(flag: StringName, value: Variant = true) -> void:
 	flags[flag] = value
+	flag_changed.emit(flag)
 
 
 func has_flag(flag: StringName) -> bool:

@@ -10,6 +10,8 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_front_02.png" id="8_kt3x1"]
 [ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="9_qxxtq"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_bridge.ogg" id="10_qs1fr"]
+[ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_lllq7"]
+[ext_resource type="Script" path="res://scripts/game/passage.gd" id="12_did7t"]
 
 [node name="Bridge" unique_id=943413289 instance=ExtResource("1_tpl")]
 place_id = &"bridge"
@@ -79,9 +81,23 @@ action = 1
 size = Vector2(600, 300)
 target_offset = Vector2(-900, 0)
 grants_flag = &"bridge_bank_path"
+lines = PackedStringArray()
 
 [node name="Sound" type="Node2D" parent="." index="6" unique_id=2088730734]
 
 [node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=1470295647]
 stream = ExtResource("10_qs1fr")
 autoplay = true
+
+[node name="Gate_6-2" type="StaticBody2D" parent="." index="7" unique_id=1287833519]
+position = Vector2(3660, 810)
+script = ExtResource("11_lllq7")
+
+[node name="Look_6-3_Slope" type="Area2D" parent="." index="8" unique_id=739503731]
+position = Vector2(3560, 810)
+script = ExtResource("12_did7t")
+to_x = 4300.0
+prompt = "강둑으로 내려가기"
+lines = PackedStringArray()
+requires_flag = &"bridge_bank_path"
+one_shot = true

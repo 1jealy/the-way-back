@@ -65,6 +65,7 @@
 | 1 | world | 바닥·벽·발판 (StaticBody2D) |
 | 2 | player | 하윤 |
 | 3 | dog | 하늘이 (world와만 부딪힌다. 하윤과 안 부딪힌다) |
+| 4 | gate | 막는 벽(Gate). **하윤만** 부딪힌다(하윤 마스크 = 1 + 4) |
 
 하윤을 감지하는 Area2D(끝 지점, 부탁 자리, 조사 대상)는 `collision_layer = 0`, `collision_mask = 2`로 둔다. 그래야 하늘이나 바닥에 반응하지 않는다.
 
@@ -82,6 +83,7 @@
 | `target_offset` | 하늘이가 가는 곳, 자리 기준 (x만 쓴다) |
 | `grants_flag` | 행동의 핵심 순간에 세우는 플래그 (예: `station_key`) |
 | `release_offset` | HOLD에서, 하윤이 target보다 이만큼 오른쪽으로 가면 하늘이가 놓고 따라온다 |
+| `lines` | 하늘이가 돌아와 부탁이 끝나면 대사 상자에 띄울 줄(3-5 "하윤: 고마워.") |
 
 - 신호: `started`(출발) / `acted`(물었다·짖었다·버티기 시작) / `completed`(돌아왔다). 퍼즐 반응(문이 열린다, 길이 열린다)은 `grants_flag`나 이 신호를 받아 만든다.
 - 한 번 쓰면 다시 안 먹는다(`one_shot`).
@@ -102,10 +104,21 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 | `grants_flag` | 조사하면 세우는 플래그 |
 | `requires_flag` | 이 플래그가 서 있을 때만 조사할 수 있다 |
 | `one_shot` | 한 번 조사하면 다시 안 된다 |
+| `show_locked` | `requires_flag`가 서기 전에도 안내가 뜨고, 조사하면 잠긴 소리(`sfx_locked_`)만 난다(잠긴 서랍·문). 신호 `locked` |
+| `sound` | 조사할 때 낼 소리 이름 앞머리(예: `sfx_pickup_`) |
 
 - 신호: `interacted`(조사 시작) / `finished`(대사를 다 넘김). 다음 연출은 `finished`를 기다린다(고정 시간으로 기다리지 않는다).
 - 여러 개가 겹치면 하윤에게 가장 가까운 것 하나만 안내가 뜬다.
 - 대사는 장면표(`docs/story.md`)의 "글·대사" 칸에 있는 것만 쓴다. 새 대사를 넣으려면 장면표부터 고친다.
+
+## 막는 벽 (Gate)과 옮겨 가기 (Passage)
+
+진행을 막는 곳. **B가 장소 씬에 놓고, 동작은 A가 만든다.** 원점은 땅 위(y = 810).
+
+- **Gate**: `StaticBody2D` + `scripts/game/gate.gd`. 이름 `Gate_<장면>`. `opens_on_flag`가 서면 사라진다(비우면 늘 막는다). 물리 층 4라 **하윤만 막고 하늘이는 지나간다**(징검다리 첫 돌에 하늘이가 가야 한다). 플래그는 `GameState.flag_changed`로 듣고, 이어하기 때는 처음부터 열려 있다.
+  - 막는 벽의 플래그를 세우는 부품은 그 벽보다 왼쪽(또는 앞 장소)에 있어야 한다(스모크 검사가 본다).
+  - 지금 놓인 것: 집 대문 `Gate_1-6`(`has_map`), 대합실 문 `Gate_3-6`(`station_door_open`), 징검다리 `Gate_5-3`(`river_stone_held`), 끊긴 철교 `Gate_6-2`(늘 막음).
+- **Passage**: `Area2D` + `scripts/game/passage.gd`(조사 대상을 이은 것). 조사하면 화면이 어두워졌다 밝아지며 하윤이 같은 장소의 `to_x`로 옮겨 간다(`main.move_player_to`). 바닥 높이로 이어지지 않는 길에 쓴다. 지금은 철교 `Look_6-3_Slope`(냄새 뒤 강둑으로 내려가기).
 
 ## 대사 상자 (DialogueBox)
 
@@ -117,6 +130,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 - `scenes/ui/map_screen.tscn` + `scripts/ui/map_screen.gd`(펼치기·접기·체크), `scripts/ui/map_canvas.gd`(그리기), `scripts/game/map_data.gd`(자리·메모).
 - `has_map` 플래그가 서야 M이 먹는다 → 1-5의 서랍 조사 대상에 `grants_flag = has_map`을 준다.
+- `has_map`이 서면 화면 왼쪽 위에 "[M] 지도"가 뜨고, 처음 펼치면(`map_opened` 플래그) 사라진다(장면표 1-5 "M 안내").
 - **동그라미 체크는 조사 대상의 `map_circle`(1~5)** 로 한다. E → 지도가 펼쳐지고 그 동그라미에 체크 → 하윤이 접으면 그 조사 대상의 `lines`가 나온다. 플래그 `map_circle_1`~`map_circle_5`. 장면 2-2, 3-1, 4-3, 5-4, 7-2.
 - 지나온 길은 지금 장소의 `place_id`와 그 안에서의 위치로 그린다. 새 장소를 만들면 `MapData.PLACES`에도 넣어야 지도에 나온다.
 - 메모 문구는 `map_data.gd` 한 곳에 있다. 고치면 `docs/design.md` "지도의 다섯 동그라미" 표도 같이 고친다(글꼴 도구가 둘 다에서 글자를 모은다).

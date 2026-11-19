@@ -18,9 +18,14 @@ var _changing: bool = false
 @onready var _place_label: Label = $Overlay/PlaceLabel
 
 
+var _map_hint: Label
+
+
 func _ready() -> void:
+	add_to_group("main")
 	_fade.modulate.a = 1.0
 	_set_ambience_volume(0.0)
+	_setup_map_hint()
 	_swap_place(GameState.take_start_place(FIRST_PLACE))
 	if GameState.has_flag(Dog.JOIN_FLAG):
 		_dog.join(_player)
@@ -92,6 +97,43 @@ func _swap_place(path: String) -> void:
 	GameState.save_game(path)
 	_place_label.text = _place.display_name
 	place_changed.emit(_place.place_id)
+
+
+## 같은 장소 안 다른 자리로 옮긴다(화면이 어두워졌다 밝아진다). Passage가 부른다.
+func move_player_to(x: float) -> void:
+	if _changing:
+		return
+	_changing = true
+	_player.lock(&"place_change")
+	await _fade_to(1.0)
+	_player.global_position.x = x
+	_player.velocity = Vector2.ZERO
+	_camera.reset_smoothing()
+	_dog.place_behind(_player)
+	await _fade_to(0.0)
+	_player.unlock(&"place_change")
+	_changing = false
+
+
+## 지도를 처음 얻으면 "[M] 지도"를 띄우고, 처음 펼칠 때까지 둔다(장면표 1-5 "M 안내").
+func _setup_map_hint() -> void:
+	_map_hint = Label.new()
+	_map_hint.name = "MapHint"
+	_map_hint.text = "[M] 지도"
+	_map_hint.add_theme_font_size_override("font_size", 28)
+	_map_hint.add_theme_color_override("font_color", Color(1, 0.95, 0.82, 1))
+	_map_hint.add_theme_color_override("font_outline_color", Color(0.12, 0.1, 0.09, 0.85))
+	_map_hint.add_theme_constant_override("outline_size", 6)
+	_map_hint.position = Vector2(48.0, 130.0)
+	_map_hint.visible = false
+	$Overlay.add_child(_map_hint)
+	$Overlay.move_child(_map_hint, _fade.get_index())  # 페이드보다 아래
+	GameState.flag_changed.connect(func(flag: StringName):
+		if flag == &"has_map" and not GameState.has_flag(&"map_opened"):
+			_map_hint.visible = true)
+	map_screen().opened.connect(func():
+		GameState.set_flag(&"map_opened")
+		_map_hint.visible = false)
 
 
 func _on_exit_reached() -> void:

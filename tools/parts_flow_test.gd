@@ -52,6 +52,16 @@ func _walk_to(x: float) -> void:
 	Input.action_release(act)
 
 
+## 대사 상자가 열려 있으면 E로 끝까지 넘긴다.
+func _close_dialogue() -> void:
+	var box: Node = _main.dialogue_box()
+	for i in 12:
+		await _wait(0.5)
+		if not box.visible:
+			return
+		await _press(&"interact")
+
+
 func _wait_flag(flag: StringName, seconds: float) -> bool:
 	for i in int(seconds / 0.25):
 		if _state.has_flag(flag):
@@ -74,6 +84,29 @@ func _run() -> void:
 	_state = root.get_node("GameState")
 	_player = _main.get_node("World/Player")
 	_dog = _main.get_node("World/Dog")
+
+	# 집: 잠긴 서랍(덜컹) → 액자 뒤 열쇠 → 서랍에서 지도. 지도 없이는 대문에서 막힌다.
+	var house: Node = _main.current_place()
+	var gate: Node2D = house.get_node("Gate_1-6")
+	await _walk_to(gate.global_position.x + 200.0)
+	_check(_player.global_position.x < gate.global_position.x, "집: 지도 없이는 대문(Gate_1-6)에서 막힌다")
+	var drawer: Node = house.get_node("Look_1-5_Drawer")
+	var rattled := [false]
+	drawer.locked.connect(func(): rattled[0] = true)
+	await _walk_to(drawer.global_position.x)
+	await _press(&"interact")
+	await _wait(0.3)
+	_check(rattled[0] and not _state.has_flag(&"has_map"), "집: 열쇠 없이 서랍을 열면 덜컹(잠김)")
+	await _walk_to(house.get_node("Look_1-4_Frame").global_position.x)
+	await _press(&"interact")
+	await _walk_to(drawer.global_position.x)
+	await _press(&"interact")
+	await _close_dialogue()
+	_check(_state.has_flag(&"has_map"), "집: 서랍에서 지도를 얻는다")
+	var hint: Label = _main.get_node("Overlay/MapHint")
+	_check(hint.visible, "집: 지도를 얻으면 [M] 지도 안내가 뜬다")
+	await _walk_to(gate.global_position.x + 200.0)
+	_check(_player.global_position.x > gate.global_position.x, "집: 지도를 얻으면 대문을 지나간다")
 
 	# 간이역: 만남(3-4)
 	var station: Node = await _go("station")
@@ -98,11 +131,24 @@ func _run() -> void:
 	await _wait(2.5)
 	await _press(&"ask_dog")
 	_check(await _wait_flag(&"station_key", 20.0), "간이역: 하늘이가 벤치 밑 열쇠를 물어 온다(station_key)")
-	await _wait(8.0)  # 돌아올 때까지
+	var box: Node = _main.dialogue_box()
+	var thanked := false
+	for i in 60:  # 돌아올 때까지
+		await _wait(0.25)
+		if box.visible:
+			thanked = true
+			break
+	_check(thanked, "간이역: 하늘이가 돌아오면 \"하윤: 고마워.\"")
+	await _close_dialogue()
+	var door_gate: Node2D = station.get_node("Gate_3-6")
+	await _walk_to(door_gate.global_position.x + 200.0)
+	_check(_player.global_position.x < door_gate.global_position.x, "간이역: 문을 열기 전에는 대합실 문에서 막힌다")
 	await _walk_to(station.get_node("Look_3-6_Door").global_position.x)
 	await _wait(0.4)
 	await _press(&"interact")
 	_check(await _wait_flag(&"station_door_open", 2.0), "간이역: 열쇠로 대합실 문을 연다")
+	await _walk_to(door_gate.global_position.x + 200.0)
+	_check(_player.global_position.x > door_gate.global_position.x, "간이역: 문을 열면 대합실로 지나간다")
 
 	# 숲·강가·철교의 부탁 자리
 	for pid in ["forest", "riverside", "bridge"]:
@@ -110,6 +156,10 @@ func _run() -> void:
 		for spot in place.get_children():
 			if not String(spot.name).begins_with("AskSpot_"):
 				continue
+			var stones: Node2D = place.get_node_or_null("Gate_5-3")
+			if stones:
+				await _walk_to(stones.global_position.x + 200.0)
+				_check(_player.global_position.x < stones.global_position.x, "강가: 하늘이가 버티기 전에는 징검다리에서 막힌다")
 			await _walk_to(spot.global_position.x)
 			await _wait(3.0)
 			await _press(&"ask_dog")
@@ -119,6 +169,15 @@ func _run() -> void:
 				await _wait(3.0)
 				_check(absf(_dog.global_position.x - _player.global_position.x) < 250.0, "%s: 건너간 뒤 하늘이가 따라온다" % pid)
 			await _wait(6.0)
+			if pid == "bridge":
+				var slope: Node2D = place.get_node("Look_6-3_Slope")
+				var edge: Node2D = place.get_node("Gate_6-2")
+				await _walk_to(edge.global_position.x + 200.0)
+				_check(_player.global_position.x < edge.global_position.x, "철교: 끊긴 끝(Gate_6-2)에서 막힌다")
+				await _walk_to(slope.global_position.x)
+				await _press(&"interact")
+				await _wait(2.0)
+				_check(absf(_player.global_position.x - slope.to_x) < 5.0, "철교: 냄새 뒤 강둑으로 내려가면 강둑 길에 선다 (%.0f)" % _player.global_position.x)
 
 	if _failures == 0:
 		print("부품 흐름 검사 통과")

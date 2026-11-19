@@ -27,6 +27,8 @@ enum Action {
 ## HOLD에서, 하윤이 target보다 이만큼 오른쪽으로 가면 하늘이가 놓고 따라온다.
 @export var release_offset: float = 300.0
 @export var one_shot: bool = true
+## 하늘이가 돌아와 부탁이 끝났을 때 대사 상자에 띄울 줄(예: 3-5 "하윤: 고마워.").
+@export var lines: PackedStringArray = PackedStringArray()
 
 var used: bool = false
 var player_inside: bool = false
