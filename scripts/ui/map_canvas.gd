@@ -37,6 +37,10 @@ func _ready() -> void:
 		label.name = "Place_%s" % place["id"]
 		label.custom_minimum_size.x = 120.0
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	for road in MapData.SIDE_ROADS:
+		if not String(road["label"]).is_empty():
+			var side := _make_label(road["label"], road["label_pos"], 22, PENCIL_LIGHT)
+			side.name = "Side_%s" % road["label"]
 	for n in range(1, MapData.CIRCLES.size() + 1):
 		var c: Dictionary = MapData.CIRCLES[n - 1]
 		var child: bool = c["child"]
@@ -75,6 +79,8 @@ func _wobble(p: Vector2, seed_value: float) -> Vector2:
 
 func _draw() -> void:
 	_draw_folds()
+	_draw_symbols()
+	_draw_side_roads()
 	_draw_river()
 	_draw_route()
 	_draw_trail()
@@ -112,34 +118,83 @@ func _draw_river() -> void:
 
 
 func _draw_route() -> void:
-	var pts := PackedVector2Array()
 	for i in MapData.PLACES.size() - 1:
-		var a: Vector2 = MapData.PLACES[i]["pos"]
-		var b: Vector2 = MapData.PLACES[i + 1]["pos"]
-		if MapData.PLACES[i + 1].get("dotted", false):
-			pts.append(a)
+		var pts := PackedVector2Array()
+		for s in 41:
+			pts.append(MapData.segment_point(i, s / 40.0))
+		if MapData.is_dotted(i):
+			_draw_dashed(pts)
+		else:
+			if not MapData.PLACES[i + 1].has("wiggle"):
+				for k in pts.size():
+					pts[k] = _wobble(pts[k], 1.3)
 			draw_polyline(pts, PENCIL, 3.0, true)
-			pts = PackedVector2Array()
-			_draw_dotted(a, b)
-			continue
-		for s in 12:
-			pts.append(_wobble(a.lerp(b, s / 12.0), 1.3))
-	if pts.size() > 0:
-		pts.append(MapData.PLACES[-1]["pos"])
-		draw_polyline(pts, PENCIL, 3.0, true)
 	for place in MapData.PLACES:
 		draw_circle(place["pos"], 6.0, PENCIL)
 	_draw_boat()
 
 
-func _draw_dotted(a: Vector2, b: Vector2) -> void:
-	var length := a.distance_to(b)
-	var d := 0.0
-	while d < length:
-		var p0 := a.lerp(b, d / length)
-		var p1 := a.lerp(b, minf(d + 10.0, length) / length)
-		draw_line(p0, p1, PENCIL, 3.0, true)
-		d += 22.0
+## 점들을 이은 선을 일정한 간격의 짧은 선으로 그린다.
+func _draw_dashed(pts: PackedVector2Array, color: Color = PENCIL, dash: float = 10.0, gap: float = 12.0) -> void:
+	var drawing := true
+	var left := dash
+	for k in pts.size() - 1:
+		var a := pts[k]
+		var b := pts[k + 1]
+		var seg := a.distance_to(b)
+		var pos := 0.0
+		while pos < seg:
+			var step := minf(left, seg - pos)
+			if drawing:
+				draw_line(a.lerp(b, pos / seg), a.lerp(b, (pos + step) / seg), color, 3.0, true)
+			pos += step
+			left -= step
+			if left <= 0.0:
+				drawing = not drawing
+				left = dash if drawing else gap
+
+
+## 하윤이 가지 않는 길: 큰길 / 점선 오솔길 / 철길.
+func _draw_side_roads() -> void:
+	for road in MapData.SIDE_ROADS:
+		var pts := MapData.side_road_points(road)
+		match road["kind"]:
+			"road":
+				var wobbly := PackedVector2Array()
+				for k in pts.size():
+					wobbly.append(_wobble(pts[k], 2.7))
+				draw_polyline(wobbly, PENCIL_LIGHT, 4.0, true)
+			"trail":
+				_draw_dashed(pts, PENCIL_LIGHT, 8.0, 10.0)
+			"rail":
+				draw_polyline(pts, PENCIL_LIGHT, 2.0, true)
+				for k in pts.size() - 1:
+					var a := pts[k]
+					var b := pts[k + 1]
+					var n := (b - a).orthogonal().normalized() * 9.0
+					var steps := int(a.distance_to(b) / 16.0)
+					for j in steps:
+						var c := a.lerp(b, float(j) / float(steps))
+						draw_line(c - n, c + n, PENCIL_LIGHT, 2.0, true)
+
+
+## 작은 그림 표시. 지도 그림이 오면 지운다.
+func _draw_symbols() -> void:
+	var h := MapData.HOUSE_ICON
+	draw_polyline(PackedVector2Array([h + Vector2(-16, 12), h + Vector2(-16, -2), h + Vector2(0, -16),
+			h + Vector2(16, -2), h + Vector2(16, 12), h + Vector2(-16, 12)]), PENCIL, 2.5, true)
+	for m in MapData.MOUNTAINS:
+		draw_polyline(PackedVector2Array([m + Vector2(-34, 20), m + Vector2(0, -26), m + Vector2(34, 20)]),
+				PENCIL_LIGHT, 2.5, true)
+	for pole in MapData.POLES:
+		draw_line(pole + Vector2(0, 14), pole + Vector2(0, -22), PENCIL_LIGHT, 2.0, true)
+		draw_line(pole + Vector2(-9, -16), pole + Vector2(9, -16), PENCIL_LIGHT, 2.0, true)
+	for t in MapData.TREES:
+		draw_arc(t + Vector2(0, -10), 12.0, 0.0, TAU, 14, PENCIL_LIGHT, 2.0, true)
+		draw_line(t + Vector2(0, 2), t + Vector2(0, 14), PENCIL_LIGHT, 2.0, true)
+	for r in MapData.REEDS:
+		for dx in [-8.0, 0.0, 8.0]:
+			draw_line(r + Vector2(dx * 0.4, 10), r + Vector2(dx, -10), RIVER, 2.0, true)
 
 
 ## 나루터에 매인 작은 배. 뱃머리가 오른쪽(강 건너)을 본다.

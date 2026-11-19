@@ -355,6 +355,22 @@ func _run() -> void:
 	var grandpa_ink: Color = canvas.note_label(1).get_theme_color("font_color")
 	var child_ink: Color = canvas.note_label(5).get_theme_color("font_color")
 	_check(child_ink != grandpa_ink, "지도: 다섯째 메모(하윤 글씨)만 다른 색이다")
+	var map_data: GDScript = load("res://scripts/game/map_data.gd")
+	var places: Array = map_consts["PLACES"]
+	var on_places := true
+	for i in places.size():
+		on_places = on_places and map_data.route_point(float(i)).distance_to(places[i]["pos"]) < 0.5
+	_check(on_places, "지도: 길이 장소 점을 지난다")
+	var straight: Vector2 = (places[0]["pos"] + places[1]["pos"]) * 0.5
+	_check(map_data.route_point(0.5).distance_to(straight) > 20.0, "지도: 길이 직선이 아니라 휜다")
+	var branches_ok := true
+	for road in map_consts["SIDE_ROADS"]:
+		if road.has("from_route"):
+			var at: Array = road["from_route"]
+			var branch_start: Vector2 = map_data.side_road_points(road)[0]
+			branches_ok = branches_ok and branch_start.distance_to(map_data.segment_point(at[0], at[1])) < 0.5
+	_check(branches_ok, "지도: 갈라지는 오솔길이 길 위에서 시작한다")
+	_check(canvas.has_node("Side_읍내") and canvas.has_node("Side_산"), "지도: 가지 않는 길 이름(읍내, 산)")
 	await _press(&"open_map")
 	await _wait(0.5)
 	_check(not map.is_open() and _player.controls_enabled, "지도: M으로 접으면 다시 걷는다")

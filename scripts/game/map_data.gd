@@ -14,16 +14,36 @@ const HEADER := "하윤이랑 같이 갈 데"
 const HEADER_POS := Vector2(190.0, 150.0)
 
 ## 걷는 순서(왼쪽 → 오른쪽). 길은 이 점들을 잇는다. label_offset은 장소 이름 자리(기본은 점 아래).
+## bend: 앞 장소에서 여기까지 길이 옆으로 휘는 정도(px, 부호는 방향). wiggle: 그 위에 얹는 꼬불꼬불함(px).
 ## dotted: 앞 장소에서 여기까지를 점선으로(철교 → 나루터: 하늘이가 찾아 주는 강둑 아래 좁은 길).
 const PLACES := [
 	{"id": &"house", "label": "집", "pos": Vector2(260.0, 660.0)},
-	{"id": &"field", "label": "들판", "pos": Vector2(500.0, 560.0)},
-	{"id": &"station", "label": "간이역", "pos": Vector2(760.0, 660.0)},
-	{"id": &"forest", "label": "숲", "pos": Vector2(1020.0, 520.0)},
-	{"id": &"riverside", "label": "강가", "pos": Vector2(1260.0, 640.0)},
-	{"id": &"bridge", "label": "철교", "pos": Vector2(1450.0, 540.0), "label_offset": Vector2(-60.0, -62.0)},
-	{"id": &"ferry", "label": "나루터", "pos": Vector2(1540.0, 800.0), "label_offset": Vector2(-150.0, -20.0), "dotted": true},
+	{"id": &"field", "label": "들판", "pos": Vector2(500.0, 560.0), "bend": 70.0},
+	{"id": &"station", "label": "간이역", "pos": Vector2(760.0, 660.0), "bend": -45.0},
+	{"id": &"forest", "label": "숲", "pos": Vector2(1020.0, 520.0), "bend": 30.0, "wiggle": 10.0},
+	{"id": &"riverside", "label": "강가", "pos": Vector2(1260.0, 640.0), "bend": -50.0},
+	{"id": &"bridge", "label": "철교", "pos": Vector2(1450.0, 540.0), "label_offset": Vector2(-60.0, -62.0), "bend": 25.0},
+	{"id": &"ferry", "label": "나루터", "pos": Vector2(1540.0, 800.0), "label_offset": Vector2(-150.0, -20.0), "dotted": true, "bend": -20.0},
 ]
+
+## 하윤이 가지 않는 길. 지도가 노선도가 아니라 동네 지도로 보이게 한다.
+## kind: "road" 큰길 / "trail" 점선 오솔길 / "rail" 철길(사다리 무늬).
+## from_route: [구간, t] — 길 위 그 자리에서 갈라져 나온다(첫 점 앞에 붙는다).
+const SIDE_ROADS := [
+	{"kind": "road", "points": [Vector2(260.0, 660.0), Vector2(225.0, 760.0), Vector2(170.0, 860.0), Vector2(135.0, 960.0)],
+		"label": "읍내", "label_pos": Vector2(150.0, 935.0)},
+	{"kind": "trail", "from_route": [0, 0.42], "points": [Vector2(320.0, 520.0), Vector2(270.0, 410.0), Vector2(250.0, 300.0)],
+		"label": "산", "label_pos": Vector2(215.0, 248.0)},
+	{"kind": "rail", "points": [Vector2(590.0, 735.0), Vector2(760.0, 690.0), Vector2(935.0, 640.0)],
+		"label": "", "label_pos": Vector2.ZERO},
+]
+
+## 작은 그림 표시(코드로 그리는 기호). 그림이 오면 지운다.
+const HOUSE_ICON := Vector2(260.0, 618.0)
+const MOUNTAINS := [Vector2(290.0, 290.0), Vector2(345.0, 300.0), Vector2(400.0, 285.0)]
+const POLES := [Vector2(330.0, 600.0), Vector2(410.0, 560.0), Vector2(590.0, 575.0), Vector2(680.0, 615.0)]
+const TREES := [Vector2(940.0, 480.0), Vector2(965.0, 610.0), Vector2(1160.0, 470.0), Vector2(1100.0, 590.0), Vector2(1135.0, 530.0)]
+const REEDS := [Vector2(1180.0, 600.0), Vector2(1330.0, 690.0), Vector2(1360.0, 670.0)]
 
 ## 동그라미 다섯. 번호는 1부터. child = 하윤 글씨.
 const CIRCLES := [
@@ -62,11 +82,37 @@ static func circle_pos(n: int) -> Vector2:
 	return place_pos(CIRCLES[n - 1]["place"])
 
 
+## 장소 i에서 i+1까지 길 위의 한 점(t: 0~1). 지도 길과 지나온 길이 같은 곡선을 쓴다.
+static func segment_point(i: int, t: float) -> Vector2:
+	var a: Vector2 = PLACES[i]["pos"]
+	var b: Vector2 = PLACES[i + 1]["pos"]
+	var to: Dictionary = PLACES[i + 1]
+	var normal := (b - a).orthogonal().normalized()
+	var control := (a + b) * 0.5 + normal * float(to.get("bend", 0.0))
+	var u := 1.0 - t
+	var p := a * u * u + control * 2.0 * u * t + b * t * t
+	var wiggle := float(to.get("wiggle", 0.0))
+	if wiggle > 0.0:
+		p += normal * sin(t * TAU * 2.0) * sin(t * PI) * wiggle
+	return p
+
+
+## 가지 않는 길의 점들. from_route가 있으면 길 위 갈림 자리를 앞에 붙인다.
+static func side_road_points(road: Dictionary) -> PackedVector2Array:
+	var pts := PackedVector2Array(road["points"])
+	if road.has("from_route"):
+		var at: Array = road["from_route"]
+		pts.insert(0, segment_point(int(at[0]), float(at[1])))
+	return pts
+
+
+static func is_dotted(i: int) -> bool:
+	return PLACES[i + 1].get("dotted", false)
+
+
 ## 길 위의 한 점. progress는 0(집) ~ PLACES.size() - 1(나루터), 소수는 다음 장소까지의 비율.
 static func route_point(progress: float) -> Vector2:
 	var last := PLACES.size() - 1
 	var p := clampf(progress, 0.0, float(last))
 	var i := mini(int(floor(p)), last - 1)
-	var a: Vector2 = PLACES[i]["pos"]
-	var b: Vector2 = PLACES[i + 1]["pos"]
-	return a.lerp(b, p - float(i))
+	return segment_point(i, p - float(i))
