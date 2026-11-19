@@ -1,0 +1,46 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/game/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/characters/player.tscn" id="2_player"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_main")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="PlaceSlot" type="Node2D" parent="World"]
+
+[node name="Player" parent="World" instance=ExtResource("2_player")]
+
+[node name="Camera" type="Camera2D" parent="World/Player"]
+position = Vector2(0, -270)
+position_smoothing_enabled = true
+position_smoothing_speed = 6.0
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="PlaceLabel" type="Label" parent="Overlay"]
+offset_left = 48.0
+offset_top = 36.0
+offset_right = 900.0
+offset_bottom = 84.0
+theme_override_font_sizes/font_size = 32
+
+[node name="Hint" type="Label" parent="Overlay"]
+offset_left = 48.0
+offset_top = 84.0
+offset_right = 900.0
+offset_bottom = 120.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.6)
+theme_override_font_sizes/font_size = 20
+text = "A D / ← → 이동 (회색 네모 뼈대)"
+
+[node name="Fade" type="ColorRect" parent="Overlay"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)

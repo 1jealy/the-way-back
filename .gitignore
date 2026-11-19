@@ -1,0 +1,12 @@
+# Godot
+.godot/
+/android/
+*.translation
+
+# 내보내기 결과
+build/
+export_credentials.cfg
+
+# OS
+.DS_Store
+Thumbs.db
