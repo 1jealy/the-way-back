@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/game/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/characters/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://scenes/characters/dog.tscn" id="3_dog"]
 [ext_resource type="PackedScene" path="res://scenes/ui/dialogue_box.tscn" id="4_box"]
+[ext_resource type="PackedScene" path="res://scenes/ui/map_screen.tscn" id="5_map"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -41,6 +42,8 @@ theme_override_font_sizes/font_size = 20
 text = "A D / ← → 이동 (회색 네모 뼈대)"
 
 [node name="DialogueBox" parent="Overlay" instance=ExtResource("4_box")]
+
+[node name="MapScreen" parent="Overlay" instance=ExtResource("5_map")]
 
 [node name="Fade" type="ColorRect" parent="Overlay"]
 anchors_preset = 15

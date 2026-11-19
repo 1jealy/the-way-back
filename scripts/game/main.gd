@@ -42,6 +42,10 @@ func dialogue_box() -> DialogueBox:
 	return $Overlay/DialogueBox
 
 
+func map_screen() -> MapScreen:
+	return $Overlay/MapScreen
+
+
 func go_to(path: String) -> void:
 	if _changing:
 		return

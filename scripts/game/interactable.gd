@@ -21,6 +21,9 @@ signal finished
 @export var requires_flag: StringName = &""
 ## 한 번 조사하면 다시 안 된다.
 @export var one_shot: bool = false
+## 1~5면 조사할 때 지도를 펼치고 그 동그라미에 체크한다(장면 2-2, 3-1, 4-3, 5-4, 7-2).
+## 하윤이 지도를 접은 뒤에 lines가 나온다.
+@export_range(0, 5) var map_circle: int = 0
 
 var used: bool = false
 var player_inside: bool = false
@@ -86,6 +89,11 @@ func interact() -> void:
 	if not grants_flag.is_empty():
 		GameState.set_flag(grants_flag)
 	interacted.emit()
+	if map_circle > 0:
+		var map := get_tree().get_first_node_in_group("map_screen") as MapScreen
+		if map:
+			map.open(map_circle)
+			await map.closed
 	if not lines.is_empty():
 		var box := get_tree().get_first_node_in_group("dialogue_box") as DialogueBox
 		if box:
