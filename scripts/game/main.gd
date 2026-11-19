@@ -46,6 +46,10 @@ func map_screen() -> MapScreen:
 	return $Overlay/MapScreen
 
 
+func pause_menu() -> PauseMenu:
+	return $Overlay/PauseMenu
+
+
 func go_to(path: String) -> void:
 	if _changing:
 		return

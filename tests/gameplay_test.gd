@@ -420,6 +420,7 @@ func _run() -> void:
 	await _press(&"open_map")
 	await _wait(0.5)
 
+	await _check_pause()
 	await _check_save()
 
 	if _failures == 0:
@@ -486,5 +487,39 @@ func _check_save() -> void:
 	await _wait(0.5)
 	var started: Node = current_scene
 	_check(started != null and started.scene_file_path == "res://scenes/main.tscn", "타이틀: 처음부터를 누르면 본편이 시작된다")
+	if started != null:
+		started.pause_menu().open()
+		await process_frame
+		started.pause_menu().go_to_title()
+		await _wait(0.3)
+		_check(current_scene != null and current_scene.scene_file_path == "res://scenes/ui/title_screen.tscn" and not paused,
+				"일시정지: 타이틀로 가면 멈춤이 풀린 채 타이틀이 뜬다")
 	_state.delete_save()
 	_state.save_path = _state.SAVE_PATH
+
+
+## 일시정지 메뉴(Esc).
+func _check_pause() -> void:
+	var menu: Control = _main.pause_menu()
+	var map: Control = _main.map_screen()
+	var player: CharacterBody2D = _main.player()
+	await _press(&"pause")
+	_check(menu.is_open() and paused, "일시정지: Esc로 메뉴가 뜨고 게임이 멈춘다")
+	_check(menu.get_node("Menu/Resume").has_focus(), "일시정지: 계속하기에 초점이 있다")
+	var x0 := player.global_position.x
+	Input.action_press(&"move_right")
+	await _wait(0.4)
+	Input.action_release(&"move_right")
+	_check(is_equal_approx(player.global_position.x, x0), "일시정지: 멈춘 동안 하윤이 걷지 않는다")
+	await _press(&"pause")
+	_check(not menu.is_open() and not paused, "일시정지: Esc를 다시 누르면 풀린다")
+	await _press(&"pause")
+	menu.get_node("Menu/Resume").emit_signal("pressed")
+	await process_frame
+	_check(not menu.is_open() and not paused, "일시정지: 계속하기로 풀린다")
+
+	await _press(&"open_map")
+	await _wait(0.5)
+	await _press(&"pause")
+	await _wait(0.5)
+	_check(not map.is_open() and not menu.is_open() and not paused, "일시정지: 지도가 펼쳐져 있으면 Esc는 지도만 접는다")
