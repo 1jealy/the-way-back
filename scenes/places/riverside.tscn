@@ -18,6 +18,7 @@ display_name = "강가"
 next_place = "res://scenes/places/bridge.tscn"
 width = 7680.0
 greybox = false
+footstep_surface = &"pebble"
 
 [node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=1597278167]
 

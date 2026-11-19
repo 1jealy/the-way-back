@@ -57,8 +57,22 @@ var _hint_left: float = 0.0
 @onready var _paw: CanvasItem = $PawMark
 
 
+## 발톱 소리가 들리는 장소. 장면표: 간이역·숲에서만, 강가부터는 없다(복선).
+const CLAW_PLACES := [&"station", &"forest"]
+## 이만큼 걸을 때마다 발톱 소리 하나(px).
+const CLAW_DISTANCE := 75.0
+
+var _claw_left: float = CLAW_DISTANCE
+var _claws: AudioStreamPlayer
+
+
 func _ready() -> void:
 	add_to_group("dog")
+	_claws = AudioStreamPlayer.new()
+	_claws.name = "Claws"
+	_claws.bus = SoundBank.BUS_SFX
+	_claws.volume_db = -8.0
+	add_child(_claws)
 	_refresh_visuals()
 
 
@@ -288,6 +302,7 @@ func _move_toward_x(goal_x: float, max_speed: float, delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += gravity * delta
 	move_and_slide()
+	_update_claws(delta)
 	if absf(velocity.x) > 1.0:
 		facing = 1 if velocity.x > 0.0 else -1
 	elif state in [State.FOLLOW, State.SIT] and _player:
@@ -305,3 +320,18 @@ func _refresh_visuals() -> void:
 	_stand.visible = not sitting
 	_sit.visible = sitting
 	_paw.visible = available_spot() != null
+
+
+func _update_claws(delta: float) -> void:
+	if not visible or absf(velocity.x) < 1.0 or GameState.current_place not in CLAW_PLACES:
+		_claw_left = CLAW_DISTANCE
+		return
+	_claw_left -= absf(velocity.x) * delta
+	if _claw_left > 0.0:
+		return
+	_claw_left += CLAW_DISTANCE
+	var stream := SoundBank.pick("sfx_dog_claw_")
+	if stream:
+		_claws.stream = stream
+		_claws.pitch_scale = randf_range(0.9, 1.1)
+		_claws.play()

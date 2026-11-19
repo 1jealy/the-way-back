@@ -17,6 +17,10 @@ display_name = "낡은 철교"
 next_place = "res://scenes/places/ferry.tscn"
 width = 7680.0
 greybox = false
+footstep_surface = &"metal"
+footstep_changes = {
+3900.0: &"grass"
+}
 
 [node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=1512856132]
 

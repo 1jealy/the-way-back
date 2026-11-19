@@ -21,6 +21,7 @@ display_name = "빛이 많은 숲"
 next_place = "res://scenes/places/riverside.tscn"
 width = 9600.0
 greybox = false
+footstep_surface = &"soil"
 
 [node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=765063256]
 

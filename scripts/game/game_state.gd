@@ -21,6 +21,10 @@ var save_path: String = SAVE_PATH
 var autosave: bool = DisplayServer.get_name() != "headless"
 
 
+func _ready() -> void:
+	SoundBank.setup_buses()
+
+
 func set_flag(flag: StringName, value: Variant = true) -> void:
 	flags[flag] = value
 

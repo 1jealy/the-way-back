@@ -437,6 +437,7 @@ func _run() -> void:
 	await _wait(0.5)
 
 	await _check_hint()
+	await _check_sound()
 	await _check_pause()
 	await _check_save()
 
@@ -445,6 +446,44 @@ func _run() -> void:
 	else:
 		print("게임플레이 검사 실패 %d건" % _failures)
 	quit(1 if _failures > 0 else 0)
+
+
+## 소리(#35): 버스, 장소 소리, 발소리 바닥, 하늘이 발톱(간이역·숲에서만).
+func _check_sound() -> void:
+	var names: Array = []
+	for i in AudioServer.bus_count:
+		names.append(AudioServer.get_bus_name(i))
+	_check(&"Ambience" in names and &"Sfx" in names and &"Music" in names, "소리: 버스 Ambience·Sfx·Music이 있다 %s" % [names])
+	var amb: AudioStreamPlayer = _main.current_place().get_node_or_null("Sound/Ambience")
+	_check(amb != null and amb.bus == &"Ambience" and amb.playing, "소리: 장소 환경음이 Ambience 버스로 돈다")
+	var bus := AudioServer.get_bus_index(&"Ambience")
+	_check(absf(AudioServer.get_bus_volume_db(bus)) < 0.5, "소리: 장소에 들어온 뒤 환경음 버스가 다 켜져 있다 (%.1f dB)" % AudioServer.get_bus_volume_db(bus))
+
+	var house: Node = load("res://scenes/places/house.tscn").instantiate()
+	_check(house.surface_at(300.0) == &"wood" and house.surface_at(5200.0) == &"dirt", "소리: 집은 마루, 마당부터 흙")
+	house.free()
+
+	var steps: AudioStreamPlayer = _player.get_node("Steps")
+	var claws: AudioStreamPlayer = _dog.get_node("Claws")
+	var heard := {"step": "", "claw": false}
+	var watch := func():
+		if steps.playing and steps.stream:
+			heard["step"] = steps.stream.resource_path.get_file()
+		if claws.playing:
+			heard["claw"] = true
+	get_root().get_tree().process_frame.connect(watch)
+	await _hold(&"move_left", 1.2)
+	await _hold(&"move_right", 1.2)
+	_check(String(heard["step"]).begins_with("step_dirt_"), "소리: 들판을 걸으면 흙길 발소리 (%s)" % heard["step"])
+	_check(not heard["claw"], "소리: 들판에서는 하늘이 발톱 소리가 없다")
+	var real_place: StringName = _state.current_place
+	_state.current_place = &"station"
+	heard["claw"] = false
+	await _hold(&"move_left", 1.5)
+	await _wait(0.5)
+	_check(heard["claw"], "소리: 간이역에서는 하늘이 발톱 소리가 난다")
+	_state.current_place = real_place
+	get_root().get_tree().process_frame.disconnect(watch)
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.
