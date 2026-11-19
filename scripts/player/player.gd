@@ -3,8 +3,8 @@ extends CharacterBody2D
 ## 하윤. 좌우로만 걷는다. 원점은 발밑이다.
 ## 담당: A(게임플레이).
 
-## 걷는 속도(px/초). 화면 하나(1920px)를 약 10초에 지난다 — 장면표 시간의 기준.
-@export var walk_speed: float = 200.0
+## 걷는 속도(px/초). 화면 하나(1920px)를 약 7.7초에 지난다. 장소 폭은 200 기준으로 잡았다(#29).
+@export var walk_speed: float = 250.0
 @export var gravity: float = 2400.0
 
 ## 조작을 막고 있는 이유들. 하나라도 있으면 걷지 않는다.
