@@ -12,6 +12,8 @@ const UNFOLD_SECONDS := 0.35
 const CHECK_SECONDS := 0.5
 
 var _open: bool = false
+## 지도가 손에 없다(2-3 바람에 날아가 쫓는 중, MapChase). 그동안 M도, 동그라미 조사도 먹지 않는다.
+var away: bool = false
 ## 펼치기·접기·체크 연출 중에는 접지 않는다.
 var _busy: bool = false
 
@@ -33,7 +35,7 @@ func canvas() -> MapCanvas:
 
 
 func can_open() -> bool:
-	if _open or not GameState.has_flag(MapData.HAS_MAP_FLAG):
+	if _open or away or not GameState.has_flag(MapData.HAS_MAP_FLAG):
 		return false
 	var player := _player()
 	return player != null and player.controls_enabled

@@ -108,6 +108,26 @@ func _run() -> void:
 	await _walk_to(gate.global_position.x + 200.0)
 	_check(_player.global_position.x > gate.global_position.x, "집: 지도를 얻으면 대문을 지나간다")
 
+	# 들판: 2-3 날아간 지도. 지나가면 바람 → 덤불 셋을 따라 걷는다 → 마지막 덤불에서 줍는다. 그 전에는 Gate_2-3.
+	var field: Node = await _go("field")
+	var chase: Node2D = field.get_node("MapChase_2-3")
+	var field_gate: Node2D = field.get_node("Gate_2-3")
+	await _walk_to(chase.global_position.x + 60.0)
+	await _wait(0.5)
+	_check(chase.state == 1 and _main.dialogue_box().visible, "들판: 지나가면 바람에 지도가 날아가고 대사가 뜬다")
+	await _close_dialogue()
+	for k in 3:
+		await _walk_to(chase.stop_position(k).x - 40.0)
+		await _wait(2.2)
+	_check(chase.stop_index == 2 and not _state.has_flag(&"map_caught"), "들판: 걸어서 따라가면 지도가 마지막 덤불까지 간다")
+	await _walk_to(field_gate.global_position.x + 200.0)
+	_check(_player.global_position.x < field_gate.global_position.x, "들판: 줍기 전에는 Gate_2-3에서 막힌다")
+	await _walk_to(chase.stop_position(2).x)
+	await _press(&"interact")
+	_check(await _wait_flag(&"map_caught", 2.0), "들판: 마지막 덤불에서 E로 지도를 줍는다(map_caught)")
+	await _walk_to(field_gate.global_position.x + 200.0)
+	_check(_player.global_position.x > field_gate.global_position.x, "들판: 지도를 주우면 지나간다")
+
 	# 간이역: 만남(3-4)
 	var station: Node = await _go("station")
 	var meeting: Node2D = station.get_node("DogMeeting_3-4")

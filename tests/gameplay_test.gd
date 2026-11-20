@@ -470,6 +470,7 @@ func _run() -> void:
 	await _check_sound()
 	await _check_gate()
 	await _check_bench()
+	await _check_map_chase()
 	await _check_pause()
 	await _check_save()
 
@@ -552,6 +553,52 @@ func _check_bench() -> void:
 	_check(not bench.sitting and _player.controls_enabled, "벤치: 방향키로 일어난다")
 	bench.queue_free()
 	await _wait(0.2)
+
+
+## 2-3 날아간 지도(MapChase): 지나가면 바람 → 덤불 셋에 걸렸다 날아간다 → 마지막 덤불에서 줍는다.
+## 들판에 B가 놓은 진짜 MapChase_2-3으로 본다(날아가는 시간만 줄인다).
+func _check_map_chase() -> void:
+	var place: Node2D = _main.current_place()
+	var chase: Node2D = place.get_node_or_null("MapChase_2-3")
+	_check(chase != null, "지도 쫓기: 들판에 MapChase_2-3이 있다")
+	if chase == null:
+		return
+	var map: Control = _main.map_screen()
+	var box: Control = _main.dialogue_box()
+	var gate: Node = place.get_node("Gate_2-3")
+	var hill: Node = place.get_node("Look_2-2_Hill")
+	chase.flight_seconds = 0.4
+	_check(chase.state == 0 and not gate.is_open(), "지도 쫓기: 줍기 전에는 Gate_2-3이 막는다")
+	_player.global_position.x = chase.global_position.x + 20.0
+	var started := await _wait_until(func(): return chase.state == 1 and box.is_open(), 1.5)
+	_check(started and map.away and box.current_text() == "어? 기다려!" and _player.is_locked_by(&"map_chase"),
+			"지도 쫓기: 지나가면 지도가 날아가고 \"하윤: 어? 기다려!\", 그동안 하윤이 멈춘다")
+	await _speak_through(box)
+	await _wait_until(func(): return not chase.flying, 2.0)
+	_check(_player.controls_enabled and chase.stop_index == 0, "지도 쫓기: 대사가 끝나면 걸을 수 있고, 지도는 첫 덤불에 걸려 있다")
+	await _press(&"open_map")
+	await _wait(0.5)
+	_check(not map.is_open(), "지도 쫓기: 지도가 날아가 있는 동안 M이 먹지 않는다")
+	_player.global_position.x = hill.global_position.x
+	await _wait(0.3)
+	_check(not hill.is_offered(), "지도 쫓기: 날아가 있는 동안 동그라미 조사(지도 펼치기)도 안 뜬다")
+	for k in 2:
+		_player.global_position.x = chase.stop_position(k).x - 100.0
+		var moved := await _wait_until(func(): return chase.stop_index == k + 1 and not chase.flying, 2.0)
+		_check(moved, "지도 쫓기: 덤불 %d에 다가가면 다시 날아간다" % (k + 1))
+	_check(not _state.has_flag(&"map_caught") and not gate.is_open(), "지도 쫓기: 줍기 전에는 아직 막혀 있다")
+	_player.global_position.x = chase.stop_position(2).x - 60.0
+	await _wait(1.0)
+	_check(chase.stop_index == 2, "지도 쫓기: 마지막 덤불에서는 더 날아가지 않는다")
+	await _press(&"interact")
+	var got := await _wait_until(func(): return _state.has_flag(&"map_caught"), 2.0)
+	_check(got and not map.away and gate.is_open(), "지도 쫓기: E로 주우면 map_caught, 지도가 돌아오고 벽이 열린다")
+	await _wait(0.5)
+	await _press(&"open_map")
+	await _wait(0.6)
+	_check(map.is_open(), "지도 쫓기: 주운 뒤에는 M이 다시 먹는다")
+	await _press(&"open_map")
+	await _wait(0.6)
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.
