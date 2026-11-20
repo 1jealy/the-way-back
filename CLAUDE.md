@@ -153,6 +153,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - 하윤이 물가에 들어서면 물에 비친 하윤이 **흐리게**(`clarity` 0.3) 일렁인다. **하늘이는 비치지 않는다**(복선. 7-6 배 위에서는 셋 다 또렷하게 비쳐 짝이 된다).
 - 하윤 모습(`Visual`)을 한 번 복사해 물 위 선(`water_y` 816) 아래로 뒤집고 매 프레임 맞춘다. 화면을 거울처럼 비추는 방식은 하늘이까지 비쳐서 쓰지 않는다. 인물 컷아웃이 들어오면 복사·맞추기를 다시 본다.
 - 물가에 있는 동안 카메라가 살짝 당겨지고(`camera_zoom` 1.08) 내려간다(`offset.y` 40). 배경이 1080에서 끝나 그냥 내릴 수는 없다.
+
 ## 빛 알갱이 (LightMotes, 장면표 4-1·4-2)
 
 `Node2D` + `scripts/game/light_motes.gd`. 숲 입구 `Motes_4-1`(땅 위 x 891).
@@ -168,7 +169,16 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - `auto_sit = false`(2-5): "[E] 앉기" → 방향키나 E로 일어난다. 조작 잠금 이유 `sit`.
 - 하늘이 만남은 `appears_on_flag`(`station_sat`)가 서야 하늘이가 나타난다. 그래서 3-3 벤치는 만남 자리보다 왼쪽, 알아채는 거리(360px) 밖에 둔다.
 
-## 엔딩 (나루터 7-3 ~ 7-7)
+## 오프닝과 영정사진 (장면표 0-1, 1-2, 7-8)
+
+- **0-1 오프닝** `scripts/game/opening.gd`(`OpeningScene`, 집 `Opening_0-1`): 손그림 컷신 0(`cut_accident`, 사고 뒤 비 오는 밤 길가에 할아버지의 모자와 카메라. 사람·하윤 물건은 그리지 않는다)과 빗소리(`sfx_rain_`) → 어둠이 걷히고 하윤이 일어난다(잠금 `opening`, 끝나면 `opening_seen`).
+  타이틀 "처음부터"가 `GameState.opening_pending`을 켰을 때만 나온다. 이어하기·검사(main을 바로 띄움)에는 없다.
+- **1-2 영정사진** `scripts/game/funeral_portraits.gd`(`FuneralPortraits`, 집 `Portraits_1-2`): 할아버지(`prop_portrait_grandpa`)는 또렷하고 옆 하윤(`prop_portrait_hayun`)은 `shaders/blur.gdshader`로 누구인지 안 보이게 흐리다. 조사할 수 없는 배경.
+  하윤 사진은 또렷하게 그린 것을 받는다. 흐리게는 게임이 한다.
+- **7-8** `BoatRide._portraits_card`: 제목 뒤 하얀 화면에 같은 두 장이 비치고 하윤 사진이 `portrait_reveal_seconds`(4초)에 걸쳐 또렷해진다(`portraits_revealed`) → 타이틀로.
+- 캔버스 셰이더의 fragment `COLOR`는 이미 그림 색을 곱한 값이다. 그림을 직접 읽어 섞는 셰이더(흐림 등)는 꼭짓점 색을 `vertex()`에서 따로 받아 곱한다(`blur.gdshader`).
+
+## 엔딩 (나루터 7-3 ~ 7-8)
 
 - **할아버지** `scenes/characters/grandpa.tscn`(`Grandpa`): B가 나루터 씬에 놓는다(`Grandpa_7-3`, 배 옆 땅 위). `appears_on_flag`(`map_circle_5`)가 서면 천천히 나타난다. `raise_camera()`/`lower_camera()`. 걷지 않는다(기획서).
 - **엔딩 연출** `scripts/game/ending.gd`(`EndingDirector`): 할아버지 옆에 놓는다(`Ending_7-3`). 다섯째 동그라미 뒤 하윤이 `trigger_distance`(380px) 안으로 오면 시작하고 끝까지 조작을 막는다(잠금 이유 `ending`).
@@ -222,7 +232,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 인물 컷아웃 (Cutout)
 

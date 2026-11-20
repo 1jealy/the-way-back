@@ -54,7 +54,7 @@ const CIRCLES := [
 	{"place": &"station", "note": "기차 안 와도 여기 앉아 있으면 좋다.", "note_pos": Vector2(300.0, 975.0), "child": false},
 	{"place": &"forest", "note": "해 지고 조금만 기다려. 금방 환해진다.", "note_pos": Vector2(560.0, 740.0), "child": false},
 	{"place": &"riverside", "note": "물수제비. 할아버지 다섯 번, 하윤이는?", "note_pos": Vector2(900.0, 975.0), "child": false},
-	{"place": &"ferry", "note": "다나으면 여기 꼭!", "note_pos": Vector2(1530.0, 790.0), "child": true},
+	{"place": &"ferry", "note": "방학하면 여기 꼭!", "note_pos": Vector2(1530.0, 790.0), "child": true},
 ]
 
 ## 강(세로 띠)과 그 너머 빈 종이. 철교는 강을 건너 빈 종이 쪽으로 이어진다.

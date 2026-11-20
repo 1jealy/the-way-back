@@ -11,7 +11,7 @@
 | `mus_<이름>` | 음악(휘파람 주제 선율) | 반복 | A가 튼다 |
 | `mus_phrase_<N>` | 기억 장면 N(동그라미 1~4)의 휘파람 한 소절 | 한 번 | 기억 장면(`MemoryScene.phrase`)이 튼다 |
 | `step_<바닥>_NN` | 하윤 발소리. 바닥: `wood` `dirt` `grass` `concrete` `soil` `pebble` `metal` `deck` | 한 번 | A가 튼다(하윤 스크립트) |
-| `sfx_<이름>_NN` | 효과음(하늘이 발톱 `sfx_dog_claw`, 서랍, 지도…). 2-3 날아간 지도: `sfx_wind_gust`(센 바람, 지도가 날아갈 때마다), `sfx_paper`(지도 줍기). 2-4 `sfx_tractor`(경운기 엔진, 지나가는 동안 약 16초 한 번). 1-6 `sfx_tree_shake`(감나무 흔들기), `sfx_persimmon_drop`(감이 땅에 툭) | 한 번 | A가 튼다 |
+| `sfx_<이름>_NN` | 효과음(하늘이 발톱 `sfx_dog_claw`, 서랍, 지도…). 2-3 날아간 지도: `sfx_wind_gust`(센 바람, 지도가 날아갈 때마다), `sfx_paper`(지도 줍기). 2-4 `sfx_tractor`(경운기 엔진, 지나가는 동안 약 16초 한 번). 1-6 `sfx_tree_shake`(감나무 흔들기), `sfx_persimmon_drop`(감이 땅에 툭). 0-1 `sfx_rain`(오프닝 밤 빗소리, 약 14초 한 번. 사이렌·충돌음은 넣지 않는다) | 한 번 | A가 튼다 |
 
 모두 **소문자**, `.ogg`(권장) 또는 `.wav`. `<장소>`는 `house field station forest riverside bridge ferry`.
 

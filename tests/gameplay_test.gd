@@ -484,6 +484,8 @@ func _run() -> void:
 	await _check_motes()
 	await _check_shadow()
 	await _check_cutout()
+	await _check_portraits()
+	await _check_opening()
 	await _check_pause()
 	await _check_save()
 
@@ -779,6 +781,42 @@ func _check_cutout() -> void:
 	_check(done and seen_closed[0] and vis.call("eye_open") and not vis.call("eye_closed"), "컷아웃: 눈을 깜빡이면 감았다가 원래 눈으로 돌아온다")
 	cut.queue_free()
 	_check(not load("res://scripts/game/cutout.gd").has_art("nobody"), "컷아웃: 그림이 없는 인물은 has_art가 false")
+
+
+## 1-2 영정사진(FuneralPortraits): 할아버지는 또렷하고 하윤 사진만 흐리다. 조사 대상이 아니다.
+func _check_portraits() -> void:
+	var pics: Node2D = load("res://scripts/game/funeral_portraits.gd").new()
+	_main.current_place().add_child(pics)
+	pics.global_position = Vector2(_player.global_position.x, 810.0)
+	await _wait(0.1)
+	_check(pics.grandpa.texture != null and pics.hayun.texture != null, "영정사진: 두 장이 걸려 있다")
+	_check(pics.grandpa.material == null and is_equal_approx(pics.hayun_blur(), 1.0), "영정사진: 할아버지는 또렷하고 옆 사진(하윤)만 흐리다")
+	_check(not pics is Area2D and pics.find_children("*", "Area2D", true, false).is_empty(), "영정사진: 조사할 수 없는 배경이다")
+	pics.queue_free()
+
+
+## 0-1 오프닝(OpeningScene): "처음부터"일 때만 컷신 0이 나오고 그동안 하윤이 멈춘다. 끝나면 일어나 걸을 수 있다.
+func _check_opening() -> void:
+	var script: GDScript = load("res://scripts/game/opening.gd")
+	var skip: Node = script.new()
+	_main.current_place().add_child(skip)
+	await _wait(0.2)
+	_check(not skip.playing and _player.controls_enabled, "오프닝: 이어하기·검사(처음부터가 아님)에는 나오지 않는다")
+	skip.queue_free()
+	_state.opening_pending = true
+	var op: Node = script.new()
+	op.seconds = 0.5
+	op.rain_sound = ""
+	var done := [false]
+	op.finished.connect(func(): done[0] = true)
+	_main.current_place().add_child(op)
+	await _wait(0.5)
+	_check(op.playing and not _state.opening_pending and _player.is_locked_by(&"opening") and _player.crouching,
+			"오프닝: 처음부터면 컷신 0이 나오고, 하윤은 누운 채 멈춰 있다")
+	var ok := await _wait_until(func(): return done[0], 10.0)
+	_check(ok and _player.controls_enabled and not _player.crouching and _state.has_flag(&"opening_seen"),
+			"오프닝: 끝나면 어둠이 걷히고 하윤이 일어나 걸을 수 있다")
+	op.queue_free()
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.

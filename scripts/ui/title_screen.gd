@@ -25,4 +25,5 @@ func start_continue() -> void:
 func start_new() -> void:
 	GameState.delete_save()
 	GameState.reset()
+	GameState.opening_pending = true  # 0-1 오프닝(사고 뒤 길가)은 처음부터 할 때만
 	get_tree().change_scene_to_file(MAIN_SCENE)
