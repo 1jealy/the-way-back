@@ -473,6 +473,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_shadow()
 	await _check_pause()
 	await _check_save()
 
@@ -648,6 +649,29 @@ func _check_shake() -> void:
 	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
 	tree.queue_free()
 	await _wait(0.2)
+
+
+## 하윤 그림자(PlayerShadow): 하윤 모습을 따라 땅에 눕고, 장소를 지날수록 옅어져 숲부터는 거의 없다.
+func _check_shadow() -> void:
+	var shadow: Node2D = _player.get_node_or_null("Shadow")
+	_check(shadow != null, "그림자: 하윤에게 그림자가 있다")
+	if shadow == null:
+		return
+	var settings: Dictionary = shadow.get_script().get_script_constant_map()["SETTINGS"]
+	var a := func(pid: StringName) -> float: return settings[pid][0]
+	var fading: bool = a.call(&"house") > a.call(&"field") and a.call(&"field") > a.call(&"station") \
+			and a.call(&"station") > a.call(&"forest") and a.call(&"forest") <= 0.05 and a.call(&"ferry") == 0.0
+	_check(fading,
+			"그림자: 장소를 지날수록 옅어지고 숲부터는 거의 없다")
+	var here: StringName = _main.current_place().place_id
+	await _wait(1.6)
+	_check(is_equal_approx(shadow.self_modulate.a, settings.get(here, [0.2])[0]), "그림자: 지금 장소(%s)의 진하기" % here)
+	_check(shadow.transform.y.x > 0.5 and shadow.transform.y.y < 0.2, "그림자: 들판에서는 해가 오른쪽 낮게 있어 왼쪽으로 길게 눕는다")
+	_player.face(-1)
+	await _wait(0.1)
+	var copy: Node2D = shadow.get_node("Visual")
+	_check(copy.transform.x.x < 0.0, "그림자: 하윤이 돌아서면 그림자도 돈다")
+	_player.face(1)
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.
