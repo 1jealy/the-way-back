@@ -9,6 +9,7 @@
 | `amb_<장소>` | 장소 환경음(바람, 강물, 풀벌레) | 반복 | 장소 씬 `Sound/Ambience`에 **자동으로** 들어간다 |
 | `pos_<장소>_<이름>` | 장소 안 한 자리에서 나는 소리(라디오, 숲 끝 물소리) | 반복 | 장소 씬 `Sound/` 아래 `AudioStreamPlayer2D`로 **손으로** 놓는다. 가까이 가면 커진다 |
 | `mus_<이름>` | 음악(휘파람 주제 선율) | 반복 | A가 튼다 |
+| `mus_phrase_<N>` | 기억 장면 N(동그라미 1~4)의 휘파람 한 소절 | 한 번 | 기억 장면(`MemoryScene.phrase`)이 튼다 |
 | `step_<바닥>_NN` | 하윤 발소리. 바닥: `wood` `dirt` `grass` `concrete` `soil` `pebble` `metal` `deck` | 한 번 | A가 튼다(하윤 스크립트) |
 | `sfx_<이름>_NN` | 효과음(하늘이 발톱 `sfx_dog_claw`, 서랍, 지도…) | 한 번 | A가 튼다 |
 

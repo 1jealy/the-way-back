@@ -15,6 +15,8 @@ const TEMPLATE := "place_template.tscn"
 const SOUND_NODE := "Sound"
 const AMBIENCE_NODE := "Ambience"
 const LOOPING := ["amb", "pos", "mus"]
+## 앞머리가 반복이어도 이것으로 시작하면 한 번만 튼다(기억 장면 휘파람 한 소절).
+const ONE_SHOT := ["mus_phrase_"]
 
 var errors: PackedStringArray = []
 var warnings: PackedStringArray = []
@@ -58,7 +60,7 @@ func _collect(write: bool) -> Dictionary:
 			errors.append("%s: %s와 이름이 겹친다 (진짜 소리를 넣었으면 placeholder 쪽을 지운다)" % [path, files[stem]])
 			continue
 		files[stem] = path
-		_check_loop(path, stem.get_slice("_", 0) in LOOPING, write)
+		_check_loop(path, stem.get_slice("_", 0) in LOOPING and not ONE_SHOT.any(func(p): return stem.begins_with(p)), write)
 	return files
 
 

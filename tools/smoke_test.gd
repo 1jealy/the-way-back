@@ -189,6 +189,7 @@ const DOG_MEETING := "res://scripts/dog/dog_meeting.gd"
 const GATE := "res://scripts/game/gate.gd"
 const PASSAGE := "res://scripts/game/passage.gd"
 const BENCH := "res://scripts/game/bench_sit.gd"
+const MEMORY := "res://scripts/game/memory_scene.gd"
 
 
 func _script_path(node: Node) -> String:
@@ -200,6 +201,7 @@ func _check_parts() -> void:
 	var granted := {}  # 플래그 → 처음 세우는 [장소 순서, x]
 	var required := []  # [장소 순서, x, 플래그, 이름]
 	var circles := {}
+	var memories := {}  # 동그라미 → [장소, 장면, 그림 있나, 소절 있나]
 	var meeting_x := -1.0
 	var fetch_x := -1.0
 	var station_end := 0.0
@@ -212,6 +214,12 @@ func _check_parts() -> void:
 			markers[String(m.name)] = m.position.x
 		for node in place.get_children():
 			var path := _script_path(node)
+			if path == MEMORY:
+				var find_art: Callable = load("res://scripts/ui/cutscene_player.gd").find_art
+				var pick: Callable = load("res://scripts/game/sound_bank.gd").pick
+				memories[node.get("circle")] = [place_id, String(node.name).get_slice("_", 1),
+						not find_art.call(node.get("art")).is_empty(), pick.call(node.get("phrase")) != null]
+				continue
 			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE, BENCH]:
 				continue
 			var x: float = node.position.x
@@ -256,6 +264,11 @@ func _check_parts() -> void:
 	for n in CIRCLE_SCENES:
 		circles_ok = circles_ok and circles.get(n, []) == CIRCLE_SCENES[n]
 	_check(circles_ok, "부품: 지도 동그라미 1~5가 장면 2-2, 3-1, 4-3, 5-4, 7-2에 하나씩 %s" % [circles])
+	var mem_ok := memories.size() == 4
+	for n in range(1, 5):
+		var m: Array = memories.get(n, [])
+		mem_ok = mem_ok and m.size() == 4 and [m[0], m[1]] == CIRCLE_SCENES[n] and m[2] and m[3]
+	_check(mem_ok, "부품: 기억 장면 1~4가 동그라미 1~4와 같은 장소·장면에 하나씩, 그림·휘파람 소절이 있다 %s" % [memories])
 	_check(granted.has(&"has_map") and granted[&"has_map"][0] == 0, "부품: 집에서 지도(has_map)를 얻는다")
 	var chain_ok := true
 	for r in required:

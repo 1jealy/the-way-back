@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="11_pp4pi"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_field.ogg" id="12_28arl"]
 [ext_resource type="Script" path="res://scripts/game/bench_sit.gd" id="13_v2r8g"]
+[ext_resource type="Script" uid="uid://bluqmseo20c52" path="res://scripts/game/memory_scene.gd" id="mem_script"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
@@ -115,3 +116,10 @@ position = Vector2(9309, 810)
 script = ExtResource("13_v2r8g")
 prompt = "앉기"
 lines = PackedStringArray()
+
+[node name="Memory_2-2" type="Node2D" parent="."]
+position = Vector2(3203, 890)
+script = ExtResource("mem_script")
+circle = 1
+art = "mem_wind"
+phrase = "mus_phrase_1"

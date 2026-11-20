@@ -208,6 +208,19 @@ func _run() -> void:
 				await _wait(3.0)
 				_check(absf(_dog.global_position.x - _player.global_position.x) < 250.0, "%s: 건너간 뒤 하늘이가 따라온다" % pid)
 			await _wait(6.0)
+			if pid == "riverside":  # 5-4 동그라미 4 → 지도를 접으면 기억 장면 4(물수제비) → 글
+				var shallows: Node2D = place.get_node("Look_5-4_Shallows")
+				var memory: Node = place.get_node("Memory_5-4")
+				await _walk_to(shallows.global_position.x)
+				await _press(&"interact")
+				await _wait(2.5)
+				await _press(&"open_map")  # 지도 접기
+				await _wait(1.0)
+				_check(memory.playing and not _main.dialogue_box().visible, "강가: 동그라미 4를 접으면 기억 장면 4가 겹쳐 뜬다")
+				await memory.ended
+				await _wait(0.5)
+				_check(_main.dialogue_box().visible, "강가: 기억 장면이 사라진 뒤 글이 나온다")
+				await _close_dialogue()
 			if pid == "bridge":
 				var slope: Node2D = place.get_node("Look_6-3_Slope")
 				var edge: Node2D = place.get_node("Gate_6-2")

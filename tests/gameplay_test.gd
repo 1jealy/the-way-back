@@ -424,6 +424,35 @@ func _run() -> void:
 	await _press(&"open_map")
 	await _wait(0.5)
 
+	# 기억 장면: 지도를 접으면 그 동그라미의 기억이 떴다 사라진 뒤에 글이 나온다
+	var memory: Node2D = load("res://scripts/game/memory_scene.gd").new()
+	memory.circle = 3
+	memory.art = "mem_pup"
+	memory.fade_in = 0.3
+	memory.hold_seconds = 0.6
+	memory.fade_out = 0.3
+	memory.position = Vector2(_player.global_position.x + 300.0, 890.0)
+	_main.current_place().add_child(memory)
+	var spot3 := _add_interactable(PackedStringArray(["하윤: 여기도."]), &"")
+	spot3.map_circle = 3
+	await _wait(0.2)
+	await _press(&"interact")
+	await _wait_until(func(): return map.is_open(), 2.0)
+	await _wait(1.5)
+	await _press(&"interact")
+	var mem_on := await _wait_until(func(): return memory.playing, 2.0)
+	_check(mem_on and not box.is_open() and _player.is_locked_by(&"memory") and memory.get_node_or_null("Sketch") != null,
+			"기억 장면: 지도를 접으면 기억이 겹쳐 뜨고, 그동안 하윤이 멈추고 글은 아직 안 나온다")
+	var mem_done := await _wait_until(func(): return not memory.playing, 3.0)
+	var talked3 := await _wait_until(func(): return box.is_open(), 2.0)
+	_check(mem_done and talked3 and box.current_text() == "여기도." and memory.get_node_or_null("Sketch") == null,
+			"기억 장면: 사라진 뒤 그 자리의 글이 나온다")
+	await _speak_through(box)
+	_check(not _player.is_locked_by(&"memory"), "기억 장면: 끝나면 잠금이 풀린다")
+	spot3.queue_free()
+	memory.queue_free()
+	await _wait(0.2)
+
 	# 장소 전환
 	var place: Node2D = _main.current_place()
 	_player.global_position.x = place.width - 320.0

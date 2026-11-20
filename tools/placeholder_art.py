@@ -1128,6 +1128,172 @@ def build_cuts() -> None:
         print(f"{path.relative_to(ROOT)}  {path.stat().st_size // 1024} KB")
 
 
+# ---------------------------------------------------------------- 기억 장면(임시)
+# 진짜 기억 장면은 일러스트 담당이 단색 선 스케치로 그린다(장면표 2-2, 3-1, 4-3, 5-4).
+# 투명 바탕에 어두운 선만. 게임이 셰이더로 색을 입히고 희미하게 겹친다(shaders/memory.gdshader).
+
+MEM_W, MEM_H = 1600, 900
+INK = (52, 44, 38, 255)
+
+
+class Sketch:
+    """흔들리는 손 선. 같은 선을 두 번 살짝 어긋나게 긋는다."""
+
+    def __init__(self, seed: str):
+        self.img = Image.new("RGBA", (MEM_W * SS, MEM_H * SS), (0, 0, 0, 0))
+        self.d = ImageDraw.Draw(self.img)
+        self.rng = random.Random(seed)
+
+    def line(self, pts, width: float = 5, passes: int = 2) -> None:
+        for k in range(passes):
+            j = 3.0 if k else 0.0
+            q = [((x + self.rng.uniform(-j, j)) * SS, (y + self.rng.uniform(-j, j)) * SS) for x, y in pts]
+            self.d.line(q, fill=INK if k == 0 else INK[:3] + (150,), width=max(1, int(width * SS * (0.6 if k else 1))), joint="curve")
+
+    def curve(self, pts, width: float = 5, n: int = 10) -> None:
+        """점 목록을 지나는 부드러운 선(캣멀-롬)."""
+        pts = [pts[0]] + list(pts) + [pts[-1]]
+        out = []
+        for i in range(1, len(pts) - 2):
+            p0, p1, p2, p3 = pts[i - 1], pts[i], pts[i + 1], pts[i + 2]
+            for k in range(n):
+                t = k / n
+                t2, t3 = t * t, t * t * t
+                out.append(tuple(0.5 * (2 * p1[a] + (-p0[a] + p2[a]) * t + (2 * p0[a] - 5 * p1[a] + 4 * p2[a] - p3[a]) * t2
+                                       + (-p0[a] + 3 * p1[a] - 3 * p2[a] + p3[a]) * t3) for a in (0, 1)))
+        out.append(pts[-2])
+        self.line(out, width)
+
+    def circle(self, cx, cy, r, width: float = 5) -> None:
+        self.curve([(cx + r * math.cos(a / 12 * math.tau), cy + r * math.sin(a / 12 * math.tau)) for a in range(13)], width)
+
+    def hatch(self, x0, y0, x1, y1, step: float = 9, width: float = 2.5) -> None:
+        x = x0
+        while x + (y1 - y0) * 0.6 < x1:
+            self.line([(x, y1), (x + (y1 - y0) * 0.6, y0)], width, passes=1)
+            x += step
+
+    def grass(self, x0, x1, base, lean: float, every: float = 26) -> None:
+        x = x0
+        while x < x1:
+            h = self.rng.uniform(40, 110)
+            self.curve([(x, base), (x + lean * 0.3, base - h * 0.6), (x + lean, base - h)], 3)
+            x += every * self.rng.uniform(0.6, 1.4)
+
+    def render(self) -> Image.Image:
+        return self.img.resize((MEM_W, MEM_H), Image.LANCZOS)
+
+
+def grandpa_back(S: Sketch, x: float, base: float, arm_to=None) -> None:
+    """할아버지 뒷모습: 둥근 모자, 넓은 등, 지팡이 없이 곧게."""
+    S.circle(x, base - 400, 42)
+    S.curve([(x - 70, base - 430), (x, base - 470), (x + 70, base - 430)], 5)  # 모자
+    S.line([(x - 90, base - 432), (x + 90, base - 432)], 5)
+    S.curve([(x - 40, base - 360), (x - 95, base - 330), (x - 110, base - 180), (x - 80, base - 150)], 6)
+    S.curve([(x + 40, base - 360), (x + 95, base - 330), (x + 110, base - 180), (x + 80, base - 150)], 6)
+    S.line([(x - 80, base - 150), (x - 60, base), (x - 20, base)], 6)  # 다리
+    S.line([(x + 80, base - 150), (x + 60, base), (x + 20, base)], 6)
+    if arm_to:
+        S.curve([(x + 90, base - 320), ((x + arm_to[0]) / 2, (base - 320 + arm_to[1]) / 2 - 20), arm_to], 6)
+    else:
+        S.line([(x + 95, base - 320), (x + 105, base - 190)], 6)
+    S.line([(x - 95, base - 320), (x - 108, base - 190)], 6)
+
+
+def mem_wind() -> Image.Image:
+    """2-2 바람을 가리키는 할아버지의 뒷모습. 억새가 한쪽으로 눕는다."""
+    S = Sketch("mem_wind")
+    S.curve([(0, 760), (400, 720), (900, 700), (1600, 740)], 5)  # 언덕
+    S.grass(40, 1560, 760, 60)
+    grandpa_back(S, 640, 720, arm_to=(980, 300))
+    for k in range(4):  # 바람 결
+        y = 200 + k * 90
+        x0 = 1000 + k * 40
+        S.curve([(x0, y), (x0 + 150, y - 25), (x0 + 300, y + 10), (x0 + 380, y - 30), (x0 + 350, y - 60), (x0 + 310, y - 35)], 3)
+    return S.render()
+
+
+def mem_train() -> Image.Image:
+    """3-1 기차 창가에 앉은 젊은 할아버지(옆모습). 창밖으로 들판이 지나간다."""
+    S = Sketch("mem_train")
+    S.line([(260, 120), (1340, 120), (1340, 640), (260, 640), (260, 120)], 7)  # 창틀
+    S.line([(800, 120), (800, 640)], 5)
+    S.curve([(260, 520), (600, 480), (1000, 500), (1340, 470)], 3)  # 창밖 언덕
+    for x in range(300, 1320, 60):
+        S.line([(x, 560 + (x % 3) * 10), (x + 40, 560 + (x % 3) * 10)], 2.5, passes=1)  # 지나가는 선
+    S.circle(1060, 340, 22)  # 해
+    x, y = 520, 430  # 젊은 할아버지 머리
+    S.circle(x, y, 60)
+    S.curve([(x - 55, y - 30), (x - 20, y - 75), (x + 40, y - 70), (x + 62, y - 20)], 6)  # 머리칼
+    S.curve([(x - 30, y + 60), (x - 120, y + 160), (x - 160, y + 420)], 6)  # 등
+    S.curve([(x + 30, y + 60), (x + 70, y + 200), (x + 40, y + 300)], 6)  # 팔
+    S.line([(x + 40, y + 300), (x + 60, y + 60)], 6)  # 턱 괸 손
+    S.line([(140, 860), (1460, 860)], 6)  # 창 아래 턱
+    S.hatch(140, 640, 1460, 860, 26)
+    return S.render()
+
+
+def mem_pup() -> Image.Image:
+    """4-3 할아버지와 어린 흰 개. 개의 왼쪽 귀 끝만 짙게(진짜 그림은 갈색) — 하늘이와 같은 무늬."""
+    S = Sketch("mem_pup")
+    S.curve([(0, 800), (800, 780), (1600, 800)], 4)
+    for x in (260, 420, 1200, 1380):  # 빛줄기
+        S.line([(x, 0), (x + 120, 780)], 2.5, passes=1)
+    gx, base = 640, 790  # 쪼그려 앉은 할아버지(옆모습)
+    S.circle(gx, base - 330, 44)
+    S.curve([(gx - 72, base - 360), (gx, base - 400), (gx + 72, base - 360)], 5)
+    S.line([(gx - 94, base - 362), (gx + 94, base - 362)], 5)
+    S.curve([(gx - 30, base - 290), (gx - 110, base - 200), (gx - 90, base - 80)], 6)  # 등
+    S.curve([(gx - 90, base - 80), (gx - 20, base - 120), (gx + 80, base - 80), (gx + 60, base)], 6)  # 무릎·정강이
+    S.curve([(gx + 20, base - 260), (gx + 130, base - 170), (gx + 220, base - 150)], 6)  # 내민 팔
+    S.circle(gx + 240, base - 150, 18, 4)  # 손
+    px, py = 960, base  # 어린 개(옆모습, 고개 들어 손을 본다)
+    S.curve([(px - 120, py - 70), (px - 60, py - 105), (px + 40, py - 100), (px + 80, py - 80)], 5)  # 등
+    S.curve([(px - 120, py - 70), (px - 110, py - 30), (px - 60, py - 20), (px + 40, py - 25), (px + 80, py - 50)], 5)  # 배
+    for lx in (-100, -70, 30, 60):
+        S.line([(px + lx, py - 25), (px + lx - 4, py)], 5)
+    S.curve([(px - 120, py - 70), (px - 160, py - 110), (px - 150, py - 140)], 4)  # 꼬리(흔든다)
+    S.curve([(px - 160, py - 105), (px - 180, py - 125)], 3)
+    hx, hy = px + 110, py - 130
+    S.circle(hx, hy, 42)
+    S.curve([(hx + 30, hy + 5), (hx + 75, hy + 15), (hx + 70, hy + 35), (hx + 30, hy + 32)], 4)  # 주둥이
+    S.circle(hx + 12, hy - 8, 4, 4)  # 눈
+    ear = [(hx - 30, hy - 30), (hx - 50, hy + 30), (hx - 30, hy + 50), (hx - 10, hy - 10)]
+    S.curve(ear, 4)  # 왼쪽(화면 앞) 귀
+    S.hatch(hx - 52, hy + 22, hx - 26, hy + 52, 6, 2.5)  # 귀 끝 무늬
+    return S.render()
+
+
+def mem_skip() -> Image.Image:
+    """5-4 할아버지의 돌이 다섯 번 튄다. 물 위에 동그란 물결 다섯."""
+    S = Sketch("mem_skip")
+    S.curve([(0, 640), (500, 630), (1100, 640), (1600, 632)], 4)  # 물가
+    for k in range(5):
+        S.line([(80 + k * 290, 720 + k * 25), (240 + k * 290, 720 + k * 25)], 2.5, passes=1)
+    gx, base = 300, 640
+    grandpa_back(S, gx, base, arm_to=(gx + 260, base - 260))
+    x, y = gx + 280, base - 270
+    for i in range(5):  # 튀는 자리
+        bx = 760 + i * 150 - i * i * 6
+        S.curve([(x, y), ((x + bx) / 2, min(y, 660) - 80 + i * 18), (bx, 680)], 2.5)
+        S.curve([(bx - 40 + i * 4, 690), (bx, 676), (bx + 40 - i * 4, 690), (bx, 702), (bx - 40 + i * 4, 690)], 3)
+        x, y = bx, 680
+    S.circle(x + 60, 690, 9, 4)  # 가라앉는 돌
+    return S.render()
+
+
+MEMORIES = {"mem_wind": mem_wind, "mem_train": mem_train, "mem_pup": mem_pup, "mem_skip": mem_skip}
+
+
+def build_memories() -> None:
+    out = OUT_DIR / "memory"
+    out.mkdir(parents=True, exist_ok=True)
+    for name, fn in MEMORIES.items():
+        path = out / f"{name}.png"
+        fn().save(path, optimize=True)
+        print(f"{path.relative_to(ROOT)}  {path.stat().st_size // 1024} KB")
+
+
 # ---------------------------------------------------------------- 실행
 
 PAINTERS = {
@@ -1157,12 +1323,15 @@ def main() -> int:
     parser.add_argument("places", nargs="*", help="place_id (그릴 수 있는 것: %s)" % ", ".join(PAINTERS))
     parser.add_argument("--all", action="store_true")
     args = parser.parse_args()
-    places = list(PAINTERS) + ["cut"] if args.all else args.places
+    places = list(PAINTERS) + ["cut", "memory"] if args.all else args.places
     if not places:
         parser.error("장소를 하나 이상 적거나 --all")
     for p in places:
         if p == "cut":  # 손그림 컷신 자리(임시)
             build_cuts()
+            continue
+        if p == "memory":  # 기억 장면 자리(임시)
+            build_memories()
             continue
         if p not in PAINTERS:
             sys.exit(f"'{p}'은 아직 그릴 수 없다 (있는 것: {', '.join(PAINTERS)})")
