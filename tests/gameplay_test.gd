@@ -473,6 +473,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_cutout()
 	await _check_pause()
 	await _check_save()
 
@@ -648,6 +649,59 @@ func _check_shake() -> void:
 	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
 	tree.queue_free()
 	await _wait(0.2)
+
+
+## 컷아웃 조립(Cutout): psd_split.py가 만드는 JSON·조각을 읽어 PSD 모습 그대로 맞추고,
+## 눈·입은 상태 하나만 보이고, 자세 조각은 그 자세만, 눈 깜빡임은 감았다가 원래 눈으로 돌아온다.
+func _check_cutout() -> void:
+	var dir := "user://cutout_test/test"
+	DirAccess.make_dir_recursive_absolute(dir)
+	var parts := {
+		"body": [40, 100, 120, 200], "head": [50, 20, 100, 90],
+		"eye_open": [70, 50, 20, 10], "eye_half": [70, 54, 20, 6], "eye_closed": [70, 57, 20, 3],
+		"mouth_neutral": [80, 80, 20, 4], "mouth_smile": [78, 78, 24, 8],
+		"stand_leg": [60, 280, 30, 20], "sit_leg": [60, 270, 60, 30],
+	}
+	var meta := {"canvas": [200, 300], "parts": {}}
+	var z := 0
+	for part in parts:
+		var r: Array = parts[part]
+		var img := Image.create(r[2], r[3], false, Image.FORMAT_RGBA8)
+		img.fill(Color(1, 1, 1, 1))
+		img.save_png(dir.path_join("char_test_%s.png" % part))
+		meta.parts[part] = {"x": r[0], "y": r[1], "w": r[2], "h": r[3], "z": z}
+		z += 1
+	var f := FileAccess.open(dir.path_join("char_test.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(meta))
+	f.close()
+
+	var cut: Node2D = load("res://scripts/game/cutout.gd").new()
+	cut.character = "test"
+	cut.art_dir = dir
+	cut.art_scale = 0.5
+	cut.poses = PackedStringArray(["stand", "sit"])
+	cut.blink = false
+	_main.current_place().add_child(cut)
+	await _wait(0.1)
+	_check(cut.parts.size() == parts.size(), "컷아웃: 조각을 다 붙인다 (%d)" % cut.parts.size())
+	var head: Sprite2D = cut.parts["head"]
+	_check(head.position.is_equal_approx(Vector2(50 - 100, 20 - 300) * 0.5) and head.get_index() < cut.parts["eye_open"].get_index(),
+			"컷아웃: PSD 자리대로(캔버스 아래 가운데 = 발밑, 크기 맞춤), 그리는 순서대로")
+	var vis := func(n: String) -> bool: return cut.parts[n].visible
+	_check(vis.call("eye_open") and not vis.call("eye_half") and not vis.call("eye_closed") and vis.call("mouth_neutral") and not vis.call("mouth_smile"),
+			"컷아웃: 눈·입은 처음 상태(open, neutral) 하나만 보인다")
+	_check(vis.call("stand_leg") and not vis.call("sit_leg"), "컷아웃: 자세 조각은 첫 자세(stand)만 보인다")
+	cut.set_state("mouth", "smile")
+	cut.set_pose("sit")
+	_check(vis.call("mouth_smile") and not vis.call("mouth_neutral") and vis.call("sit_leg") and not vis.call("stand_leg"),
+			"컷아웃: 입 상태·자세를 바꿔 끼운다")
+	var seen_closed := [false]
+	cut.parts["eye_closed"].visibility_changed.connect(func(): if cut.parts["eye_closed"].visible: seen_closed[0] = true)
+	cut.do_blink()
+	var done := await _wait_until(func(): return not cut._blinking, 1.0)
+	_check(done and seen_closed[0] and vis.call("eye_open") and not vis.call("eye_closed"), "컷아웃: 눈을 깜빡이면 감았다가 원래 눈으로 돌아온다")
+	cut.queue_free()
+	_check(not load("res://scripts/game/cutout.gd").has_art("nobody"), "컷아웃: 그림이 없는 인물은 has_art가 false")
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.
