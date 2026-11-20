@@ -471,6 +471,7 @@ func _run() -> void:
 	await _check_gate()
 	await _check_bench()
 	await _check_map_chase()
+	await _check_tractor()
 	await _check_pause()
 	await _check_save()
 
@@ -599,6 +600,33 @@ func _check_map_chase() -> void:
 	_check(map.is_open(), "지도 쫓기: 주운 뒤에는 M이 다시 먹는다")
 	await _press(&"open_map")
 	await _wait(0.6)
+
+
+## 2-4 경운기(TractorPass): 다가오면 하윤이 멈춰 비켜서고, 가까이 오면 "안녕하세요",
+## 지나간 뒤에야 다시 걷는다. 끝나면 tractor_passed라 다시 오지 않는다. 빠르기만 올려서 본다.
+func _check_tractor() -> void:
+	var place: Node2D = _main.current_place()
+	var tractor: Node2D = place.get_node_or_null("Tractor_2-4")
+	_check(tractor != null, "경운기: 들판에 Tractor_2-4가 있다")
+	if tractor == null:
+		return
+	var box: Control = _main.dialogue_box()
+	tractor.speed = 900.0
+	var passed := [false]
+	tractor.passed.connect(func(): passed[0] = true)
+	_player.global_position.x = tractor.global_position.x - tractor.trigger_before + 20.0
+	var started := await _wait_until(func(): return tractor.running and tractor.tractor() != null, 1.0)
+	_check(started and _player.is_locked_by(&"tractor"), "경운기: 그 자리에 오면 경운기가 나타나고 하윤이 멈춘다")
+	_check(started and tractor.tractor().global_position.x > _player.global_position.x + 1000.0,
+			"경운기: 오른쪽 멀리서 다가온다")
+	var greeted := await _wait_until(func(): return box.is_open(), 3.0)
+	_check(greeted and box.current_text() == "안녕하세요." and _player.facing == 1, "경운기: 가까이 오면 경운기 쪽을 보고 \"하윤: 안녕하세요.\"")
+	await _wait_until(func(): return passed[0], 3.0)
+	await _speak_through(box)
+	var done := await _wait_until(func(): return _player.controls_enabled and _state.has_flag(&"tractor_passed"), 3.0)
+	_check(done and passed[0], "경운기: 지나간 뒤 다시 걸을 수 있고 tractor_passed")
+	var gone := await _wait_until(func(): return tractor.tractor() == null, 4.0)
+	_check(gone and not tractor.running, "경운기: 왼쪽으로 멀어져 사라지고, 다시 오지 않는다")
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.

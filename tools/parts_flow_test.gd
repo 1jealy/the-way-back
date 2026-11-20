@@ -127,6 +127,20 @@ func _run() -> void:
 	_check(await _wait_flag(&"map_caught", 2.0), "들판: 마지막 덤불에서 E로 지도를 줍는다(map_caught)")
 	await _walk_to(field_gate.global_position.x + 200.0)
 	_check(_player.global_position.x > field_gate.global_position.x, "들판: 지도를 주우면 지나간다")
+	# 들판: 2-4 경운기. 다가오면 비켜서서 인사하고, 지나간 뒤에 다시 걷는다.
+	var tractor: Node2D = field.get_node("Tractor_2-4")
+	await _walk_to(tractor.global_position.x)
+	await _wait(1.0)
+	_check(tractor.running and not _player.controls_enabled, "들판: 경운기가 다가오면 하윤이 멈춘다")
+	for i in 40:
+		await _wait(0.5)
+		if _main.dialogue_box().visible:
+			break
+	_check(_main.dialogue_box().visible, "들판: 경운기가 가까이 오면 인사한다")
+	await _close_dialogue()
+	_check(await _wait_flag(&"tractor_passed", 15.0), "들판: 경운기가 지나가면 끝난다(tractor_passed)")
+	await _wait(0.3)
+	_check(_player.controls_enabled, "들판: 경운기가 지나간 뒤 다시 걷는다")
 
 	# 간이역: 만남(3-4)
 	var station: Node = await _go("station")

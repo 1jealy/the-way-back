@@ -412,6 +412,19 @@ def make_steps(rng):
             crinkle = one_shot(rng, 0.09, band(1200, 9000, -1), 0.003, 0.03)
             place_event(x, crinkle * rng.uniform(0.6, 1.0), int((0.01 + k * rng.uniform(0.06, 0.11)) * RATE), wrap=False)
         out[f"sfx_paper_{i + 1:02d}"] = db_rms(x, -26)
+    # 2-4 경운기: 한 기통 엔진이 통통통. 지나가는 동안(약 16초) 한 번 튼다. 멀어지는 건 게임이 자리로 만든다.
+    secs = 16.0
+    n = n_samples(secs)
+    t = np.arange(n) / RATE
+    rate = 7.5 + 0.4 * np.sin(2 * np.pi * 0.11 * t)
+    phase = np.cumsum(rate) / RATE
+    pulse = np.clip(np.sin(2 * np.pi * phase), 0, 1) ** 6
+    body = shaped_noise(rng, secs, band(50, 700, -4))[:n]
+    hum = np.sin(2 * np.pi * 62 * t) * 0.5 + np.sin(2 * np.pi * 124 * t) * 0.2
+    rattle = shaped_noise(rng, secs, band(1500, 5000, -2))[:n] * 0.15
+    x = (body + hum) * (0.25 + pulse) + rattle * pulse
+    edge = np.clip(np.minimum(t / 0.8, (secs - t) / 0.8), 0, 1)
+    out["sfx_tractor_01"] = db_rms(x * edge, -22)
     return out
 
 

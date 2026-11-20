@@ -1322,7 +1322,30 @@ def prop_map_folded() -> Image.Image:
     return img.crop((0, 0, w, h))
 
 
-PROPS = {"prop_map_folded": prop_map_folded}
+def prop_tractor() -> Image.Image:
+    """2-4 농부와 경운기 실루엣. 왼쪽으로 간다(앞이 왼쪽). 농부는 앞만 본다(고개를 돌리지 않는다)."""
+    w, h = 560, 330
+    ink = rgba(70, 58, 48, 235)
+    L = Layer(w)
+    base = h - 4
+    L.ellipse((330, base - 150, 480, base), ink)  # 큰 뒷바퀴
+    L.ellipse((368, base - 112, 442, base - 38), rgba(120, 100, 80, 235))
+    L.ellipse((40, base - 70, 110, base), ink)  # 앞바퀴
+    L.poly([(60, base - 70), (330, base - 110), (340, base - 60), (90, base - 40)], ink)  # 몸통·짐칸 이음
+    L.poly([(30, base - 150), (150, base - 160), (160, base - 70), (40, base - 70)], ink)  # 엔진
+    L.rect(70, base - 200, 86, base - 150, ink)  # 굴뚝
+    L.line([(150, base - 140), (260, base - 210), (300, base - 205)], ink, 8)  # 손잡이
+    L.poly([(250, base - 100), (500, base - 112), (520, base - 40), (260, base - 40)], ink)  # 짐칸
+    # 농부: 짐칸 앞에 앉아 앞(왼쪽)만 본다. 둥근 밀짚모자.
+    L.poly([(272, base - 108), (318, base - 108), (312, base - 200), (276, base - 200)], ink)
+    L.ellipse((276, base - 246, 316, base - 204), ink)
+    L.ellipse((252, base - 240, 340, base - 222), ink)
+    L.line([(282, base - 180), (262, base - 205)], ink, 9)  # 손잡이 잡은 팔
+    img = L.render()[0]
+    return img.crop((0, 0, w, h))
+
+
+PROPS = {"prop_map_folded": prop_map_folded, "prop_tractor": prop_tractor}
 
 
 def build_props() -> None:

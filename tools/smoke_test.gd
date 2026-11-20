@@ -131,6 +131,7 @@ func _run() -> void:
 	# 집에서 나루터까지 끝 지점을 차례로 밟아 7곳을 잇는다.
 	# 들판 2-3 날아간 지도는 푼 것으로 둔다(풀기 전이면 지나갈 때 바람이 불어 조작이 멈춘다. 흐름은 게임플레이 검사).
 	state.set_flag(&"map_caught")
+	state.set_flag(&"tractor_passed")  # 2-4 경운기도 지나간 것으로(지나가는 동안 조작이 멈춘다)
 	for i in range(1, PLACES.size()):
 		var here: Node2D = main.current_place()
 		player.global_position.x = here.width - 320.0
@@ -292,6 +293,9 @@ func _check_parts() -> void:
 	if chase_ok:
 		for k in 3:
 			chase_ok = chase_ok and k < snags.size() and is_equal_approx(chases[0][1][k], snags[k])
+	var tractor := _find_by_script("field", "res://scripts/game/tractor_pass.gd")
+	_check(tractor.size() == 1 and String(tractor[0][0]) == "Tractor_2-4" and chases.size() == 1 and tractor[0][1] > 7000.0,
+			"부품: 들판 2-4에 경운기(Tractor_2-4) 하나, 2-3 벽(Gate_2-3) 오른쪽 %s" % [tractor])
 	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 덤불 셋이 임시 배경 FIELD_SNAGS와 같은 자리, 지도 그림이 있다 %s / %s" % [chases, snags])
 	var chain_ok := true
 	for r in required:
@@ -303,6 +307,17 @@ func _check_parts() -> void:
 	_check(meeting_x > 0.0, "부품: 간이역에 하늘이 만남(3-4)")
 	_check(meeting_x > 0.0 and meeting_x + 600.0 < station_end, "부품: 만남 자리 + 물러날 거리 600px가 끝 지점보다 왼쪽")
 	_check(fetch_x > meeting_x and meeting_x > 0.0, "부품: 첫 부탁(3-5)이 만남 자리보다 오른쪽")
+
+
+## 장소 씬에서 그 스크립트를 붙인 자식들: [[이름, x], ...]
+func _find_by_script(place_id: String, script_path: String) -> Array:
+	var place: Node = load("res://scenes/places/%s.tscn" % place_id).instantiate()
+	var out := []
+	for node in place.get_children():
+		if _script_path(node) == script_path:
+			out.append([node.name, node.position.x])
+	place.free()
+	return out
 
 
 ## tools/placeholder_art.py의 숫자 목록 상수(예: FIELD_SNAGS = [5000, 5900, 6800]).
