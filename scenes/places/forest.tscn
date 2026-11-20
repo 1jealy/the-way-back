@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/game/passage.gd" id="15_5ibt5"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="16_8c2du"]
 [ext_resource type="Script" uid="uid://bluqmseo20c52" path="res://scripts/game/memory_scene.gd" id="mem_script"]
+[ext_resource type="Script" path="res://scripts/game/light_motes.gd" id="motes_script"]
 
 [node name="Forest" unique_id=2086477153 instance=ExtResource("1_tpl")]
 place_id = &"forest"
@@ -181,3 +182,7 @@ script = ExtResource("mem_script")
 circle = 3
 art = "mem_pup"
 phrase = "mus_phrase_3"
+
+[node name="Motes_4-1" type="Node2D" parent="."]
+position = Vector2(891, 810)
+script = ExtResource("motes_script")
