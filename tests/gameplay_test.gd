@@ -356,6 +356,13 @@ func _run() -> void:
 	var grandpa_ink: Color = canvas.note_label(1).get_theme_color("font_color")
 	var child_ink: Color = canvas.note_label(5).get_theme_color("font_color")
 	_check(child_ink != grandpa_ink, "지도: 다섯째 메모(하윤 글씨)만 다른 색이다")
+	var grandpa_font := load("res://assets/fonts/grandpa_hand_subset.ttf")
+	var hayun_font := load("res://assets/fonts/hayun_hand_subset.ttf")
+	var hands_ok: bool = canvas.get_node("Header").get_theme_font("font") == grandpa_font
+	for n in range(1, circles.size() + 1):
+		var want: Font = hayun_font if circles[n - 1]["child"] else grandpa_font
+		hands_ok = hands_ok and canvas.note_label(n).get_theme_font("font") == want
+	_check(hands_ok, "지도: 맨 위·메모 1~4는 할아버지 글씨, 다섯째만 하윤 글씨 글꼴이다")
 	var map_data: GDScript = load("res://scripts/game/map_data.gd")
 	var places: Array = map_consts["PLACES"]
 	var on_places := true
@@ -473,6 +480,9 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_reflection()
+	await _check_motes()
+	await _check_shadow()
 	await _check_cutout()
 	await _check_pause()
 	await _check_save()
@@ -651,6 +661,73 @@ func _check_shake() -> void:
 	await _wait(0.2)
 
 
+## 5-2 물그림자(WaterReflection): 물가에서 하윤은 흐리게 비치고 하늘이는 비치지 않는다. 카메라가 살짝 내려간다.
+func _check_reflection() -> void:
+	var water: Node2D = load("res://scripts/game/water_reflection.gd").new()
+	water.camera_seconds = 0.3
+	_main.current_place().add_child(water)
+	water.global_position = Vector2(_player.global_position.x + 30.0, 810.0)
+	var camera: Camera2D = _player.get_node("Camera")
+	await _wait(0.6)
+	var copy: Node2D = water.player_reflection()
+	_check(water.inside and copy != null and copy.get_parent().visible, "물그림자: 물가에 서면 하윤이 물에 비친다")
+	if copy:
+		var holder: Node2D = copy.get_parent()
+		_check(holder.global_position.y > _player.global_position.y and holder.scale.y < 0.0, "물그림자: 물 위 선 아래로 뒤집혀 비친다")
+		var mat: ShaderMaterial = holder.material
+		_check(mat != null and mat.get_shader_parameter("clarity") < 0.5, "물그림자: 하윤은 흐리게 비친다")
+		_check(holder.get_child_count() == 1 and water.get_child_count() == 1, "물그림자: 하늘이는 비치지 않는다(반사는 하윤 하나뿐)")
+	_check(_dog.visible, "물그림자: (하늘이는 보이는데도 비치지 않는다)")
+	_check(camera.zoom.x > 1.01 and camera.offset.y > 1.0, "물그림자: 카메라가 살짝 내려가 물을 보여 준다")
+	_player.global_position.x = water.global_position.x + water.half_width + 400.0
+	await _wait(0.6)
+	_check(not water.inside and not copy.get_parent().visible and is_equal_approx(camera.zoom.x, 1.0) and is_zero_approx(camera.offset.y),
+			"물그림자: 물가를 벗어나면 반사가 사라지고 카메라가 돌아온다")
+	water.queue_free()
+	_player.global_position.x = water.global_position.x - 30.0
+## 4-1·4-2 빛 알갱이(LightMotes): 지나가면 떠오르고, 갈림길 구간에서는 하늘이 발밑에만 모인다.
+func _check_motes() -> void:
+	var motes: Node2D = load("res://scripts/game/light_motes.gd").new()
+	var px := _player.global_position.x
+	motes.gather_from = px + 2000.0
+	motes.gather_to = px + 4000.0
+	_main.current_place().add_child(motes)
+	motes.global_position = Vector2(px + 300.0, 810.0)
+	await _wait(0.3)
+	_check(not motes.started and motes.motes.is_empty(), "빛 알갱이: 그 자리를 지나기 전에는 없다")
+	_player.global_position.x = px + 400.0
+	await _wait(0.5)
+	_check(motes.started and motes.motes.size() == motes.count and not motes.gathering, "빛 알갱이: 지나가면 떠오른다")
+	_player.global_position.x = px + 2600.0
+	await _wait(0.3)
+	_check(motes.gathering, "빛 알갱이: 갈림길 구간에 들어서면 하늘이 발밑에 모으기 시작한다")
+	await _wait(6.0)
+	var near: float = motes.share_near(_dog.global_position.x, motes.gather_spread * 2.0 + 40.0)
+	_check(near > 0.9, "빛 알갱이: 잠시 뒤 알갱이가 하늘이 발밑에만 있다 (%.0f%%)" % (near * 100.0))
+	motes.queue_free()
+	_player.global_position.x = px
+	await _wait(0.5)
+## 하윤 그림자(PlayerShadow): 하윤 모습을 따라 땅에 눕고, 장소를 지날수록 옅어져 숲부터는 거의 없다.
+func _check_shadow() -> void:
+	var shadow: Node2D = _player.get_node_or_null("Shadow")
+	_check(shadow != null, "그림자: 하윤에게 그림자가 있다")
+	if shadow == null:
+		return
+	var settings: Dictionary = shadow.get_script().get_script_constant_map()["SETTINGS"]
+	var a := func(pid: StringName) -> float: return settings[pid][0]
+	var fading: bool = a.call(&"house") > a.call(&"field") and a.call(&"field") > a.call(&"station") \
+			and a.call(&"station") > a.call(&"forest") and a.call(&"forest") <= 0.05 and a.call(&"ferry") == 0.0
+	_check(fading,
+			"그림자: 장소를 지날수록 옅어지고 숲부터는 거의 없다")
+	var here: StringName = _main.current_place().place_id
+	await _wait(1.6)
+	_check(is_equal_approx(shadow.self_modulate.a, settings.get(here, [0.2])[0]), "그림자: 지금 장소(%s)의 진하기" % here)
+	_check(shadow.transform.y.x > 0.5 and shadow.transform.y.y < 0.2, "그림자: 들판에서는 해가 오른쪽 낮게 있어 왼쪽으로 길게 눕는다")
+	_player.face(-1)
+	await _wait(0.1)
+	var copy: Node2D = shadow.get_node("Visual")
+	_check(copy.transform.x.x < 0.0, "그림자: 하윤이 돌아서면 그림자도 돈다")
+	_player.face(1)
 ## 컷아웃 조립(Cutout): psd_split.py가 만드는 JSON·조각을 읽어 PSD 모습 그대로 맞추고,
 ## 눈·입은 상태 하나만 보이고, 자세 조각은 그 자세만, 눈 깜빡임은 감았다가 원래 눈으로 돌아온다.
 func _check_cutout() -> void:
