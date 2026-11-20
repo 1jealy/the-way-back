@@ -473,6 +473,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_motes()
 	await _check_pause()
 	await _check_save()
 
@@ -648,6 +649,30 @@ func _check_shake() -> void:
 	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
 	tree.queue_free()
 	await _wait(0.2)
+
+
+## 4-1·4-2 빛 알갱이(LightMotes): 지나가면 떠오르고, 갈림길 구간에서는 하늘이 발밑에만 모인다.
+func _check_motes() -> void:
+	var motes: Node2D = load("res://scripts/game/light_motes.gd").new()
+	var px := _player.global_position.x
+	motes.gather_from = px + 2000.0
+	motes.gather_to = px + 4000.0
+	_main.current_place().add_child(motes)
+	motes.global_position = Vector2(px + 300.0, 810.0)
+	await _wait(0.3)
+	_check(not motes.started and motes.motes.is_empty(), "빛 알갱이: 그 자리를 지나기 전에는 없다")
+	_player.global_position.x = px + 400.0
+	await _wait(0.5)
+	_check(motes.started and motes.motes.size() == motes.count and not motes.gathering, "빛 알갱이: 지나가면 떠오른다")
+	_player.global_position.x = px + 2600.0
+	await _wait(0.3)
+	_check(motes.gathering, "빛 알갱이: 갈림길 구간에 들어서면 하늘이 발밑에 모으기 시작한다")
+	await _wait(6.0)
+	var near: float = motes.share_near(_dog.global_position.x, motes.gather_spread * 2.0 + 40.0)
+	_check(near > 0.9, "빛 알갱이: 잠시 뒤 알갱이가 하늘이 발밑에만 있다 (%.0f%%)" % (near * 100.0))
+	motes.queue_free()
+	_player.global_position.x = px
+	await _wait(0.5)
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.

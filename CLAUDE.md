@@ -146,6 +146,13 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - "[E] 감나무 흔들기" → 잎이 몇 장 떨어지고(`sfx_tree_shake_`) 감 하나(`prop_persimmon`)가 `drop_from`에서 떨어져 땅에 닿고(`sfx_persimmon_drop_`, 신호 `dropped`) 조금 구른다.
 - 진행과 상관없다(선택). 조작을 막지 않는다. 한 번만(`one_shot`).
 
+## 빛 알갱이 (LightMotes, 장면표 4-1·4-2)
+
+`Node2D` + `scripts/game/light_motes.gd`. 숲 입구 `Motes_4-1`(땅 위 x 891).
+
+- 하윤이 원점을 지나면 금빛 알갱이가 땅에서 한꺼번에 떠오르고, 그 뒤로 화면 둘레에서 생겼다 사그라든다(`count` 70). z 5(하윤 앞, 앞 층 뒤).
+- 하윤이 `gather_from`~`gather_to`(3000~5900, 4-2 빛 갈림길)에 있으면 새 알갱이는 **하늘이 발밑에서만** 생기고, 먼 알갱이는 빨리 사그라든다(복선).
+
 ## 벤치 (BenchSit)
 
 `Area2D` + `scripts/game/bench_sit.gd`(조사 대상을 이은 것). 이름 `Sit_<장면>`, 벤치 가운데 땅 위.
