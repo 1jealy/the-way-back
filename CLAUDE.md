@@ -133,8 +133,10 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 - **할아버지** `scenes/characters/grandpa.tscn`(`Grandpa`): B가 나루터 씬에 놓는다(`Grandpa_7-3`, 배 옆 땅 위). `appears_on_flag`(`map_circle_5`)가 서면 천천히 나타난다. `raise_camera()`/`lower_camera()`. 걷지 않는다(기획서).
 - **엔딩 연출** `scripts/game/ending.gd`(`EndingDirector`): 할아버지 옆에 놓는다(`Ending_7-3`). 다섯째 동그라미 뒤 하윤이 `trigger_distance`(380px) 안으로 오면 시작하고 끝까지 조작을 막는다(잠금 이유 `ending`).
-  하윤이 달려가다 멈춤(`player.auto_move_to`) → 하늘이가 먼저 할아버지에게(`dog.script_move_to`) → "할아버지: 왔니." → 컷신 1(팔찌) → 하늘이가 발치에 앉고 셔터(`ending_photo`) → 하얗게 번지며 제목(`ending_seen`) → 타이틀로(`return_to_title`, 검사는 끈다).
-  7-6(배)·7-7(컷신 2)은 아직 없다 — 사진 뒤 바로 제목이다.
+  하윤이 달려가다 멈춤(`player.auto_move_to`) → 하늘이가 먼저 할아버지에게(`dog.script_move_to`) → "할아버지: 왔니." → 컷신 1(팔찌) → 하늘이가 발치에 앉고 셔터(`ending_photo`) → 강 위 구간으로(`crossing_scene`).
+- **7-1 안개** `scripts/game/mist_reveal.gd`(`MistReveal`, 나루터 `Mist_7-1`): 들어서면 하얀 안개가 걷히고 휘파람 선율이 작게 시작된다.
+- **7-6 강 위 구간** `scenes/places/crossing.tscn`(place_id `crossing`, 지도에는 없음) + `scripts/game/boat_ride.gd`(`BoatRide_7-6`): 셋이 탄 배가 `ride_seconds`(70초) 동안 저절로 흘러간다(조작 없음, 잠금 `ending`). 강 건너 안개에 지나온 장소 다섯이 차례로 비친다(각 장소의 `bg_<장소>_mid` 그림을 `shaders/ghost.gdshader`로 바래게 — 진짜 그림이 오면 그것이 비친다). 물에 비친 셋은 또렷하다(모습을 뒤집어 복사). 하윤이 물을 한 번 만진다. 휘파람 선율을 처음부터 끝까지(`restart`) → 컷신 2(`cut_boat`, 하얗게 번짐) → 제목 → `ending_seen` → 타이틀로(`return_to_title`, 검사는 끈다).
+- **음악**: `main.play_music(이름, dB, 페이드, restart)` / `fade_music` / `stop_music`. 장소를 옮겨도 끊기지 않는다(`Music` 버스).
 - **컷신 재생** `scripts/ui/cutscene_player.gd`(`CutscenePlayer`, B): 한 장짜리 그림에 천천히 확대·이동, 글자는 글꼴로 얹는다(팔찌 "이하윤 / 9세"). 그림은 이름(`cut_bracelet`)으로 `assets/art` 아래에서 찾고 진짜 그림이 placeholder보다 먼저다. 대사 상자보다 아래 층(5)이라 컷신 위로 대사가 보인다.
 - 나루터 `Gate_7-3`(`map_circle_5`): 다섯째 동그라미 전에는 할아버지 쪽으로 못 간다.
 

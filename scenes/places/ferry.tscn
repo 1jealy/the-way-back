@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/characters/grandpa.tscn" id="10_34ljx"]
 [ext_resource type="Script" path="res://scripts/game/ending.gd" id="11_tlvh7"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="12_k8810"]
+[ext_resource type="Script" path="res://scripts/game/mist_reveal.gd" id="13_tlvh7"]
 
 [node name="Ferry" unique_id=1705164281 instance=ExtResource("1_tpl")]
 place_id = &"ferry"
@@ -107,3 +108,6 @@ cut1_lines = PackedStringArray("하윤: …다섯 군데 다 봤어.", "할아�
 position = Vector2(1050, 810)
 script = ExtResource("12_k8810")
 opens_on_flag = &"map_circle_5"
+
+[node name="Mist_7-1" type="Node" parent="." index="10" unique_id=1834763598]
+script = ExtResource("13_tlvh7")

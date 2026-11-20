@@ -19,6 +19,9 @@ var _changing: bool = false
 
 
 var _map_hint: Label
+## 음악(휘파람 주제 선율). 장소를 옮겨도 끊기지 않게 main이 들고 있다.
+var _music: AudioStreamPlayer
+var _music_tween: Tween
 
 
 func _ready() -> void:
@@ -26,6 +29,10 @@ func _ready() -> void:
 	_fade.modulate.a = 1.0
 	_set_ambience_volume(0.0)
 	_setup_map_hint()
+	_music = AudioStreamPlayer.new()
+	_music.name = "Music"
+	_music.bus = SoundBank.BUS_MUSIC
+	add_child(_music)
 	_swap_place(GameState.take_start_place(FIRST_PLACE))
 	if GameState.has_flag(Dog.JOIN_FLAG):
 		_dog.join(_player)
@@ -97,6 +104,40 @@ func _swap_place(path: String) -> void:
 	GameState.save_game(path)
 	_place_label.text = _place.display_name
 	place_changed.emit(_place.place_id)
+
+
+## 음악을 튼다(이름 앞머리, 예: "mus_theme_full"). fade초에 걸쳐 volume_db까지 커진다.
+## 이미 같은 음악이 돌고 있으면 크기만 바꾼다(restart면 처음부터 다시).
+func play_music(prefix: String, volume_db: float = 0.0, fade: float = 2.0, restart: bool = false) -> void:
+	var stream := SoundBank.pick(prefix)
+	if stream == null:
+		return
+	if _music.playing and _music.stream == stream and not restart:
+		fade_music(volume_db, fade)
+		return
+	_music.stream = stream
+	_music.volume_db = -60.0
+	_music.play()
+	fade_music(volume_db, fade)
+
+
+func fade_music(volume_db: float, seconds: float) -> void:
+	if _music_tween:
+		_music_tween.kill()
+	_music_tween = create_tween()
+	_music_tween.tween_property(_music, "volume_db", volume_db, maxf(seconds, 0.01))
+
+
+func stop_music(seconds: float = 2.0) -> void:
+	if not _music.playing:
+		return
+	fade_music(-60.0, seconds)
+	await _music_tween.finished
+	_music.stop()
+
+
+func music_playing() -> bool:
+	return _music.playing
 
 
 ## 같은 장소 안 다른 자리로 옮긴다(화면이 어두워졌다 밝아진다). Passage가 부른다.

@@ -1,20 +1,19 @@
 class_name EndingDirector
 extends Node2D
-## 나루터 엔딩 연출(장면표 7-3 ~ 7-5, 그리고 지금은 바로 제목 7-7).
+## 나루터 엔딩 연출(장면표 7-3 ~ 7-5). 사진 뒤 강 위 구간으로 넘긴다.
 ## 나루터 씬에 B가 할아버지(Grandpa) 옆에 놓는다(이름 Ending_7-3). 하윤이 다섯째 동그라미를 체크한 뒤
 ## 할아버지에게 trigger_distance만큼 다가오면 시작한다. 시작하면 끝까지 하윤 조작을 막는다(잠금 이유 ending).
 ##
 ## 7-3 하윤이 달려가다 멈춘다 → 하늘이가 먼저 할아버지에게 간다 → "할아버지: 왔니."
 ## 7-4 손그림 컷신 1(팔찌): 팔찌 글씨 "이하윤 / 9세" → "하윤: …다섯 군데 다 봤어." "할아버지: 그래."
 ## 7-5 할아버지가 카메라를 든다, 하늘이가 하윤 발치에 앉는다, 셔터
-## 7-6(배)·7-7(컷신 2)은 다음 단계. 지금은 사진 뒤 바로 하얗게 번지며 제목 "돌아가는 길".
+## 7-6 배 건너기·7-7 컷신 2·제목은 강 위 구간 씬의 BoatRide(scripts/game/boat_ride.gd)가 이어서 한다.
 ## 담당: A(게임플레이). (A 세션이 쉬는 동안 B 세션이 만듦)
 
 signal photo_taken
 signal ended
 
 const LOCK := &"ending"
-const TITLE_SCENE := "res://scenes/ui/title_screen.tscn"
 
 @export var start_flag: StringName = &"map_circle_5"
 ## 하윤이 할아버지에게 이만큼 다가오면 시작한다(px).
@@ -27,9 +26,8 @@ const TITLE_SCENE := "res://scenes/ui/title_screen.tscn"
 @export var bracelet_text: String = "이하윤 / 9세"
 ## 팔찌 글씨 자리(컷신 그림 좌표 1920x1080).
 @export var bracelet_text_pos: Vector2 = Vector2(852.0, 616.0)
-@export var title_text: String = "돌아가는 길"
-## 끝나면 타이틀로 돌아간다(검사는 끈다).
-@export var return_to_title: bool = true
+## 사진 뒤 넘어가는 강 위 구간(7-6). 그다음(컷신 2·제목·타이틀)은 그 씬의 BoatRide가 한다.
+@export_file("*.tscn") var crossing_scene: String = "res://scenes/places/crossing.tscn"
 
 var started: bool = false
 var _player: Player
@@ -97,12 +95,10 @@ func _run() -> void:
 	photo_taken.emit()
 	await _wait(1.5)
 	_grandpa.lower_camera()
-	# 7-6·7-7은 다음 단계. 지금은 바로 제목.
-	await _title_card()
-	GameState.set_flag(&"ending_seen")
+	# 7-6 셋이 나룻배에 오른다 → 강 위 구간(crossing)의 BoatRide가 이어받는다.
 	ended.emit()
-	if return_to_title:
-		get_tree().change_scene_to_file(TITLE_SCENE)
+	if main and not crossing_scene.is_empty():
+		main.go_to(crossing_scene)
 
 
 func _say(lines: PackedStringArray) -> void:
@@ -129,27 +125,3 @@ func _shutter() -> void:
 	layer.add_child(flash)
 	await create_tween().tween_property(flash, "color:a", 0.0, 0.7).finished
 	layer.queue_free()
-
-
-## 7-7: 화면이 하얗게 번지고 제목이 뜬다.
-func _title_card() -> void:
-	var layer := CanvasLayer.new()
-	layer.layer = 30
-	add_child(layer)
-	var white := ColorRect.new()
-	white.color = Color(1, 0.99, 0.95, 0)
-	white.set_anchors_preset(Control.PRESET_FULL_RECT)
-	layer.add_child(white)
-	var title := Label.new()
-	title.name = "Title"
-	title.text = title_text
-	title.add_theme_font_size_override("font_size", 72)
-	title.add_theme_color_override("font_color", Color(0.55, 0.46, 0.3, 1))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.set_anchors_preset(Control.PRESET_FULL_RECT)
-	title.modulate.a = 0.0
-	layer.add_child(title)
-	await create_tween().tween_property(white, "color:a", 1.0, 3.0).finished
-	await create_tween().tween_property(title, "modulate:a", 1.0, 2.0).finished
-	await _wait(4.0)

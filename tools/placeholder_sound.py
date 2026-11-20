@@ -237,6 +237,52 @@ def pos_forest_water(rng):
     return db_rms(flow, -24)
 
 
+def amb_crossing(rng):
+    # 7-6 강 위: 배 밑의 아주 작은 물소리만.
+    flow = shaped_noise(rng, LOOP, band(120, 1400, -5)) * periodic_lfo(rng, LOOP, [2, 5], 0.35)
+    return db_rms(flow, -44)
+
+
+def whistle(rng, melody, tempo: float, start: float, out: np.ndarray) -> float:
+    """휘파람 선율: (MIDI 음, 박) 목록. 0은 쉼. 끝난 시각을 돌려준다."""
+    pos = start
+    for note, beats in melody:
+        dur = beats * tempo
+        if note:
+            n = n_samples(dur)
+            t = np.arange(n) / RATE
+            f = 440.0 * 2 ** ((note + 12 - 69) / 12)
+            vib = 1 + 0.007 * np.sin(2 * np.pi * 5.2 * t) * np.clip(t / 0.4, 0, 1)
+            tone = np.sin(2 * np.pi * np.cumsum(f * vib) / RATE)
+            breath = shaped_noise(rng, dur, band(f * 0.85, f * 1.25))[:n] * 0.06
+            env = np.clip(t / 0.07, 0, 1) * np.clip((dur - t) / 0.18, 0, 1)
+            place_event(out, (tone + breath) * env, n_samples(pos), wrap=False)
+        pos += dur
+    return pos
+
+
+def mus_theme_full(rng):
+    # 할아버지의 휘파람 주제 선율, 처음부터 끝까지(7-6). 진짜 곡이 오기 전 임시.
+    # A는 집 라디오에서 희미하게 들리던 그 선율(pos_house_radio)과 같다.
+    seconds = 72.0
+    out = np.zeros(n_samples(seconds))
+    A = [(67, .6), (69, .6), (72, .9), (74, .6), (76, 1.2), (74, .6), (72, .6), (69, 1.5),
+         (0, .8), (67, .6), (72, .6), (69, .9), (67, .6), (64, 1.2), (67, 2.0)]
+    B = [(74, .8), (76, .8), (79, 1.2), (76, .8), (74, .8), (72, 1.2), (0, .6),
+         (72, .8), (74, .8), (76, 1.6), (74, .8), (69, 2.0)]
+    CODA = [(67, 1.2), (69, 1.2), (72, 1.6), (69, 1.2), (67, 3.2)]
+    pos = 1.5
+    pos = whistle(rng, A, 1.35, pos, out) + 1.5
+    pos = whistle(rng, B, 1.35, pos, out) + 1.5
+    pos = whistle(rng, A, 1.35, pos, out) + 1.2
+    pos = whistle(rng, CODA, 1.5, pos, out)
+    melody = db_rms(out, -22)
+    t = np.arange(len(out)) / RATE
+    pad = (np.sin(2 * np.pi * 98.0 * t) + 0.6 * np.sin(2 * np.pi * 146.8 * t) + 0.3 * np.sin(2 * np.pi * 196.0 * t))
+    pad_env = np.clip(t / 6.0, 0, 1) * np.clip((seconds - t) / 8.0, 0, 1)
+    return melody + db_rms(pad * pad_env, -34)
+
+
 # ---------------------------------------------------------------- 발소리·효과음(한 번)
 
 
@@ -344,6 +390,7 @@ AMBIENCE = {
     "amb_house": amb_house, "amb_field": amb_field, "amb_station": amb_station, "amb_forest": amb_forest,
     "amb_riverside": amb_riverside, "amb_bridge": amb_bridge, "amb_ferry": amb_ferry,
     "pos_house_radio": pos_house_radio, "pos_forest_water": pos_forest_water,
+    "amb_crossing": amb_crossing, "mus_theme_full": mus_theme_full,
 }
 
 

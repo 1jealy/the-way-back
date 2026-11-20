@@ -221,7 +221,7 @@ func _run() -> void:
 	# 나루터 엔딩(7-2 ~ 7-5, 지금은 사진 뒤 바로 제목)
 	var ferry: Node = await _go("ferry")
 	var ending: Node = ferry.get_node("Ending_7-3")
-	ending.return_to_title = false
+	_check(_main.music_playing(), "나루터: 들어서면 휘파람 선율이 시작된다(7-1)")
 	var grandpa: Node2D = ferry.get_node("Grandpa_7-3")
 	var end_gate: Node2D = ferry.get_node("Gate_7-3")
 	_check(not grandpa.visible, "나루터: 다섯째 동그라미 전에는 할아버지가 안 보인다")
@@ -256,7 +256,26 @@ func _run() -> void:
 	_check(cut_seen, "나루터: 팔찌 컷신이 나온다")
 	await _close_dialogue()
 	_check(await _wait_flag(&"ending_photo", 15.0), "나루터: 마지막 사진(셔터)")
-	_check(await _wait_flag(&"ending_seen", 20.0), "나루터: 하얗게 번지며 제목으로 끝난다")
+	# 7-6 강 위: 배가 저절로 흘러간다(검사는 4배 빠르게)
+	for i in 40:
+		await _wait(0.25)
+		if _state.current_place == &"crossing":
+			break
+	_check(_state.current_place == &"crossing", "강 위: 사진 뒤 셋이 배를 타고 강 위 구간으로")
+	await _wait(0.5)
+	var ride: Node = _main.current_place().get_node("BoatRide_7-6")
+	ride.return_to_title = false
+	_check(not _player.controls_enabled and _main.music_playing(), "강 위: 조작 없이 휘파람 선율이 흐른다")
+	_check(ride.get_node_or_null("Boat/Reflections") != null and ride.get_node("Boat/Reflections").get_child_count() >= 3,
+			"강 위: 물에 비친 셋(하윤·할아버지·하늘이)과 배")
+	var x0 := _player.global_position.x
+	Engine.time_scale = 4.0
+	var done := await _wait_flag(&"ending_seen", 120.0)  # 게임 시간(배 70초 + 컷신 2 + 제목)
+	Engine.time_scale = 1.0
+	_check(_player.global_position.x > x0 + 4000.0, "강 위: 배가 오른쪽으로 흘러갔다 (%.0f px)" % (_player.global_position.x - x0))
+	_check(ride.ghosts_shown == 5, "강 위: 지나온 장소 다섯이 차례로 비쳤다 (%d)" % ride.ghosts_shown)
+	_check(ride.touched, "강 위: 하윤이 물을 한 번 만진다")
+	_check(done, "강 위: 컷신 2(빛 속으로) 뒤 하얀 화면에 제목으로 끝난다")
 
 	if _failures == 0:
 		print("부품 흐름 검사 통과")
