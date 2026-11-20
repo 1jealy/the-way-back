@@ -120,6 +120,10 @@ func interact() -> void:
 		if map:
 			map.open(map_circle)
 			await map.closed
+		# 지도를 접으면 그 동그라미의 기억 장면이 겹쳐 떴다 사라진다(동그라미 1~4)
+		var memory := MemoryScene.find(get_tree(), map_circle)
+		if memory:
+			await memory.play()
 	if not lines.is_empty():
 		var box := get_tree().get_first_node_in_group("dialogue_box") as DialogueBox
 		if box:

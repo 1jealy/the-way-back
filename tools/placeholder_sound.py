@@ -283,6 +283,23 @@ def mus_theme_full(rng):
     return melody + db_rms(pad * pad_env, -34)
 
 
+def phrase(melody, tempo: float = 1.35):
+    """기억 장면마다 휘파람 한 소절(장면표 2-2, 3-1, 4-3, 5-4). 주제 선율의 조각이다."""
+    def f(rng):
+        seconds = sum(b for _, b in melody) * tempo + 2.0
+        out = np.zeros(n_samples(seconds))
+        whistle(rng, melody, tempo, 0.4, out)
+        t = np.arange(len(out)) / RATE
+        return db_rms(out, -22) * np.clip((seconds - t) / 1.2, 0, 1)
+    return f
+
+
+THEME_A1 = [(67, .6), (69, .6), (72, .9), (74, .6), (76, 1.2)]
+THEME_A2 = [(74, .6), (72, .6), (69, 1.5)]
+THEME_A3 = [(67, .6), (72, .6), (69, .9), (67, .6), (64, 1.2), (67, 2.0)]
+THEME_B1 = [(74, .8), (76, .8), (79, 1.2), (76, .8), (74, .8), (72, 1.2)]
+
+
 # ---------------------------------------------------------------- 발소리·효과음(한 번)
 
 
@@ -391,6 +408,8 @@ AMBIENCE = {
     "amb_riverside": amb_riverside, "amb_bridge": amb_bridge, "amb_ferry": amb_ferry,
     "pos_house_radio": pos_house_radio, "pos_forest_water": pos_forest_water,
     "amb_crossing": amb_crossing, "mus_theme_full": mus_theme_full,
+    "mus_phrase_1": phrase(THEME_A1), "mus_phrase_2": phrase(THEME_A1 + THEME_A2),
+    "mus_phrase_3": phrase(THEME_B1), "mus_phrase_4": phrase(THEME_A3),
 }
 
 
