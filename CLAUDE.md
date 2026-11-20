@@ -131,6 +131,14 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - 덤불 자리는 임시 배경 `tools/placeholder_art.py` `FIELD_SNAGS`와 같아야 한다(스모크 검사). 그림은 `prop_map_folded`.
 - 이어하기는 장소 처음부터라, 줍기 전에 끄면 다시 쫓는다.
 
+## 경운기 (TractorPass, 장면표 2-4)
+
+`Node2D` + `scripts/game/tractor_pass.gd`. 들판 `Tractor_2-4`(땅 위 x 7337, `Gate_2-3` 오른쪽).
+
+- 하윤이 원점 - `trigger_before`(250px)를 지나면 오른쪽 멀리서 경운기(`prop_tractor`, 하윤 뒤 길가 z -3)가 다가오고 엔진 소리(`sfx_tractor_`, 경운기에 붙은 `AudioStreamPlayer2D`라 멀어지면 작아진다).
+- 하윤은 멈춰(잠금 `tractor`) 몇 걸음 비켜서서 경운기 쪽을 본다(`player.face`). 가까이 오면 "하윤: 안녕하세요." 농부는 돌아보지 않고 지나간다.
+- 대사를 넘기고 경운기가 하윤을 지나가야 풀린다(신호 `passed` → `finished`). `done_flag`(`tractor_passed`)를 세워 다시 오지 않는다.
+
 ## 벤치 (BenchSit)
 
 `Area2D` + `scripts/game/bench_sit.gd`(조사 대상을 이은 것). 이름 `Sit_<장면>`, 벤치 가운데 땅 위.
@@ -192,7 +200,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 하늘이
 
