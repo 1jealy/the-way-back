@@ -348,6 +348,7 @@ func _run() -> void:
 	var canvas: Control = map.canvas()
 	_check(canvas.progress >= 0.0 and canvas.progress < 1.0, "지도: 집에 있으면 지나온 길이 집~들판 사이 (%.2f)" % canvas.progress)
 	_check(canvas.get_node("Header").text == map_consts["HEADER"], "지도: 맨 위 메모")
+	_check(canvas.has_paper_art() == ResourceLoader.exists(map_consts["PAPER_ART"]), "지도: 지도 그림이 있으면 그림을 깐다")
 	var notes_ok := true
 	for n in range(1, circles.size() + 1):
 		notes_ok = notes_ok and canvas.note_label(n).text == circles[n - 1]["note"]

@@ -24,22 +24,27 @@ var checks: Dictionary = {}
 
 var _note_labels: Array[Label] = []
 var _header_label: Label
+## 일러스트레이터의 지도 그림(종이·장소 그림). 있으면 접힌 자국·강·철교·기호·배는 그리지 않는다.
+var _paper: Texture2D
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if ResourceLoader.exists(MapData.PAPER_ART):
+		_paper = load(MapData.PAPER_ART)
 	_header_label = _make_label(MapData.HEADER, MapData.HEADER_POS, 40, NOTE_COLOR)
 	_header_label.name = "Header"
 	for i in MapData.PLACES.size():
 		var place: Dictionary = MapData.PLACES[i]
 		var offset: Vector2 = place.get("label_offset", Vector2(-60.0, 62.0))
-		var label := _make_label(place["label"], place["pos"] + offset, 22, PENCIL)
+		var label := _make_label(place["label"], place["pos"] + offset, 26 if _paper else 22, PENCIL)
 		label.name = "Place_%s" % place["id"]
 		label.custom_minimum_size.x = 120.0
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for road in MapData.SIDE_ROADS:
 		if not String(road["label"]).is_empty():
-			var side := _make_label(road["label"], road["label_pos"], 22, PENCIL_LIGHT)
+			var side := _make_label(road["label"], road["label_pos"], 24 if _paper else 22,
+					PENCIL if _paper else PENCIL_LIGHT)
 			side.name = "Side_%s" % road["label"]
 	for n in range(1, MapData.CIRCLES.size() + 1):
 		var c: Dictionary = MapData.CIRCLES[n - 1]
@@ -68,6 +73,9 @@ func _make_label(text: String, pos: Vector2, font_size: int, color: Color) -> La
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if _paper:  # 그림 위에서도 읽히게 종이색 테두리
+		label.add_theme_color_override("font_outline_color", Color(0.96, 0.86, 0.64, 0.85))
+		label.add_theme_constant_override("outline_size", 6)
 	add_child(label)
 	return label
 
@@ -77,11 +85,19 @@ func _wobble(p: Vector2, seed_value: float) -> Vector2:
 	return p + Vector2(sin(p.y * 0.05 + seed_value) * 2.0, cos(p.x * 0.05 + seed_value) * 2.0)
 
 
+func has_paper_art() -> bool:
+	return _paper != null
+
+
 func _draw() -> void:
-	_draw_folds()
-	_draw_symbols()
+	if _paper:
+		draw_texture_rect(_paper, MapData.PAPER_RECT, false)
+	else:
+		_draw_folds()
+		_draw_symbols()
 	_draw_side_roads()
-	_draw_river()
+	if not _paper:
+		_draw_river()
 	_draw_route()
 	_draw_trail()
 	for n in range(1, MapData.CIRCLES.size() + 1):
@@ -131,7 +147,8 @@ func _draw_route() -> void:
 			draw_polyline(pts, PENCIL, 3.0, true)
 	for place in MapData.PLACES:
 		draw_circle(place["pos"], 6.0, PENCIL)
-	_draw_boat()
+	if not _paper:
+		_draw_boat()
 
 
 ## 점들을 이은 선을 일정한 간격의 짧은 선으로 그린다.
