@@ -425,6 +425,17 @@ def make_steps(rng):
     x = (body + hum) * (0.25 + pulse) + rattle * pulse
     edge = np.clip(np.minimum(t / 0.8, (secs - t) / 0.8), 0, 1)
     out["sfx_tractor_01"] = db_rms(x * edge, -22)
+    for i in range(2):  # 1-6 감나무 흔들기: 마른 잎이 우수수
+        x = np.zeros(n_samples(1.4))
+        for k in range(int(rng.integers(14, 22))):
+            leaf = one_shot(rng, 0.08, band(1800, 9000, -1), 0.004, 0.025)
+            place_event(x, leaf * rng.uniform(0.3, 1.0), int(rng.uniform(0.0, 1.1) * RATE), wrap=False)
+        swish = one_shot(rng, 1.2, band(400, 4000, -2), 0.08, 0.35) * 0.6
+        place_event(x, swish, 0, wrap=False)
+        out[f"sfx_tree_shake_{i + 1:02d}"] = db_rms(x, -26)
+    for i in range(2):  # 감이 마당 흙에 툭
+        x = one_shot(rng, 0.35, band(60, 900, -5), 0.002, 0.05, ring([(140, 0.5), (230, 0.25)], 0.05))
+        out[f"sfx_persimmon_drop_{i + 1:02d}"] = db_rms(x, -22)
     return out
 
 

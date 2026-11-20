@@ -1345,7 +1345,18 @@ def prop_tractor() -> Image.Image:
     return img.crop((0, 0, w, h))
 
 
-PROPS = {"prop_map_folded": prop_map_folded, "prop_tractor": prop_tractor}
+def prop_persimmon() -> Image.Image:
+    """1-6 감나무에서 떨어지는 감 하나. 그림 아래 끝이 땅에 닿는 곳."""
+    w, h = 44, 44
+    L = Layer(w)
+    L.ellipse((3, 8, 41, 43), rgba(226, 112, 34))
+    L.ellipse((10, 13, 22, 23), rgba(246, 170, 96, 200))  # 빛
+    L.poly([(14, 10), (22, 4), (30, 10), (22, 13)], rgba(86, 96, 48))  # 꼭지
+    L.line([(22, 6), (24, 0)], rgba(80, 60, 40), 2.5)
+    return L.render()[0].crop((0, 0, w, h))
+
+
+PROPS = {"prop_map_folded": prop_map_folded, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon}
 
 
 def build_props() -> None:

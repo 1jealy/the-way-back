@@ -472,6 +472,7 @@ func _run() -> void:
 	await _check_bench()
 	await _check_map_chase()
 	await _check_tractor()
+	await _check_shake()
 	await _check_pause()
 	await _check_save()
 
@@ -627,6 +628,26 @@ func _check_tractor() -> void:
 	_check(done and passed[0], "경운기: 지나간 뒤 다시 걸을 수 있고 tractor_passed")
 	var gone := await _wait_until(func(): return tractor.tractor() == null, 4.0)
 	_check(gone and not tractor.running, "경운기: 왼쪽으로 멀어져 사라지고, 다시 오지 않는다")
+
+
+## 흔들면 떨어지는 조사 대상(ShakeDrop, 1-6 감나무): E → 감이 떨어져 땅에 닿는다. 한 번만.
+func _check_shake() -> void:
+	var tree: Area2D = load("res://scripts/game/shake_drop.gd").new()
+	tree.prompt = "감나무 흔들기"
+	_main.current_place().add_child(tree)
+	tree.global_position = Vector2(_player.global_position.x + 30.0, 810.0)
+	var landed := [false]
+	tree.dropped.connect(func(): landed[0] = true)
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.3)
+	_check(tree.fallen != null and tree.fallen.position.y < -100.0, "감나무: E로 흔들면 감이 가지에 달려 있다가")
+	var down := await _wait_until(func(): return landed[0], 2.0)
+	await _wait(0.6)
+	_check(down and is_zero_approx(tree.fallen.position.y) and _player.controls_enabled, "감나무: 땅에 떨어진다(조작은 막지 않는다)")
+	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
+	tree.queue_free()
+	await _wait(0.2)
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.
