@@ -7,34 +7,37 @@ extends RefCounted
 ## 1-5에서 지도를 얻으면 세운다. 그 전에는 M이 먹지 않는다.
 const HAS_MAP_FLAG := &"has_map"
 
-## 종이가 놓이는 자리(화면 좌표). 접힌 자국·강도 이 안에 그린다.
-const PAPER_RECT := Rect2(90.0, 70.0, 1740.0, 940.0)
+## 종이가 놓이는 자리(화면 좌표). 지도 그림(16:9)이 이 크기로 깔린다.
+const PAPER_RECT := Rect2(90.0, 50.0, 1740.0, 980.0)
+## 일러스트레이터의 지도 그림. 있으면 종이·강·철교·장소 그림은 이것으로 그리고, 아래 좌표는 이 그림에 맞춘다.
+## 지금은 미리보기(1080x608 JPEG). 최종본은 1920x1080 이상 PNG로 바꾼다.
+const PAPER_ART := "res://assets/art/map/map_paper_preview.jpg"
 
 const HEADER := "하윤이랑 같이 갈 데"
-const HEADER_POS := Vector2(190.0, 150.0)
+const HEADER_POS := Vector2(560.0, 92.0)
 
 ## 걷는 순서(왼쪽 → 오른쪽). 길은 이 점들을 잇는다. label_offset은 장소 이름 자리(기본은 점 아래).
 ## bend: 앞 장소에서 여기까지 길이 옆으로 휘는 정도(px, 부호는 방향). wiggle: 그 위에 얹는 꼬불꼬불함(px).
 ## dotted: 앞 장소에서 여기까지를 점선으로(철교 → 나루터: 하늘이가 찾아 주는 강둑 아래 좁은 길).
 const PLACES := [
-	{"id": &"house", "label": "집", "pos": Vector2(260.0, 660.0)},
-	{"id": &"field", "label": "들판", "pos": Vector2(500.0, 560.0), "bend": 70.0},
-	{"id": &"station", "label": "간이역", "pos": Vector2(760.0, 660.0), "bend": -45.0},
-	{"id": &"forest", "label": "숲", "pos": Vector2(1020.0, 520.0), "bend": 30.0, "wiggle": 10.0},
-	{"id": &"riverside", "label": "강가", "pos": Vector2(1260.0, 640.0), "bend": -50.0},
-	{"id": &"bridge", "label": "철교", "pos": Vector2(1450.0, 540.0), "label_offset": Vector2(-60.0, -62.0), "bend": 25.0},
-	{"id": &"ferry", "label": "나루터", "pos": Vector2(1540.0, 800.0), "label_offset": Vector2(-150.0, -20.0), "dotted": true, "bend": -20.0},
+	{"id": &"house", "label": "집", "pos": Vector2(265.0, 245.0)},
+	{"id": &"field", "label": "들판", "pos": Vector2(420.0, 640.0), "bend": -60.0},
+	{"id": &"station", "label": "간이역", "pos": Vector2(770.0, 870.0), "bend": 40.0},
+	{"id": &"forest", "label": "숲", "pos": Vector2(830.0, 610.0), "label_offset": Vector2(-150.0, -20.0), "bend": -30.0, "wiggle": 10.0},
+	{"id": &"riverside", "label": "강가", "pos": Vector2(1190.0, 700.0), "bend": 40.0},
+	{"id": &"bridge", "label": "철교", "pos": Vector2(1500.0, 500.0), "label_offset": Vector2(-60.0, -62.0), "bend": -30.0},
+	{"id": &"ferry", "label": "나루터", "pos": Vector2(1490.0, 880.0), "label_offset": Vector2(-170.0, -20.0), "dotted": true, "bend": 30.0},
 ]
 
 ## 하윤이 가지 않는 길. 지도가 노선도가 아니라 동네 지도로 보이게 한다.
 ## kind: "road" 큰길 / "trail" 점선 오솔길 / "rail" 철길(사다리 무늬).
 ## from_route: [구간, t] — 길 위 그 자리에서 갈라져 나온다(첫 점 앞에 붙는다).
 const SIDE_ROADS := [
-	{"kind": "road", "points": [Vector2(260.0, 660.0), Vector2(225.0, 760.0), Vector2(170.0, 860.0), Vector2(135.0, 960.0)],
-		"label": "읍내", "label_pos": Vector2(150.0, 935.0)},
-	{"kind": "trail", "from_route": [0, 0.42], "points": [Vector2(320.0, 520.0), Vector2(270.0, 410.0), Vector2(250.0, 300.0)],
-		"label": "산", "label_pos": Vector2(215.0, 248.0)},
-	{"kind": "rail", "points": [Vector2(590.0, 735.0), Vector2(760.0, 690.0), Vector2(935.0, 640.0)],
+	{"kind": "road", "points": [Vector2(265.0, 245.0), Vector2(215.0, 185.0), Vector2(170.0, 145.0), Vector2(135.0, 120.0)],
+		"label": "읍내", "label_pos": Vector2(140.0, 82.0)},
+	{"kind": "trail", "from_route": [0, 0.55], "points": [Vector2(430.0, 420.0), Vector2(500.0, 360.0), Vector2(540.0, 320.0)],
+		"label": "산", "label_pos": Vector2(550.0, 270.0)},
+	{"kind": "rail", "points": [Vector2(640.0, 955.0), Vector2(770.0, 900.0), Vector2(930.0, 850.0)],
 		"label": "", "label_pos": Vector2.ZERO},
 ]
 
@@ -47,11 +50,11 @@ const REEDS := [Vector2(1180.0, 600.0), Vector2(1330.0, 690.0), Vector2(1360.0, 
 
 ## 동그라미 다섯. 번호는 1부터. child = 하윤 글씨.
 const CIRCLES := [
-	{"place": &"field", "note": "바람 셈. 지도 꽉 잡아라.", "note_pos": Vector2(330.0, 420.0), "child": false},
-	{"place": &"station", "note": "기차 안 와도 여기 앉아 있으면 좋다.", "note_pos": Vector2(560.0, 760.0), "child": false},
-	{"place": &"forest", "note": "해 지고 조금만 기다려. 금방 환해진다.", "note_pos": Vector2(840.0, 380.0), "child": false},
-	{"place": &"riverside", "note": "물수제비. 할아버지 다섯 번, 하윤이는?", "note_pos": Vector2(880.0, 830.0), "child": false},
-	{"place": &"ferry", "note": "다나으면 여기 꼭!", "note_pos": Vector2(1300.0, 900.0), "child": true},
+	{"place": &"field", "note": "바람 셈. 지도 꽉 잡아라.", "note_pos": Vector2(120.0, 455.0), "child": false},
+	{"place": &"station", "note": "기차 안 와도 여기 앉아 있으면 좋다.", "note_pos": Vector2(300.0, 975.0), "child": false},
+	{"place": &"forest", "note": "해 지고 조금만 기다려. 금방 환해진다.", "note_pos": Vector2(560.0, 740.0), "child": false},
+	{"place": &"riverside", "note": "물수제비. 할아버지 다섯 번, 하윤이는?", "note_pos": Vector2(900.0, 975.0), "child": false},
+	{"place": &"ferry", "note": "다나으면 여기 꼭!", "note_pos": Vector2(1560.0, 790.0), "child": true},
 ]
 
 ## 강(세로 띠)과 그 너머 빈 종이. 철교는 강을 건너 빈 종이 쪽으로 이어진다.

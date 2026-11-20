@@ -23,3 +23,4 @@
 | 파일 | 원본 | 라이선스 |
 | --- | --- | --- |
 | `assets/art/placeholder/**/*.png` | 코드로 그린 임시 배경(`tools/placeholder_art.py`). 외부 에셋 아님 | 이 프로젝트 것 |
+| `assets/art/map/map_paper_preview.jpg` | 지도 미리보기, 팀 일러스트 담당이 그림 | 이 프로젝트 것 |
