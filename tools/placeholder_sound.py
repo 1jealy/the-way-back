@@ -330,6 +330,11 @@ def make_steps(rng):
         tail = shaped_noise(rng, len(far) / RATE, band(200, 1200, -4))[:len(far)] * 0.15 * np.abs(far).max()
         far = far + tail * np.linspace(0, 1, len(far)) * np.exp(-np.linspace(0, 4, len(far)))
         out[f"sfx_dog_bark_far_{i + 1:02d}"] = db_rms(far, -34)
+    x = np.zeros(n_samples(0.5))  # 필름 카메라 셔터: 찰칵 + 감기는 소리
+    place_event(x, one_shot(rng, 0.03, band(1500, 9000, -1), 0.0005, 0.006), n_samples(0.01), wrap=False)
+    place_event(x, one_shot(rng, 0.05, band(800, 6000, -2), 0.001, 0.012) * 0.8, n_samples(0.09), wrap=False)
+    place_event(x, one_shot(rng, 0.25, band(300, 3000, -3), 0.02, 0.08) * 0.25, n_samples(0.2), wrap=False)
+    out["sfx_shutter_01"] = db_rms(x, -24)
     return out
 
 

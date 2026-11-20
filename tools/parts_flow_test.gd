@@ -218,6 +218,46 @@ func _run() -> void:
 				await _wait(2.0)
 				_check(absf(_player.global_position.x - slope.to_x) < 5.0, "철교: 냄새 뒤 강둑으로 내려가면 강둑 길에 선다 (%.0f)" % _player.global_position.x)
 
+	# 나루터 엔딩(7-2 ~ 7-5, 지금은 사진 뒤 바로 제목)
+	var ferry: Node = await _go("ferry")
+	var ending: Node = ferry.get_node("Ending_7-3")
+	ending.return_to_title = false
+	var grandpa: Node2D = ferry.get_node("Grandpa_7-3")
+	var end_gate: Node2D = ferry.get_node("Gate_7-3")
+	_check(not grandpa.visible, "나루터: 다섯째 동그라미 전에는 할아버지가 안 보인다")
+	await _walk_to(end_gate.global_position.x + 200.0)
+	_check(_player.global_position.x < end_gate.global_position.x, "나루터: 다섯째 동그라미 전에는 할아버지 쪽으로 못 간다")
+	await _walk_to(ferry.get_node("Look_7-2_Map").global_position.x)
+	await _press(&"interact")
+	await _wait(2.5)
+	await _press(&"open_map")  # 지도 접기
+	await _wait(1.0)
+	_check(_state.has_flag(&"map_circle_5") and grandpa.visible, "나루터: 다섯째 동그라미를 체크하면 할아버지가 나타난다")
+	await _walk_to(end_gate.global_position.x + 150.0)
+	await _wait(0.5)
+	_check(ending.started and not _player.controls_enabled, "나루터: 할아버지에게 다가가면 엔딩이 시작되고 조작이 멈춘다")
+	var greeted := false
+	for i in 40:
+		await _wait(0.25)
+		if _main.dialogue_box().visible:
+			greeted = true
+			break
+	_check(greeted and absf(_dog.global_position.x - (grandpa.global_position.x - 80.0)) < 10.0,
+			"나루터: 하늘이가 먼저 할아버지에게 가고 \"왔니.\"")
+	await _close_dialogue()
+	var cut_seen := false
+	for i in 80:  # 컷신이 끝나고 대사가 나올 때까지
+		await _wait(0.25)
+		for c in ending.get_children():
+			if c is CanvasLayer and c.get_child_count() > 0:
+				cut_seen = true
+		if _main.dialogue_box().visible:
+			break
+	_check(cut_seen, "나루터: 팔찌 컷신이 나온다")
+	await _close_dialogue()
+	_check(await _wait_flag(&"ending_photo", 15.0), "나루터: 마지막 사진(셔터)")
+	_check(await _wait_flag(&"ending_seen", 20.0), "나루터: 하얗게 번지며 제목으로 끝난다")
+
 	if _failures == 0:
 		print("부품 흐름 검사 통과")
 	else:

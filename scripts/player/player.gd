@@ -21,6 +21,12 @@ var crouching: bool = false
 const STEP_DISTANCE := 110.0
 
 var _step_left: float = STEP_DISTANCE * 0.5
+## 연출용 자동 걷기(auto_move_to). 조작 잠금과 상관없이 이 x까지 간다.
+var _auto_x: float = NAN
+var _auto_speed: float = 0.0
+
+## auto_move_to로 보낸 곳에 닿았을 때.
+signal auto_arrived
 var _steps: AudioStreamPlayer
 
 @onready var _visual: Node2D = $Visual
@@ -55,6 +61,12 @@ func set_crouching(on: bool) -> void:
 	_visual.scale.y = 0.62 if on else 1.0
 
 
+## 연출용: 조작과 상관없이 x까지 speed로 걸어(달려) 간다. 닿으면 auto_arrived.
+func auto_move_to(x: float, speed: float = 0.0) -> void:
+	_auto_x = x
+	_auto_speed = speed if speed > 0.0 else walk_speed
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("interact") or not controls_enabled:
 		return
@@ -66,9 +78,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	var direction := 0.0
-	if controls_enabled:
+	var speed := walk_speed
+	if not is_nan(_auto_x):
+		var gap := _auto_x - global_position.x
+		if absf(gap) <= _auto_speed * delta:
+			global_position.x = _auto_x
+			_auto_x = NAN
+			auto_arrived.emit()
+		else:
+			direction = signf(gap)
+			speed = _auto_speed
+	elif controls_enabled:
 		direction = Input.get_axis("move_left", "move_right")
-	velocity.x = direction * walk_speed
+	velocity.x = direction * speed
 	if not is_on_floor():
 		velocity.y += gravity * delta
 	move_and_slide()

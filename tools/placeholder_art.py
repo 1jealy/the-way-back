@@ -1046,6 +1046,59 @@ def ferry(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     return layers
 
 
+# ---------------------------------------------------------------- 손그림 컷신 자리(임시)
+# 진짜 컷신은 일러스트 담당이 손으로 그린다(장면표). 이건 연출 길이·글자 자리를 맞춰 보는 임시 그림.
+# 글자(팔찌 "이하윤 / 9세")는 그리지 않는다 — 게임이 글꼴로 얹는다(scripts/game/ending.gd).
+
+def cut_bracelet() -> Image.Image:
+    """7-4 손목 클로즈업: 할아버지의 큰 손이 아이 손목을 잡고 있다. 손목에 흰 팔찌(글자 자리는 비움)."""
+    bg = vertical_gradient(SCREEN_W, [(0.0, (248, 240, 222)), (0.6, (244, 230, 200)), (1.0, (236, 218, 186))])
+    add_glow(bg, 1500, 200, 1300, (255, 250, 236), 0.6)
+    L = Layer(SCREEN_W, bg)
+    L.poly([(-20, 760), (700, 600), (1140, 560), (1160, 700), (720, 760), (-20, 940)], rgba(238, 206, 186))  # 아이 팔
+    L.ellipse((1060, 520, 1300, 720), rgba(240, 210, 190))  # 아이 손
+    L.poly([(820, 560), (1010, 540), (1030, 690), (840, 716)], rgba(250, 250, 246))  # 흰 팔찌
+    L.line([(822, 566), (842, 712)], rgba(210, 212, 214), 4)
+    L.line([(1008, 546), (1028, 686)], rgba(210, 212, 214), 4)
+    L.poly([(1940, 260), (1500, 360), (1180, 470), (1120, 560), (1200, 640), (1500, 600), (1940, 520)], rgba(196, 150, 120))  # 할아버지 팔·소매
+    L.poly([(1940, 220), (1640, 300), (1660, 380), (1940, 330)], rgba(110, 100, 92))  # 외투 소매
+    for i, (fx, fy) in enumerate(((1130, 520), (1100, 585), (1095, 650), (1120, 712))):  # 손가락
+        L.line(sag(1260, fy - 30, fx, fy + 20, -12, 6), rgba(184, 138, 110), 34 - i * 3)
+    L.line(sag(1220, 470, 1000, 520, 20, 8), rgba(184, 138, 110), 30)  # 엄지
+    for k in range(6):  # 주름
+        x0 = 1300 + k * 70
+        L.line([(x0, 420 + k * 4), (x0 + 40, 440 + k * 4)], rgba(160, 118, 94), 3)
+    return L.render()[0].convert("RGB")
+
+
+def cut_boat() -> Image.Image:
+    """7-7 나룻배가 빛 속으로: 하얀 빛, 물 위 작은 배와 셋의 실루엣."""
+    bg = vertical_gradient(SCREEN_W, [(0.0, (252, 250, 244)), (0.55, (250, 244, 226)), (0.62, (236, 230, 214)), (1.0, (222, 220, 214))])
+    add_glow(bg, 1500, 560, 1400, (255, 252, 240), 0.9)
+    L = Layer(SCREEN_W, bg)
+    rng = random.Random("cut_boat")
+    water_streaks(L, rng, 0, SCREEN_W, 680, 1080, 160, rgba(255, 246, 220, 160))
+    bx, by = 900, 700
+    L.poly([(bx - 220, by), (bx + 240, by - 6), (bx + 180, by + 44), (bx - 170, by + 46)], rgba(120, 100, 86, 230))
+    for dx, h, w in ((-110, 150, 46), (-20, 110, 38), (140, 60, 56)):  # 할아버지, 하윤, 하늘이(뱃머리)
+        L.poly([(bx + dx - w / 2, by), (bx + dx + w / 2, by), (bx + dx + w / 2 - 6, by - h), (bx + dx - w / 2 + 6, by - h)], rgba(110, 96, 86, 220))
+        L.ellipse((bx + dx - w * 0.35, by - h - w * 0.7, bx + dx + w * 0.35, by - h), rgba(110, 96, 86, 220))
+    L.haze(mist(rng, 0, SCREEN_W, 660, 140, rgba(255, 255, 250, 150), 10), 30)
+    return L.render()[0].convert("RGB")
+
+
+CUTS = {"cut_bracelet": cut_bracelet, "cut_boat": cut_boat}
+
+
+def build_cuts() -> None:
+    out = OUT_DIR / "cut"
+    out.mkdir(parents=True, exist_ok=True)
+    for name, fn in CUTS.items():
+        path = out / f"{name}.png"
+        fn().save(path, optimize=True)
+        print(f"{path.relative_to(ROOT)}  {path.stat().st_size // 1024} KB")
+
+
 # ---------------------------------------------------------------- 실행
 
 PAINTERS = {
@@ -1075,10 +1128,13 @@ def main() -> int:
     parser.add_argument("places", nargs="*", help="place_id (그릴 수 있는 것: %s)" % ", ".join(PAINTERS))
     parser.add_argument("--all", action="store_true")
     args = parser.parse_args()
-    places = list(PAINTERS) if args.all else args.places
+    places = list(PAINTERS) + ["cut"] if args.all else args.places
     if not places:
         parser.error("장소를 하나 이상 적거나 --all")
     for p in places:
+        if p == "cut":  # 손그림 컷신 자리(임시)
+            build_cuts()
+            continue
         if p not in PAINTERS:
             sys.exit(f"'{p}'은 아직 그릴 수 없다 (있는 것: {', '.join(PAINTERS)})")
         build(p)

@@ -245,6 +245,9 @@ func _check_parts() -> void:
 				var n: int = node.get("map_circle")
 				if n > 0:
 					circles[n] = [place_id, scene_id]
+					var circle_flag := StringName("map_circle_%d" % n)
+					if not granted.has(circle_flag):
+						granted[circle_flag] = [i, x]
 			elif String(node.name) == "AskSpot_3-5":
 				fetch_x = x
 		place.free()
