@@ -117,9 +117,19 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 - **Gate**: `StaticBody2D` + `scripts/game/gate.gd`. 이름 `Gate_<장면>`. `opens_on_flag`가 서면 사라진다(비우면 늘 막는다). 물리 층 4라 **하윤만 막고 하늘이는 지나간다**(징검다리 첫 돌에 하늘이가 가야 한다). 플래그는 `GameState.flag_changed`로 듣고, 이어하기 때는 처음부터 열려 있다.
   - 막는 벽의 플래그를 세우는 부품은 그 벽보다 왼쪽(또는 앞 장소)에 있어야 한다(스모크 검사가 본다).
-  - 지금 놓인 것: 집 대문 `Gate_1-6`(`has_map`), 대합실 문 `Gate_3-6`(`station_door_open`), 징검다리 `Gate_5-3`(`river_stone_held`), 끊긴 철교 `Gate_6-2`(늘 막음).
+  - 지금 놓인 것: 집 대문 `Gate_1-6`(`has_map`), 들판 `Gate_2-3`(`map_caught`, 날아간 지도), 대합실 문 `Gate_3-6`(`station_door_open`), 징검다리 `Gate_5-3`(`river_stone_held`), 끊긴 철교 `Gate_6-2`(늘 막음).
   - 숲 4-2 빛 갈림길 두 번: 갈림길마다 냄새 부탁 `AskSpot_4-2_N` + 빛줄기 셋 `Look_4-2_LightNM`(Passage, 맞는 빛은 다음으로, 틀린 빛은 이끼 바위 앞으로) + 늘 막는 `Gate_4-2_N`. 빛줄기 자리는 임시 배경(`tools/placeholder_art.py` `FOREST_FORKS`)과 같다.
 - **Passage**: `Area2D` + `scripts/game/passage.gd`(조사 대상을 이은 것). 조사하면 화면이 어두워졌다 밝아지며 하윤이 같은 장소의 `to_x`로 옮겨 간다(`main.move_player_to`). 바닥 높이로 이어지지 않는 길에 쓴다. 지금은 철교 `Look_6-3_Slope`(냄새 뒤 강둑으로 내려가기).
+
+## 날아간 지도 (MapChase, 장면표 2-3 퍼즐 2)
+
+`Node2D` + `scripts/game/map_chase.gd`. 들판에 `MapChase_2-3`(땅 위 x 4300)과 그 오른쪽 `Gate_2-3`(`map_caught`, x 7000).
+
+- 지도를 가진(`requires_flag` = `has_map`) 하윤이 원점을 지나면 센 바람(`sfx_wind_gust_`)에 지도가 날아가고 "하윤: 어? 기다려!"(그동안 잠금 `map_chase`).
+- 지도는 `stops`(원점 기준 x, 억새 덤불 셋)에 차례로 걸린다. 하윤이 덤불에 `catch_distance`(260px) 안으로 오면 다음 덤불로 또 날아간다. 마지막 덤불에서는 `[E] 지도 줍기`(조사 대상을 그 자리에 만든다) → `grants_flag`(`map_caught`) → 벽이 열린다.
+- 날아가 있는 동안 `MapScreen.away = true`: M이 먹지 않고 `map_circle` 조사 대상도 안 뜬다.
+- 덤불 자리는 임시 배경 `tools/placeholder_art.py` `FIELD_SNAGS`와 같아야 한다(스모크 검사). 그림은 `prop_map_folded`.
+- 이어하기는 장소 처음부터라, 줍기 전에 끄면 다시 쫓는다.
 
 ## 벤치 (BenchSit)
 
@@ -182,7 +192,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 하늘이
 
