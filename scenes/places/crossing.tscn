@@ -1,0 +1,77 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
+[ext_resource type="Script" path="res://scripts/game/boat_ride.gd" id="2_ride"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/crossing/bg_crossing_sky.png" id="2_v8hne"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/crossing/bg_crossing_far.png" id="3_8slwj"]
+[ext_resource type="PackedScene" path="res://scenes/characters/grandpa.tscn" id="3_grandpa"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/crossing/bg_crossing_mid.png" id="4_vi51i"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/crossing/bg_crossing_ground.png" id="5_fng5p"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/crossing/bg_crossing_props.png" id="6_8nc6p"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/crossing/bg_crossing_front_01.png" id="7_7cx6f"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/crossing/bg_crossing_front_02.png" id="8_owuat"]
+[ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_crossing.ogg" id="11_8slwj"]
+
+[node name="Crossing" unique_id=2130968916 instance=ExtResource("1_tpl")]
+place_id = &"crossing"
+width = 7680.0
+greybox = false
+footstep_surface = &"deck"
+
+[node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=141585268]
+
+[node name="bg_crossing_sky" type="Sprite2D" parent="Layers/Sky/Art" index="0" unique_id=327437506]
+texture = ExtResource("2_v8hne")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=1378201443]
+
+[node name="bg_crossing_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=1332467365]
+texture = ExtResource("3_8slwj")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=1165747099]
+
+[node name="bg_crossing_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=566523694]
+texture = ExtResource("4_vi51i")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1071452475]
+
+[node name="bg_crossing_ground" type="Sprite2D" parent="Layers/Ground/Art" index="0" unique_id=254958390]
+texture = ExtResource("5_fng5p")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Props" index="0" unique_id=1491813622]
+
+[node name="bg_crossing_props" type="Sprite2D" parent="Layers/Props/Art" index="0" unique_id=943434868]
+texture = ExtResource("6_8nc6p")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=1474150497]
+
+[node name="bg_crossing_front_01" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=832234018]
+texture = ExtResource("7_7cx6f")
+centered = false
+
+[node name="bg_crossing_front_02" type="Sprite2D" parent="Layers/Front/Art" index="1" unique_id=1967113522]
+position = Vector2(4568, 0)
+texture = ExtResource("8_owuat")
+centered = false
+
+[node name="Spawn" parent="." index="1"]
+position = Vector2(1100, 810)
+
+[node name="Grandpa_7-6" parent="." index="5" unique_id=1739304770 instance=ExtResource("3_grandpa")]
+position = Vector2(980, 810)
+appears_on_flag = &""
+
+[node name="BoatRide_7-6" type="Node2D" parent="." index="6" unique_id=1349509605]
+position = Vector2(1100, 810)
+script = ExtResource("2_ride")
+
+[node name="Sound" type="Node2D" parent="." index="7" unique_id=1486241111]
+
+[node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=1795031172]
+stream = ExtResource("11_8slwj")
+autoplay = true

@@ -1046,6 +1046,35 @@ def ferry(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     return layers
 
 
+# ---------------------------------------------------------------- 7-6 강 위 구간
+# 나룻배가 흘러가는 강. 걷는 땅 없이 물뿐. 강 건너 안개에는 지나온 장소가 코드로 비친다(boat_ride.gd).
+
+def crossing(width: float, markers: dict[str, float]) -> dict[str, Layer]:
+    rng = random.Random("crossing")
+    layers: dict[str, Layer] = {}
+    layers["sky"] = sky_layer(width, [
+        (0.0, (240, 238, 230)), (0.5, (250, 246, 236)), (0.75, (252, 244, 222)), (1.0, (248, 238, 212)),
+    ], glows=[(0.85, 560, 1600, (255, 252, 240), 0.75), (0.85, 560, 700, (255, 240, 200), 0.5)])
+    w = layer_width(width, "far")
+    layers["far"] = L = Layer(w)
+    L.poly(ridge(rng, w, 560, 30), rgba(232, 228, 218, 200))  # 아주 먼 강 건너
+    L.haze(mist(rng, 0, w, 560, 120, rgba(255, 255, 252, 170), int(w / 220)), 34)
+    w = layer_width(width, "mid")
+    layers["mid"] = L = Layer(w)
+    L.rect(-20, 600, w + 20, H, rgba(228, 232, 234))
+    water_streaks(L, rng, 0, w, 610, H, int(w / 10), rgba(255, 246, 218, 170))
+    L.haze(mist(rng, 0, w, 610, 90, rgba(252, 252, 250, 160), int(w / 200)), 30)
+    w = layer_width(width, "ground")
+    layers["ground"] = L = Layer(w)
+    L.rect(-20, 818, w + 20, H, rgba(220, 226, 230))  # 배 아래 물
+    water_streaks(L, rng, 0, w, 826, H, int(w / 12), rgba(255, 244, 214, 180))
+    layers["props"] = Layer(layer_width(width, "props"))
+    w = layer_width(width, "front")
+    layers["front"] = L = Layer(w)
+    L.haze(mist(rng, 0, w, H - 30, 150, rgba(255, 255, 252, 140), int(w / 240)), 32)
+    return layers
+
+
 # ---------------------------------------------------------------- 손그림 컷신 자리(임시)
 # 진짜 컷신은 일러스트 담당이 손으로 그린다(장면표). 이건 연출 길이·글자 자리를 맞춰 보는 임시 그림.
 # 글자(팔찌 "이하윤 / 9세")는 그리지 않는다 — 게임이 글꼴로 얹는다(scripts/game/ending.gd).
@@ -1103,7 +1132,7 @@ def build_cuts() -> None:
 
 PAINTERS = {
     "house": house, "field": field, "station": station, "forest": forest,
-    "riverside": riverside, "bridge": bridge, "ferry": ferry,
+    "riverside": riverside, "bridge": bridge, "ferry": ferry, "crossing": crossing,
 }
 
 
