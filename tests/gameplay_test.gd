@@ -480,6 +480,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_reflection()
 	await _check_pause()
 	await _check_save()
 
@@ -655,6 +656,33 @@ func _check_shake() -> void:
 	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
 	tree.queue_free()
 	await _wait(0.2)
+
+
+## 5-2 물그림자(WaterReflection): 물가에서 하윤은 흐리게 비치고 하늘이는 비치지 않는다. 카메라가 살짝 내려간다.
+func _check_reflection() -> void:
+	var water: Node2D = load("res://scripts/game/water_reflection.gd").new()
+	water.camera_seconds = 0.3
+	_main.current_place().add_child(water)
+	water.global_position = Vector2(_player.global_position.x + 30.0, 810.0)
+	var camera: Camera2D = _player.get_node("Camera")
+	await _wait(0.6)
+	var copy: Node2D = water.player_reflection()
+	_check(water.inside and copy != null and copy.get_parent().visible, "물그림자: 물가에 서면 하윤이 물에 비친다")
+	if copy:
+		var holder: Node2D = copy.get_parent()
+		_check(holder.global_position.y > _player.global_position.y and holder.scale.y < 0.0, "물그림자: 물 위 선 아래로 뒤집혀 비친다")
+		var mat: ShaderMaterial = holder.material
+		_check(mat != null and mat.get_shader_parameter("clarity") < 0.5, "물그림자: 하윤은 흐리게 비친다")
+		_check(holder.get_child_count() == 1 and water.get_child_count() == 1, "물그림자: 하늘이는 비치지 않는다(반사는 하윤 하나뿐)")
+	_check(_dog.visible, "물그림자: (하늘이는 보이는데도 비치지 않는다)")
+	_check(camera.zoom.x > 1.01 and camera.offset.y > 1.0, "물그림자: 카메라가 살짝 내려가 물을 보여 준다")
+	_player.global_position.x = water.global_position.x + water.half_width + 400.0
+	await _wait(0.6)
+	_check(not water.inside and not copy.get_parent().visible and is_equal_approx(camera.zoom.x, 1.0) and is_zero_approx(camera.offset.y),
+			"물그림자: 물가를 벗어나면 반사가 사라지고 카메라가 돌아온다")
+	water.queue_free()
+	_player.global_position.x = water.global_position.x - 30.0
+	await _wait(0.5)
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.

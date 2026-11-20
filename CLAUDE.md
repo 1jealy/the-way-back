@@ -146,6 +146,14 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - "[E] 감나무 흔들기" → 잎이 몇 장 떨어지고(`sfx_tree_shake_`) 감 하나(`prop_persimmon`)가 `drop_from`에서 떨어져 땅에 닿고(`sfx_persimmon_drop_`, 신호 `dropped`) 조금 구른다.
 - 진행과 상관없다(선택). 조작을 막지 않는다. 한 번만(`one_shot`).
 
+## 물그림자 (WaterReflection, 장면표 5-2)
+
+`Node2D` + `scripts/game/water_reflection.gd` + `shaders/reflection.gdshader`. 강가 `Reflection_5-2`(물가 가운데 땅 위 x 2040, `half_width` 380).
+
+- 하윤이 물가에 들어서면 물에 비친 하윤이 **흐리게**(`clarity` 0.3) 일렁인다. **하늘이는 비치지 않는다**(복선. 7-6 배 위에서는 셋 다 또렷하게 비쳐 짝이 된다).
+- 하윤 모습(`Visual`)을 한 번 복사해 물 위 선(`water_y` 816) 아래로 뒤집고 매 프레임 맞춘다. 화면을 거울처럼 비추는 방식은 하늘이까지 비쳐서 쓰지 않는다. 인물 컷아웃이 들어오면 복사·맞추기를 다시 본다.
+- 물가에 있는 동안 카메라가 살짝 당겨지고(`camera_zoom` 1.08) 내려간다(`offset.y` 40). 배경이 1080에서 끝나 그냥 내릴 수는 없다.
+
 ## 벤치 (BenchSit)
 
 `Area2D` + `scripts/game/bench_sit.gd`(조사 대상을 이은 것). 이름 `Sit_<장면>`, 벤치 가운데 땅 위.
