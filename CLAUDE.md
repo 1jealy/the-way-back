@@ -139,6 +139,13 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - 하윤은 멈춰(잠금 `tractor`) 몇 걸음 비켜서서 경운기 쪽을 본다(`player.face`). 가까이 오면 "하윤: 안녕하세요." 농부는 돌아보지 않고 지나간다.
 - 대사를 넘기고 경운기가 하윤을 지나가야 풀린다(신호 `passed` → `finished`). `done_flag`(`tractor_passed`)를 세워 다시 오지 않는다.
 
+## 흔들면 떨어지는 것 (ShakeDrop, 장면표 1-6 감나무)
+
+`Area2D` + `scripts/game/shake_drop.gd`(조사 대상을 이은 것). 집 마당 `Shake_1-6_Persimmon`(감나무 밑동 x 5070, 대문 안쪽).
+
+- "[E] 감나무 흔들기" → 잎이 몇 장 떨어지고(`sfx_tree_shake_`) 감 하나(`prop_persimmon`)가 `drop_from`에서 떨어져 땅에 닿고(`sfx_persimmon_drop_`, 신호 `dropped`) 조금 구른다.
+- 진행과 상관없다(선택). 조작을 막지 않는다. 한 번만(`one_shot`).
+
 ## 벤치 (BenchSit)
 
 `Area2D` + `scripts/game/bench_sit.gd`(조사 대상을 이은 것). 이름 `Sit_<장면>`, 벤치 가운데 땅 위.

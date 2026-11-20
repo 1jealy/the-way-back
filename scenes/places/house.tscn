@@ -11,6 +11,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_house.ogg" id="9_idm51"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/pos_house_radio.ogg" id="10_mxv64"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_bdaxg"]
+[ext_resource type="Script" path="res://scripts/game/shake_drop.gd" id="shake_script"]
 
 [node name="House" unique_id=721323629 instance=ExtResource("1_tpl")]
 place_id = &"house"
@@ -119,3 +120,8 @@ max_distance = 1400.0
 position = Vector2(5300, 810)
 script = ExtResource("11_bdaxg")
 opens_on_flag = &"has_map"
+
+[node name="Shake_1-6_Persimmon" type="Area2D" parent="."]
+position = Vector2(5070, 810)
+script = ExtResource("shake_script")
+prompt = "감나무 흔들기"

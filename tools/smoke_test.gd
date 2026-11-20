@@ -194,6 +194,7 @@ const PASSAGE := "res://scripts/game/passage.gd"
 const BENCH := "res://scripts/game/bench_sit.gd"
 const MEMORY := "res://scripts/game/memory_scene.gd"
 const MAP_CHASE := "res://scripts/game/map_chase.gd"
+const SHAKE := "res://scripts/game/shake_drop.gd"
 
 
 func _script_path(node: Node) -> String:
@@ -238,7 +239,7 @@ func _check_parts() -> void:
 				if not chase_req.is_empty():
 					required.append([i, node.position.x, chase_req, "%s/%s" % [place_id, node.name]])
 				continue
-			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE, BENCH]:
+			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE, BENCH, SHAKE]:
 				continue
 			var x: float = node.position.x
 			var on_ground: bool = is_equal_approx(node.position.y, 810.0) and x > 0.0 and x < place.width
@@ -264,7 +265,7 @@ func _check_parts() -> void:
 			var flag: StringName = node.get("grants_flag")
 			if not flag.is_empty() and not granted.has(flag):
 				granted[flag] = [i, x]
-			if path in [INTERACTABLE, PASSAGE, BENCH]:
+			if path in [INTERACTABLE, PASSAGE, BENCH, SHAKE]:
 				var req: StringName = node.get("requires_flag")
 				if not req.is_empty():
 					required.append([i, x, req, "%s/%s" % [place_id, node.name]])
@@ -296,6 +297,9 @@ func _check_parts() -> void:
 	var tractor := _find_by_script("field", "res://scripts/game/tractor_pass.gd")
 	_check(tractor.size() == 1 and String(tractor[0][0]) == "Tractor_2-4" and chases.size() == 1 and tractor[0][1] > 7000.0,
 			"부품: 들판 2-4에 경운기(Tractor_2-4) 하나, 2-3 벽(Gate_2-3) 오른쪽 %s" % [tractor])
+	var shakes := _find_by_script("house", SHAKE)
+	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
+			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
 	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 덤불 셋이 임시 배경 FIELD_SNAGS와 같은 자리, 지도 그림이 있다 %s / %s" % [chases, snags])
 	var chain_ok := true
 	for r in required:
