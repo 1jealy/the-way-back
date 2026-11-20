@@ -9,10 +9,12 @@ signal task_started(spot: AskSpot)
 signal task_finished(spot: AskSpot)
 ## MEETING에서 meet_move_to로 보낸 자리에 닿았을 때.
 signal meet_arrived
+## 연출(엔딩 등)에서 script_move_to로 보낸 곳에 닿았을 때.
+signal script_arrived
 ## 하윤이 오래 서 있어서 다음 목표 쪽을 알려 줄 때. target_x는 그 목표.
 signal hinted(target_x: float)
 
-enum State { HIDDEN, MEETING, FOLLOW, SIT, HINT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN }
+enum State { HIDDEN, MEETING, FOLLOW, SIT, HINT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN, SCRIPTED }
 
 const JOIN_FLAG := &"dog_joined"
 ## 하윤 뒤 이 거리에 서려고 한다. 설 자리에서 DEADBAND 안이면 멈춘다 → 80~120px.
@@ -63,6 +65,9 @@ const CLAW_PLACES := [&"station", &"forest"]
 const CLAW_DISTANCE := 75.0
 
 var _claw_left: float = CLAW_DISTANCE
+var _script_goal_x: float = 0.0
+var _script_speed: float = 0.0
+var _script_moving: bool = false
 var _claws: AudioStreamPlayer
 
 
@@ -218,6 +223,13 @@ func _physics_process(delta: float) -> void:
 		State.HOLD:
 			if _player.global_position.x >= _spot.release_x():
 				state = State.TASK_RETURN
+		State.SCRIPTED:
+			if _script_moving:
+				goal_x = _script_goal_x
+				max_speed = _script_speed
+				if absf(goal_x - global_position.x) < 2.0:
+					_script_moving = false
+					script_arrived.emit()
 		State.TASK_RETURN:
 			goal_x = _follow_x()
 			max_speed = TASK_SPEED
@@ -322,7 +334,8 @@ func _move_toward_x(goal_x: float, max_speed: float, delta: float) -> void:
 func _refresh_visuals() -> void:
 	visible = state != State.HIDDEN
 	_visual.scale.x = facing
-	var sitting := state == State.SIT or (state == State.MEETING and not _meet_moving)
+	var sitting := state == State.SIT or (state == State.MEETING and not _meet_moving) \
+			or (state == State.SCRIPTED and not _script_moving)
 	_stand.visible = not sitting
 	_sit.visible = sitting
 	_paw.visible = available_spot() != null
@@ -341,6 +354,24 @@ func _update_claws(delta: float) -> void:
 		_claws.stream = stream
 		_claws.pitch_scale = randf_range(0.9, 1.1)
 		_claws.play()
+
+
+## 연출용: 따라오기·부탁을 멈추고 x까지 간 뒤 앉아 있는다. 닿으면 script_arrived.
+## 다시 따라오게 하려면 release_script().
+func script_move_to(x: float, speed: float = MEET_SPEED) -> void:
+	if not is_joined():
+		return
+	state = State.SCRIPTED
+	_script_goal_x = x
+	_script_speed = speed
+	_script_moving = true
+	_refresh_visuals()
+
+
+func release_script() -> void:
+	if state == State.SCRIPTED:
+		state = State.FOLLOW
+		_script_moving = false
 
 
 func _bark() -> void:

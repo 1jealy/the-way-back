@@ -9,6 +9,9 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_front.png" id="7_34ljx"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="8_qn10e"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_ferry.ogg" id="9_r1owm"]
+[ext_resource type="PackedScene" path="res://scenes/characters/grandpa.tscn" id="10_34ljx"]
+[ext_resource type="Script" path="res://scripts/game/ending.gd" id="11_tlvh7"]
+[ext_resource type="Script" path="res://scripts/game/gate.gd" id="12_k8810"]
 
 [node name="Ferry" unique_id=1705164281 instance=ExtResource("1_tpl")]
 place_id = &"ferry"
@@ -90,3 +93,17 @@ map_circle = 5
 [node name="Ambience" type="AudioStreamPlayer" parent="Sound" index="0" unique_id=1085038037]
 stream = ExtResource("9_r1owm")
 autoplay = true
+
+[node name="Grandpa_7-3" parent="." index="7" unique_id=1178004673 instance=ExtResource("10_34ljx")]
+position = Vector2(1380, 810)
+
+[node name="Ending_7-3" type="Node2D" parent="." index="8" unique_id=903278131]
+position = Vector2(1380, 810)
+script = ExtResource("11_tlvh7")
+greeting = PackedStringArray("할아버지: 왔니.")
+cut1_lines = PackedStringArray("하윤: …다섯 군데 다 봤어.", "할아버지: 그래.")
+
+[node name="Gate_7-3" type="StaticBody2D" parent="." index="9" unique_id=483167511]
+position = Vector2(1050, 810)
+script = ExtResource("12_k8810")
+opens_on_flag = &"map_circle_5"

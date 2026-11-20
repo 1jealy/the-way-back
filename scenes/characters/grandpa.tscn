@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/game/grandpa.gd" id="1_grandpa"]
+
+[node name="Grandpa" type="Node2D"]
+script = ExtResource("1_grandpa")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Coat" type="Polygon2D" parent="Visual"]
+color = Color(0.36, 0.33, 0.3, 1)
+polygon = PackedVector2Array(-42, 0, 42, 0, 36, -212, -36, -212)
+
+[node name="Head" type="Polygon2D" parent="Visual"]
+color = Color(0.84, 0.8, 0.74, 1)
+polygon = PackedVector2Array(-28, -212, 28, -212, 28, -266, -28, -266)
+
+[node name="Hat" type="Polygon2D" parent="Visual"]
+color = Color(0.28, 0.26, 0.24, 1)
+polygon = PackedVector2Array(-44, -262, 44, -262, 30, -270, 26, -292, -26, -292, -30, -270)
+
+[node name="Camera" type="Polygon2D" parent="Visual"]
+color = Color(0.15, 0.14, 0.14, 1)
+polygon = PackedVector2Array(-34, -222, 34, -222, 34, -252, -34, -252)
+
+[node name="Lens" type="Polygon2D" parent="Visual/Camera"]
+color = Color(0.55, 0.6, 0.66, 1)
+polygon = PackedVector2Array(-10, -230, 10, -230, 10, -246, -10, -246)
