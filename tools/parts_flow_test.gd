@@ -158,8 +158,39 @@ func _run() -> void:
 	await _walk_to(door_gate.global_position.x + 200.0)
 	_check(_player.global_position.x > door_gate.global_position.x, "간이역: 문을 열면 대합실로 지나간다")
 
-	# 숲·강가·철교의 부탁 자리
-	for pid in ["forest", "riverside", "bridge"]:
+	# 숲 4-2: 빛 갈림길 두 번. 냄새 → 틀린 빛(이끼 바위 앞으로) → 맞는 빛(다음으로).
+	var forest: Node = await _go("forest")
+	for k in [1, 2]:
+		var ask: Node2D = forest.get_node("AskSpot_4-2_%d" % k)
+		var fork_gate: Node2D = forest.get_node("Gate_4-2_%d" % k)
+		await _walk_to(fork_gate.global_position.x + 200.0)
+		_check(_player.global_position.x < fork_gate.global_position.x, "숲: 갈림길 %d은 걸어서는 못 지나간다" % k)
+		await _walk_to(ask.global_position.x)
+		await _wait(1.0)
+		await _press(&"ask_dog")
+		_check(await _wait_flag(ask.grants_flag, 20.0), "숲: 갈림길 %d에서 냄새 → 맞는 빛 쪽으로 짖는다" % k)
+		await _wait(6.0)
+		var right_x: float = ask.global_position.x + ask.target_offset.x
+		var wrong: Node2D = null
+		var right: Node2D = null
+		for i in 3:
+			var light: Node2D = forest.get_node("Look_4-2_Light%d%d" % [k, i + 1])
+			if is_equal_approx(light.global_position.x, right_x):
+				right = light
+			elif wrong == null:
+				wrong = light
+		await _walk_to(wrong.global_position.x)
+		await _press(&"interact")
+		await _wait(2.0)
+		_check(absf(_player.global_position.x - wrong.to_x) < 5.0 and _player.global_position.x < ask.global_position.x,
+				"숲: 갈림길 %d 틀린 빛을 따라가면 이끼 바위 앞으로 돌아온다" % k)
+		await _walk_to(right.global_position.x)
+		await _press(&"interact")
+		await _wait(2.0)
+		_check(_player.global_position.x > fork_gate.global_position.x, "숲: 갈림길 %d 맞는 빛을 따라가면 지나간다" % k)
+
+	# 강가·철교의 부탁 자리
+	for pid in ["riverside", "bridge"]:
 		var place: Node = await _go(pid)
 		for spot in place.get_children():
 			if not String(spot.name).begins_with("AskSpot_"):
