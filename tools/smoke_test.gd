@@ -181,6 +181,28 @@ func _check_font() -> void:
 			if not font.has_char(text.unicode_at(i)) and not missing.contains(text[i]):
 				missing += text[i]
 	_check(missing.is_empty(), "장소 이름·화면 문구 글자가 글꼴에 있다" + ("" if missing.is_empty() else " (빠짐: %s)" % missing))
+	# 지도 손글씨(할아버지·하윤): 지도 문구 글자가 다 있는지
+	var map_texts: Array[String] = []
+	var map_consts: Dictionary = load("res://scripts/game/map_data.gd").get_script_constant_map()
+	map_texts.append(map_consts["HEADER"])
+	for place in map_consts["PLACES"]:
+		map_texts.append(place["label"])
+	for road in map_consts["SIDE_ROADS"]:
+		map_texts.append(road["label"])
+	for c in map_consts["CIRCLES"]:
+		map_texts.append(c["note"])
+	for hand in ["grandpa_hand_subset", "hayun_hand_subset"]:
+		var hand_font: FontFile = load("res://assets/fonts/%s.ttf" % hand)
+		if hand_font == null:
+			_check(false, "지도 글꼴을 불러온다: %s" % hand)
+			continue
+		var hand_missing := ""
+		for text in map_texts:
+			for i in text.length():
+				if not hand_font.has_char(text.unicode_at(i)) and not hand_missing.contains(text[i]):
+					hand_missing += text[i]
+		_check(not hand_font.allow_system_fallback and hand_missing.is_empty(),
+				"지도 글꼴 %s: OS 글꼴로 대신하지 않고 지도 문구 글자가 다 있다%s" % [hand, "" if hand_missing.is_empty() else " (빠짐: %s)" % hand_missing])
 
 
 ## 장소에 놓은 부품(조사 대상·부탁 자리·하늘이 만남)이 약속을 지키는지 본다. CLAUDE.md 참고.

@@ -146,6 +146,13 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - "[E] 감나무 흔들기" → 잎이 몇 장 떨어지고(`sfx_tree_shake_`) 감 하나(`prop_persimmon`)가 `drop_from`에서 떨어져 땅에 닿고(`sfx_persimmon_drop_`, 신호 `dropped`) 조금 구른다.
 - 진행과 상관없다(선택). 조작을 막지 않는다. 한 번만(`one_shot`).
 
+## 물그림자 (WaterReflection, 장면표 5-2)
+
+`Node2D` + `scripts/game/water_reflection.gd` + `shaders/reflection.gdshader`. 강가 `Reflection_5-2`(물가 가운데 땅 위 x 2040, `half_width` 380).
+
+- 하윤이 물가에 들어서면 물에 비친 하윤이 **흐리게**(`clarity` 0.3) 일렁인다. **하늘이는 비치지 않는다**(복선. 7-6 배 위에서는 셋 다 또렷하게 비쳐 짝이 된다).
+- 하윤 모습(`Visual`)을 한 번 복사해 물 위 선(`water_y` 816) 아래로 뒤집고 매 프레임 맞춘다. 화면을 거울처럼 비추는 방식은 하늘이까지 비쳐서 쓰지 않는다. 인물 컷아웃이 들어오면 복사·맞추기를 다시 본다.
+- 물가에 있는 동안 카메라가 살짝 당겨지고(`camera_zoom` 1.08) 내려간다(`offset.y` 40). 배경이 1080에서 끝나 그냥 내릴 수는 없다.
 ## 빛 알갱이 (LightMotes, 장면표 4-1·4-2)
 
 `Node2D` + `scripts/game/light_motes.gd`. 숲 입구 `Motes_4-1`(땅 위 x 891).
@@ -187,6 +194,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - 지나온 길은 지금 장소의 `place_id`와 그 안에서의 위치로 그린다. 새 장소를 만들면 `MapData.PLACES`에도 넣어야 지도에 나온다.
 - 메모 문구는 `map_data.gd` 한 곳에 있다. 고치면 `docs/design.md` "지도의 다섯 동그라미" 표도 같이 고친다(글꼴 도구가 둘 다에서 글자를 모은다).
 - **지도 그림**: `MapData.PAPER_ART`(`assets/art/map/`)가 있으면 그 그림을 `PAPER_RECT`(1740×980)에 깔고, 코드는 접힌 자국·강·철교·작은 기호·배를 그리지 않는다. 동그라미·메모·체크·지나온 길·장소 이름은 코드가 그린다(그림 위에서는 종이색 테두리). 길과 가지 않는 길은 그림에 아직 없어서 코드가 그린다 — 그림에 들어오면 `_draw_route`·`_draw_side_roads`도 끈다. 좌표는 그림에 맞춰 `map_data.gd`만 고친다.
+- **지도 글씨**: 맨 위 메모·장소 이름·메모 1~4는 할아버지 글씨(`grandpa_hand_subset.ttf`, Nanum Pen Script), 다섯째 메모만 하윤 글씨(`hayun_hand_subset.ttf`, Gamja Flower)다(반전 복선). 둘 다 지도 문구 글자만 든 서브셋이라, 지도 문구를 고치면 `python3 tools/font_subset.py`로 세 글꼴을 다시 만든다(CI가 `--check`로 본다). 없는 글자는 본문 글꼴로 그린다(`map_canvas.gd`의 fallback).
 - **기억 장면**(동그라미 1~4, `scripts/game/memory_scene.gd` `MemoryScene`): B가 그 동그라미 조사 대상 오른쪽에 놓는다(`Memory_2-2`, 원점은 그림 아래 가운데, y 890이면 그림의 땅 선이 땅에 맞는다). `circle`이 같은 조사 대상이 지도를 접은 뒤 `play()`를 기다리고 나서 글을 띄운다. 단색 선 스케치(`art`, 예: `mem_wind`)를 `shaders/memory.gdshader`로 빛처럼 희미하게 겹치고, 그동안 휘파람 한 소절(`phrase` = `mus_phrase_N`, 한 번만)이 나고 환경음이 줄고 하윤 조작이 멈춘다(잠금 이유 `memory`). 대사 없음.
 - 지금 그림(`map_paper.jpg`, 1080×608 JPEG)이 일러스트 담당의 **최종본**이다. 좌표는 이 그림에 맞춰져 있다.
 

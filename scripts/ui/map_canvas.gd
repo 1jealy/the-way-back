@@ -13,6 +13,11 @@ const RIVER := Color(0.36, 0.48, 0.58, 0.55)
 const NOTE_COLOR := Color(0.2, 0.18, 0.16, 1.0)
 const CHILD_COLOR := Color(0.18, 0.24, 0.42, 1.0)
 const CIRCLE_RADIUS := 50.0
+## 지도 글씨. 할아버지(차분한 펜글씨)와 하윤(동글동글한 아이 글씨). 다섯째 메모만 하윤 글씨다(반전 복선).
+## 지도 문구 글자만 든 서브셋이다(tools/font_subset.py). 없는 글자는 본문 글꼴로 그린다.
+const GRANDPA_FONT := preload("res://assets/fonts/grandpa_hand_subset.ttf")
+const HAYUN_FONT := preload("res://assets/fonts/hayun_hand_subset.ttf")
+const BODY_FONT := preload("res://assets/fonts/noto_sans_kr_regular_subset.ttf")
 
 ## 하윤이 지나온 정도(MapData.route_point 참고). 음수면 그리지 않는다.
 var progress: float = -1.0:
@@ -32,25 +37,28 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists(MapData.PAPER_ART):
 		_paper = load(MapData.PAPER_ART)
-	_header_label = _make_label(MapData.HEADER, MapData.HEADER_POS, 40, NOTE_COLOR)
+	for font: FontFile in [GRANDPA_FONT, HAYUN_FONT]:
+		if BODY_FONT not in font.fallbacks:
+			font.fallbacks = [BODY_FONT]
+	_header_label = _make_label(MapData.HEADER, MapData.HEADER_POS, 52, NOTE_COLOR)
 	_header_label.name = "Header"
 	for i in MapData.PLACES.size():
 		var place: Dictionary = MapData.PLACES[i]
 		var offset: Vector2 = place.get("label_offset", Vector2(-60.0, 62.0))
-		var label := _make_label(place["label"], place["pos"] + offset, 26 if _paper else 22, PENCIL)
+		var label := _make_label(place["label"], place["pos"] + offset, 34 if _paper else 30, PENCIL)
 		label.name = "Place_%s" % place["id"]
 		label.custom_minimum_size.x = 120.0
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for road in MapData.SIDE_ROADS:
 		if not String(road["label"]).is_empty():
-			var side := _make_label(road["label"], road["label_pos"], 24 if _paper else 22,
+			var side := _make_label(road["label"], road["label_pos"], 32 if _paper else 30,
 					PENCIL if _paper else PENCIL_LIGHT)
 			side.name = "Side_%s" % road["label"]
 	for n in range(1, MapData.CIRCLES.size() + 1):
 		var c: Dictionary = MapData.CIRCLES[n - 1]
 		var child: bool = c["child"]
-		var label := _make_label(c["note"], c["note_pos"], 36 if child else 28,
-				CHILD_COLOR if child else NOTE_COLOR)
+		var label := _make_label(c["note"], c["note_pos"], 40 if child else 36,
+				CHILD_COLOR if child else NOTE_COLOR, HAYUN_FONT if child else GRANDPA_FONT)
 		label.name = "Note_%d" % n
 		if child:
 			label.rotation = -0.09
@@ -66,10 +74,11 @@ func set_check(n: int, amount: float) -> void:
 	queue_redraw()
 
 
-func _make_label(text: String, pos: Vector2, font_size: int, color: Color) -> Label:
+func _make_label(text: String, pos: Vector2, font_size: int, color: Color, font: Font = GRANDPA_FONT) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.position = pos
+	label.add_theme_font_override("font", font)
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
