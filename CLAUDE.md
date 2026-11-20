@@ -224,6 +224,16 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
 - 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
+## 인물 컷아웃 (Cutout)
+
+- 그림 담당이 클립 스튜디오에서 레이어로 나눠 그린 PSD → `tools/psd_split.py` → `assets/art/char/<인물>/char_<인물>_<부위>.png` + `char_<인물>.json`(레이어 규칙은 도구 맨 위 설명).
+- `scripts/game/cutout.gd`(`Cutout`, Node2D): JSON대로 Sprite2D 조각을 붙인다. 원점 = PSD 캔버스 아래 가운데 = 발밑, `art_scale`로 게임 크기.
+  - 눈·입·눈썹(`eye_`/`mouth_`/`brow_` + 상태)은 한 번에 하나만 보인다: `set_state("eye", "closed")`. 처음은 open·neutral.
+  - 자세(`poses`, 예: `stand`, `sit`)가 있으면 `set_pose("sit")`로 그 자세 조각만.
+  - `blink`면 2.5~6초마다 eye_half → eye_closed → eye_half → 원래 눈.
+- **아직 인물에 붙이지 않았다.** 진짜 그림이 오면 인물마다 `Visual` 아래에 넣고(`Cutout.has_art`), 회색 네모를 끈다. 그림자·물그림자는 `Visual`을 복사하므로 같이 따라온다.
+- 관절(Skeleton2D)·움직임(AnimationPlayer)은 그림 담당과 관절 자리를 정한 뒤 더한다.
+
 ## 하늘이
 
 - `scenes/characters/dog.tscn` + `scripts/dog/dog.gd`. 하윤처럼 `main.tscn`이 들고 있다.

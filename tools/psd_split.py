@@ -13,7 +13,10 @@
   폴더 안 폴더는 이름을 _로 잇는다: hayun/eye/open → char_hayun_eye_open.png
 - 이름은 영어 소문자·숫자·_ 만. 같은 인물 안에서 부위 이름이 겹치면 안 된다.
 - 머리는 눈 없이 그리고(눈 자리까지 피부를 칠한다) 눈·입·눈썹은 상태마다 따로 그린다
-  (eye_open / eye_half / eye_closed …). 깜빡임·표정은 게임이 조각을 바꿔 끼워 만든다.
+  (eye_open / eye_half / eye_closed, mouth_neutral / mouth_smile …, brow_neutral …).
+  깜빡임·표정은 게임이 조각을 바꿔 끼워 만든다(scripts/game/cutout.gd). 처음 상태는 open·neutral.
+- 자세가 여럿이면(하늘이 서기·앉기) 자세마다 폴더: dog/stand/body, dog/sit/body → stand_body, sit_body.
+- 캔버스 아래 가운데가 발밑(게임의 원점)이다. 발이 캔버스 맨 아래 가운데에 닿게 그린다.
 - 클리핑·효과·합성 모드(곱하기 등) 레이어는 부위별로 합쳐 일반 레이어로 만든다.
   자를 때 그 효과가 같이 따라오지 않는다(도구가 찾아서 알려 준다).
 - 숨긴 레이어는 건너뛴다(조각에서 빠진다).
