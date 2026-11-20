@@ -356,6 +356,13 @@ func _run() -> void:
 	var grandpa_ink: Color = canvas.note_label(1).get_theme_color("font_color")
 	var child_ink: Color = canvas.note_label(5).get_theme_color("font_color")
 	_check(child_ink != grandpa_ink, "지도: 다섯째 메모(하윤 글씨)만 다른 색이다")
+	var grandpa_font := load("res://assets/fonts/grandpa_hand_subset.ttf")
+	var hayun_font := load("res://assets/fonts/hayun_hand_subset.ttf")
+	var hands_ok: bool = canvas.get_node("Header").get_theme_font("font") == grandpa_font
+	for n in range(1, circles.size() + 1):
+		var want: Font = hayun_font if circles[n - 1]["child"] else grandpa_font
+		hands_ok = hands_ok and canvas.note_label(n).get_theme_font("font") == want
+	_check(hands_ok, "지도: 맨 위·메모 1~4는 할아버지 글씨, 다섯째만 하윤 글씨 글꼴이다")
 	var map_data: GDScript = load("res://scripts/game/map_data.gd")
 	var places: Array = map_consts["PLACES"]
 	var on_places := true
