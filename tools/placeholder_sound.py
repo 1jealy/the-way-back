@@ -398,6 +398,44 @@ def make_steps(rng):
     place_event(x, one_shot(rng, 0.05, band(800, 6000, -2), 0.001, 0.012) * 0.8, n_samples(0.09), wrap=False)
     place_event(x, one_shot(rng, 0.25, band(300, 3000, -3), 0.02, 0.08) * 0.25, n_samples(0.2), wrap=False)
     out["sfx_shutter_01"] = db_rms(x, -24)
+    for i in range(2):  # 2-3 센 바람: 휘익 부풀었다 빠진다 + 억새가 쓸리는 높은 소리
+        n = n_samples(2.2)
+        t = np.arange(n) / RATE
+        swell = np.sin(np.pi * np.clip(t / 2.0, 0, 1)) ** 1.6
+        low = shaped_noise(rng, 2.2, band(150, 1400, -3))[:n]
+        hiss = shaped_noise(rng, 2.2, band(2500, 9000, -1))[:n] * 0.35
+        flutter = 1 + 0.25 * np.sin(2 * np.pi * rng.uniform(5, 8) * t)
+        out[f"sfx_wind_gust_{i + 1:02d}"] = db_rms((low + hiss * flutter) * swell, -24)
+    for i in range(2):  # 종이(지도)를 집는다: 바스락 두세 번
+        x = np.zeros(n_samples(0.5))
+        for k in range(int(rng.integers(2, 4))):
+            crinkle = one_shot(rng, 0.09, band(1200, 9000, -1), 0.003, 0.03)
+            place_event(x, crinkle * rng.uniform(0.6, 1.0), int((0.01 + k * rng.uniform(0.06, 0.11)) * RATE), wrap=False)
+        out[f"sfx_paper_{i + 1:02d}"] = db_rms(x, -26)
+    # 2-4 경운기: 한 기통 엔진이 통통통. 지나가는 동안(약 16초) 한 번 튼다. 멀어지는 건 게임이 자리로 만든다.
+    secs = 16.0
+    n = n_samples(secs)
+    t = np.arange(n) / RATE
+    rate = 7.5 + 0.4 * np.sin(2 * np.pi * 0.11 * t)
+    phase = np.cumsum(rate) / RATE
+    pulse = np.clip(np.sin(2 * np.pi * phase), 0, 1) ** 6
+    body = shaped_noise(rng, secs, band(50, 700, -4))[:n]
+    hum = np.sin(2 * np.pi * 62 * t) * 0.5 + np.sin(2 * np.pi * 124 * t) * 0.2
+    rattle = shaped_noise(rng, secs, band(1500, 5000, -2))[:n] * 0.15
+    x = (body + hum) * (0.25 + pulse) + rattle * pulse
+    edge = np.clip(np.minimum(t / 0.8, (secs - t) / 0.8), 0, 1)
+    out["sfx_tractor_01"] = db_rms(x * edge, -22)
+    for i in range(2):  # 1-6 감나무 흔들기: 마른 잎이 우수수
+        x = np.zeros(n_samples(1.4))
+        for k in range(int(rng.integers(14, 22))):
+            leaf = one_shot(rng, 0.08, band(1800, 9000, -1), 0.004, 0.025)
+            place_event(x, leaf * rng.uniform(0.3, 1.0), int(rng.uniform(0.0, 1.1) * RATE), wrap=False)
+        swish = one_shot(rng, 1.2, band(400, 4000, -2), 0.08, 0.35) * 0.6
+        place_event(x, swish, 0, wrap=False)
+        out[f"sfx_tree_shake_{i + 1:02d}"] = db_rms(x, -26)
+    for i in range(2):  # 감이 마당 흙에 툭
+        x = one_shot(rng, 0.35, band(60, 900, -5), 0.002, 0.05, ring([(140, 0.5), (230, 0.25)], 0.05))
+        out[f"sfx_persimmon_drop_{i + 1:02d}"] = db_rms(x, -22)
     return out
 
 

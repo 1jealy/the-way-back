@@ -3,6 +3,7 @@
 
     python3 tools/placeholder_art.py field        # 장소 하나
     python3 tools/placeholder_art.py --all        # 그릴 수 있는 장소 전부
+    python3 tools/placeholder_art.py prop         # 움직이는 소품(접힌 지도 등)
 
 결과: assets/art/placeholder/<place_id>/bg_<place_id>_<layer>[_NN].png
 그다음 그림 가져오기 도구로 장소 씬에 넣는다:
@@ -202,6 +203,10 @@ def lerp_color(a: Color, b: Color, t: float) -> Color:
 # ---------------------------------------------------------------- 억새 들판
 # 해 기우는 오후. 은빛·금빛 억새, 옅은 하늘색. 해는 오른쪽 낮게, 그림자는 왼쪽으로 길다.
 
+# 2-3 지도가 걸리는 억새 덤불(땅 x). field.tscn MapChase_2-3의 position.x + stops와 같아야 한다(스모크 검사가 본다).
+FIELD_SNAGS = [5000, 5900, 6800]
+
+
 def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     rng = random.Random("field")
     layers: dict[str, Layer] = {}
@@ -303,6 +308,10 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
             L.line(sag(xa + dx, ya, xb + dx, yb, 46), rgba(70, 60, 50, 200), 2)
     L.blur_groups.append((shadows, 3))
     bus_stop(L, stop_x, 792, shadows)
+    # 2-3 날아간 지도가 걸리는 억새 덤불 셋(하윤 뒤). 자리는 MapChase_2-3의 stops와 같다.
+    snag_rng = random.Random("field_snags")
+    for x in FIELD_SNAGS:
+        reed_clump(L, snag_rng, x, 0.62, base=800)
 
     # 앞: 억새 덤불. 하윤 앞을 지나간다. 듬성듬성, 낮게.
     w = layer_width(width, "front")
@@ -350,8 +359,8 @@ def bus_stop(L: Layer, cx: float, base: float, shadows: list[tuple]) -> None:
         L.line([(ccx, ccy), (ccx + math.cos(a) * length, ccy + math.sin(a) * length)], rgba(50, 44, 40), width)
 
 
-def reed_clump(L: Layer, rng: random.Random, x: float, scale: float) -> None:
-    """억새 한 덤불: 줄기 여럿 + 끝의 은빛·금빛 이삭. 바람에 왼쪽으로 기운다."""
+def reed_clump(L: Layer, rng: random.Random, x: float, scale: float, base: float = H + 10) -> None:
+    """억새 한 덤불: 줄기 여럿 + 끝의 은빛·금빛 이삭. 바람에 왼쪽으로 기운다. base = 뿌리 높이."""
     stem, plume_a, plume_b = rgba(150, 128, 84), rgba(236, 226, 196), rgba(222, 196, 140)
     for _ in range(int(rng.randint(9, 16) * scale)):
         bx = x + rng.gauss(0, 50 * scale)
@@ -360,7 +369,7 @@ def reed_clump(L: Layer, rng: random.Random, x: float, scale: float) -> None:
         pts = []
         for i in range(13):
             t = i / 12
-            pts.append((bx + lean * t * t, H + 10 - h * t))
+            pts.append((bx + lean * t * t, base - h * t))
         L.line(pts, stem, 3.2 * scale)
         tip = pts[-1]
         for k in range(7):  # 이삭: 가는 획 여러 개
@@ -371,7 +380,7 @@ def reed_clump(L: Layer, rng: random.Random, x: float, scale: float) -> None:
         # 잎: 아래쪽에서 휘어 나간다
         if rng.random() < 0.6:
             lx = bx + rng.uniform(-10, 10)
-            L.line(sag(lx, H + 10, lx + rng.choice((-1, 1)) * rng.uniform(80, 160) * scale, H - rng.uniform(90, 200) * scale, -30 * scale, 8), stem, 4 * scale)
+            L.line(sag(lx, base, lx + rng.choice((-1, 1)) * rng.uniform(80, 160) * scale, base - 10 - rng.uniform(90, 200) * scale, -30 * scale, 8), stem, 4 * scale)
 
 
 # ---------------------------------------------------------------- 여러 장소가 같이 쓰는 것
@@ -1294,6 +1303,71 @@ def build_memories() -> None:
         print(f"{path.relative_to(ROOT)}  {path.stat().st_size // 1024} KB")
 
 
+# ---------------------------------------------------------------- 움직이는 소품(임시)
+# 진짜 소품 그림은 일러스트 담당이 준다(장면표 그림 목록 "움직이거나 바뀌는 소품"). 같은 이름이면 그쪽이 먼저다.
+
+
+def prop_map_folded() -> Image.Image:
+    """접힌 지도(2-3 날아가는 지도도 이 그림). 누런 종이 세 겹 접힘, 연필 길과 붉은 동그라미가 비친다."""
+    w, h = 180, 130
+    L = Layer(w)
+    L.poly([(14, 22), (166, 8), (172, 112), (8, 122)], rgba(222, 196, 146))
+    L.poly([(14, 22), (64, 17), (60, 118), (8, 122)], rgba(206, 178, 128))  # 접힌 면 그늘
+    L.poly([(116, 12), (166, 8), (172, 112), (120, 115)], rgba(232, 208, 160))
+    for xa, ya, xb, yb in ((64, 17, 60, 118), (116, 12, 120, 115)):
+        L.line([(xa, ya), (xb, yb)], rgba(150, 120, 80, 200), 2)
+    L.line([(24, 96), (52, 70), (90, 84), (130, 50), (156, 60)], rgba(80, 66, 52, 200), 2.4)
+    L.line([(91 + 11 * math.cos(a / 10 * math.tau), 81 + 11 * math.sin(a / 10 * math.tau)) for a in range(11)], rgba(184, 76, 66, 220), 2.4)
+    img = L.render()[0]
+    return img.crop((0, 0, w, h))
+
+
+def prop_tractor() -> Image.Image:
+    """2-4 농부와 경운기 실루엣. 왼쪽으로 간다(앞이 왼쪽). 농부는 앞만 본다(고개를 돌리지 않는다)."""
+    w, h = 560, 330
+    ink = rgba(70, 58, 48, 235)
+    L = Layer(w)
+    base = h - 4
+    L.ellipse((330, base - 150, 480, base), ink)  # 큰 뒷바퀴
+    L.ellipse((368, base - 112, 442, base - 38), rgba(120, 100, 80, 235))
+    L.ellipse((40, base - 70, 110, base), ink)  # 앞바퀴
+    L.poly([(60, base - 70), (330, base - 110), (340, base - 60), (90, base - 40)], ink)  # 몸통·짐칸 이음
+    L.poly([(30, base - 150), (150, base - 160), (160, base - 70), (40, base - 70)], ink)  # 엔진
+    L.rect(70, base - 200, 86, base - 150, ink)  # 굴뚝
+    L.line([(150, base - 140), (260, base - 210), (300, base - 205)], ink, 8)  # 손잡이
+    L.poly([(250, base - 100), (500, base - 112), (520, base - 40), (260, base - 40)], ink)  # 짐칸
+    # 농부: 짐칸 앞에 앉아 앞(왼쪽)만 본다. 둥근 밀짚모자.
+    L.poly([(272, base - 108), (318, base - 108), (312, base - 200), (276, base - 200)], ink)
+    L.ellipse((276, base - 246, 316, base - 204), ink)
+    L.ellipse((252, base - 240, 340, base - 222), ink)
+    L.line([(282, base - 180), (262, base - 205)], ink, 9)  # 손잡이 잡은 팔
+    img = L.render()[0]
+    return img.crop((0, 0, w, h))
+
+
+def prop_persimmon() -> Image.Image:
+    """1-6 감나무에서 떨어지는 감 하나. 그림 아래 끝이 땅에 닿는 곳."""
+    w, h = 44, 44
+    L = Layer(w)
+    L.ellipse((3, 8, 41, 43), rgba(226, 112, 34))
+    L.ellipse((10, 13, 22, 23), rgba(246, 170, 96, 200))  # 빛
+    L.poly([(14, 10), (22, 4), (30, 10), (22, 13)], rgba(86, 96, 48))  # 꼭지
+    L.line([(22, 6), (24, 0)], rgba(80, 60, 40), 2.5)
+    return L.render()[0].crop((0, 0, w, h))
+
+
+PROPS = {"prop_map_folded": prop_map_folded, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon}
+
+
+def build_props() -> None:
+    out = OUT_DIR / "prop"
+    out.mkdir(parents=True, exist_ok=True)
+    for name, fn in PROPS.items():
+        path = out / f"{name}.png"
+        fn().save(path, optimize=True)
+        print(f"{path.relative_to(ROOT)}  {path.stat().st_size // 1024} KB")
+
+
 # ---------------------------------------------------------------- 실행
 
 PAINTERS = {
@@ -1323,7 +1397,7 @@ def main() -> int:
     parser.add_argument("places", nargs="*", help="place_id (그릴 수 있는 것: %s)" % ", ".join(PAINTERS))
     parser.add_argument("--all", action="store_true")
     args = parser.parse_args()
-    places = list(PAINTERS) + ["cut", "memory"] if args.all else args.places
+    places = list(PAINTERS) + ["cut", "memory", "prop"] if args.all else args.places
     if not places:
         parser.error("장소를 하나 이상 적거나 --all")
     for p in places:
@@ -1332,6 +1406,9 @@ def main() -> int:
             continue
         if p == "memory":  # 기억 장면 자리(임시)
             build_memories()
+            continue
+        if p == "prop":  # 움직이는 소품(임시)
+            build_props()
             continue
         if p not in PAINTERS:
             sys.exit(f"'{p}'은 아직 그릴 수 없다 (있는 것: {', '.join(PAINTERS)})")

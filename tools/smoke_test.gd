@@ -129,6 +129,9 @@ func _run() -> void:
 	await _check_house_puzzle(main, player)
 
 	# 집에서 나루터까지 끝 지점을 차례로 밟아 7곳을 잇는다.
+	# 들판 2-3 날아간 지도는 푼 것으로 둔다(풀기 전이면 지나갈 때 바람이 불어 조작이 멈춘다. 흐름은 게임플레이 검사).
+	state.set_flag(&"map_caught")
+	state.set_flag(&"tractor_passed")  # 2-4 경운기도 지나간 것으로(지나가는 동안 조작이 멈춘다)
 	for i in range(1, PLACES.size()):
 		var here: Node2D = main.current_place()
 		player.global_position.x = here.width - 320.0
@@ -212,6 +215,8 @@ const GATE := "res://scripts/game/gate.gd"
 const PASSAGE := "res://scripts/game/passage.gd"
 const BENCH := "res://scripts/game/bench_sit.gd"
 const MEMORY := "res://scripts/game/memory_scene.gd"
+const MAP_CHASE := "res://scripts/game/map_chase.gd"
+const SHAKE := "res://scripts/game/shake_drop.gd"
 
 
 func _script_path(node: Node) -> String:
@@ -224,6 +229,7 @@ func _check_parts() -> void:
 	var required := []  # [장소 순서, x, 플래그, 이름]
 	var circles := {}
 	var memories := {}  # 동그라미 → [장소, 장면, 그림 있나, 소절 있나]
+	var chases := []  # [장소, 덤불 땅 x들, 지도 그림 있나]
 	var meeting_x := -1.0
 	var fetch_x := -1.0
 	var station_end := 0.0
@@ -242,7 +248,20 @@ func _check_parts() -> void:
 				memories[node.get("circle")] = [place_id, String(node.name).get_slice("_", 1),
 						not find_art.call(node.get("art")).is_empty(), pick.call(node.get("phrase")) != null]
 				continue
-			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE, BENCH]:
+			if path == MAP_CHASE:  # 2-3 날아간 지도: 마지막 덤불에서 줍고 grants_flag를 세운다
+				var stops: PackedFloat32Array = node.get("stops")
+				var xs := []
+				for sx in stops:
+					xs.append(node.position.x + sx)
+				chases.append([place_id, xs, not load("res://scripts/ui/cutscene_player.gd").find_art.call(node.get("art")).is_empty()])
+				var chase_flag: StringName = node.get("grants_flag")
+				if not xs.is_empty() and not chase_flag.is_empty() and not granted.has(chase_flag):
+					granted[chase_flag] = [i, xs[-1]]
+				var chase_req: StringName = node.get("requires_flag")
+				if not chase_req.is_empty():
+					required.append([i, node.position.x, chase_req, "%s/%s" % [place_id, node.name]])
+				continue
+			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE, BENCH, SHAKE]:
 				continue
 			var x: float = node.position.x
 			var on_ground: bool = is_equal_approx(node.position.y, 810.0) and x > 0.0 and x < place.width
@@ -268,7 +287,7 @@ func _check_parts() -> void:
 			var flag: StringName = node.get("grants_flag")
 			if not flag.is_empty() and not granted.has(flag):
 				granted[flag] = [i, x]
-			if path in [INTERACTABLE, PASSAGE, BENCH]:
+			if path in [INTERACTABLE, PASSAGE, BENCH, SHAKE]:
 				var req: StringName = node.get("requires_flag")
 				if not req.is_empty():
 					required.append([i, x, req, "%s/%s" % [place_id, node.name]])
@@ -292,6 +311,18 @@ func _check_parts() -> void:
 		mem_ok = mem_ok and m.size() == 4 and [m[0], m[1]] == CIRCLE_SCENES[n] and m[2] and m[3]
 	_check(mem_ok, "부품: 기억 장면 1~4가 동그라미 1~4와 같은 장소·장면에 하나씩, 그림·휘파람 소절이 있다 %s" % [memories])
 	_check(granted.has(&"has_map") and granted[&"has_map"][0] == 0, "부품: 집에서 지도(has_map)를 얻는다")
+	var snags := _placeholder_list("FIELD_SNAGS")
+	var chase_ok: bool = chases.size() == 1 and chases[0][0] == "field" and chases[0][2] and chases[0][1].size() == 3
+	if chase_ok:
+		for k in 3:
+			chase_ok = chase_ok and k < snags.size() and is_equal_approx(chases[0][1][k], snags[k])
+	var tractor := _find_by_script("field", "res://scripts/game/tractor_pass.gd")
+	_check(tractor.size() == 1 and String(tractor[0][0]) == "Tractor_2-4" and chases.size() == 1 and tractor[0][1] > 7000.0,
+			"부품: 들판 2-4에 경운기(Tractor_2-4) 하나, 2-3 벽(Gate_2-3) 오른쪽 %s" % [tractor])
+	var shakes := _find_by_script("house", SHAKE)
+	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
+			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
+	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 덤불 셋이 임시 배경 FIELD_SNAGS와 같은 자리, 지도 그림이 있다 %s / %s" % [chases, snags])
 	var chain_ok := true
 	for r in required:
 		var g: Array = granted.get(r[2], [])
@@ -302,6 +333,30 @@ func _check_parts() -> void:
 	_check(meeting_x > 0.0, "부품: 간이역에 하늘이 만남(3-4)")
 	_check(meeting_x > 0.0 and meeting_x + 600.0 < station_end, "부품: 만남 자리 + 물러날 거리 600px가 끝 지점보다 왼쪽")
 	_check(fetch_x > meeting_x and meeting_x > 0.0, "부품: 첫 부탁(3-5)이 만남 자리보다 오른쪽")
+
+
+## 장소 씬에서 그 스크립트를 붙인 자식들: [[이름, x], ...]
+func _find_by_script(place_id: String, script_path: String) -> Array:
+	var place: Node = load("res://scenes/places/%s.tscn" % place_id).instantiate()
+	var out := []
+	for node in place.get_children():
+		if _script_path(node) == script_path:
+			out.append([node.name, node.position.x])
+	place.free()
+	return out
+
+
+## tools/placeholder_art.py의 숫자 목록 상수(예: FIELD_SNAGS = [5000, 5900, 6800]).
+func _placeholder_list(name: String) -> Array:
+	var text := FileAccess.get_file_as_string("res://tools/placeholder_art.py")
+	var re := RegEx.create_from_string("(?m)^" + name + r" = \[([^\]]*)\]")
+	var m := re.search(text)
+	var out := []
+	if m:
+		for part in m.get_string(1).split(","):
+			if not part.strip_edges().is_empty():
+				out.append(float(part))
+	return out
 
 
 ## 키를 한 번 누른다. _unhandled_input으로 받는 동작은 Input.action_press로는 안 오고 이벤트여야 한다.

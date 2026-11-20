@@ -76,7 +76,14 @@ func is_available() -> bool:
 
 
 func _unlocked() -> bool:
+	if map_circle > 0 and _map_away():
+		return false  # 지도가 날아가 있는 동안(2-3)에는 지도를 펼칠 수 없다
 	return requires_flag.is_empty() or GameState.has_flag(requires_flag)
+
+
+func _map_away() -> bool:
+	var map := get_tree().get_first_node_in_group("map_screen") as MapScreen
+	return map != null and map.away
 
 
 ## 안내를 띄우고 E를 받는가. 잠겨 있어도 show_locked면 받는다(덜컹).

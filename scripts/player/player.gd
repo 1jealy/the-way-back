@@ -61,6 +61,12 @@ func set_crouching(on: bool) -> void:
 	_visual.scale.y = 0.62 if on else 1.0
 
 
+## 연출용: 그 쪽을 본다(1 = 오른쪽, -1 = 왼쪽).
+func face(dir: int) -> void:
+	facing = 1 if dir >= 0 else -1
+	_visual.scale.x = facing
+
+
 ## 연출용: 조작과 상관없이 x까지 speed로 걸어(달려) 간다. 닿으면 auto_arrived.
 func auto_move_to(x: float, speed: float = 0.0) -> void:
 	_auto_x = x

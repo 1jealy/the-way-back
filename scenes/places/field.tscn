@@ -14,6 +14,9 @@
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_field.ogg" id="12_28arl"]
 [ext_resource type="Script" path="res://scripts/game/bench_sit.gd" id="13_v2r8g"]
 [ext_resource type="Script" uid="uid://bluqmseo20c52" path="res://scripts/game/memory_scene.gd" id="mem_script"]
+[ext_resource type="Script" path="res://scripts/game/map_chase.gd" id="chase_script"]
+[ext_resource type="Script" path="res://scripts/game/gate.gd" id="gate_script"]
+[ext_resource type="Script" path="res://scripts/game/tractor_pass.gd" id="tractor_script"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
@@ -123,3 +126,17 @@ script = ExtResource("mem_script")
 circle = 1
 art = "mem_wind"
 phrase = "mus_phrase_1"
+
+[node name="MapChase_2-3" type="Node2D" parent="."]
+position = Vector2(4300, 810)
+script = ExtResource("chase_script")
+stops = PackedFloat32Array(700, 1600, 2500)
+
+[node name="Gate_2-3" type="StaticBody2D" parent="."]
+position = Vector2(7000, 810)
+script = ExtResource("gate_script")
+opens_on_flag = &"map_caught"
+
+[node name="Tractor_2-4" type="Node2D" parent="."]
+position = Vector2(7337, 810)
+script = ExtResource("tractor_script")

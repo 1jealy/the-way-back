@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://byaxsxklj5xyi"
-path="res://.godot/imported/map_paper_preview.jpg-9c2471f97aa69a3ad9102e5b479d6162.ctex"
+uid="uid://bx5mxqdut2wrv"
+path="res://.godot/imported/prop_persimmon.png-784b09ce274acdeabf4dcb65e94a9962.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/map/map_paper_preview.jpg"
-dest_files=["res://.godot/imported/map_paper_preview.jpg-9c2471f97aa69a3ad9102e5b479d6162.ctex"]
+source_file="res://assets/art/placeholder/prop/prop_persimmon.png"
+dest_files=["res://.godot/imported/prop_persimmon.png-784b09ce274acdeabf4dcb65e94a9962.ctex"]
 
 [params]
 
