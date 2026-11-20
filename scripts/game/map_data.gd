@@ -10,8 +10,8 @@ const HAS_MAP_FLAG := &"has_map"
 ## 종이가 놓이는 자리(화면 좌표). 지도 그림(16:9)이 이 크기로 깔린다.
 const PAPER_RECT := Rect2(90.0, 50.0, 1740.0, 980.0)
 ## 일러스트레이터의 지도 그림. 있으면 종이·강·철교·장소 그림은 이것으로 그리고, 아래 좌표는 이 그림에 맞춘다.
-## 지금은 미리보기(1080x608 JPEG). 최종본은 1920x1080 이상 PNG로 바꾼다.
-const PAPER_ART := "res://assets/art/map/map_paper_preview.jpg"
+## 최종본(1080x608 JPEG). 크기를 키운 그림으로 바꾸면 비율(16:9)만 같으면 좌표는 그대로 맞는다.
+const PAPER_ART := "res://assets/art/map/map_paper.jpg"
 
 const HEADER := "하윤이랑 같이 갈 데"
 const HEADER_POS := Vector2(560.0, 92.0)
