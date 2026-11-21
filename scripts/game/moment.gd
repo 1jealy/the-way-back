@@ -14,6 +14,9 @@ signal finished
 const LOCK := &"moment"
 
 @export var trigger_before: float = 0.0
+## 처음 알아챘을 때 하윤이 원점보다 이만큼 넘게 지나 있으면 건너뛴다(옮겨 가기·검사의 순간이동).
+## 이미 멀리 간 하윤을 멈추거나 하늘이를 한참 뒤로 돌려보내지 않는다(#85).
+@export var trigger_window: float = 600.0
 
 @export_group("하늘이")
 @export var dog_to: float = INF
@@ -54,26 +57,30 @@ func _process(_delta: float) -> void:
 	var player := get_tree().get_first_node_in_group("player") as Player
 	if player and player.global_position.x >= global_position.x - trigger_before:
 		triggered = true
+		if player.global_position.x > global_position.x + trigger_window:
+			return
 		_run(player)
 
 
 func _run(player: Player) -> void:
-	var jobs := 0
 	if not sound.is_empty():
 		_play_sound()
-	if not art.is_empty():
-		jobs += 1
-		_run_art()
-	if player_pause > 0.0:
-		jobs += 1
-		_run_player(player)
 	var dog := get_tree().get_first_node_in_group("dog") as Dog
-	if dog_to != INF and dog and dog.is_joined() and not dog.is_busy():
-		jobs += 1
-		_run_dog(dog)
-	_left = jobs
-	if jobs == 0:
+	var do_art := not art.is_empty()
+	var do_player := player_pause > 0.0
+	var do_dog := dog_to != INF and dog != null and dog.is_joined() and not dog.is_busy()
+	# 일을 시작하기 전에 센다. 그림을 못 찾으면 _run_art가 곧바로 _done()을 불러서,
+	# 나중에 세면 다른 일이 남았는데도 finished가 나간다(#85).
+	_left = int(do_art) + int(do_player) + int(do_dog)
+	if _left == 0:
 		finished.emit()
+		return
+	if do_art:
+		_run_art()
+	if do_player:
+		_run_player(player)
+	if do_dog:
+		_run_dog(dog)
 
 
 var _left: int = 0

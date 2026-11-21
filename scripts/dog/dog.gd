@@ -147,7 +147,8 @@ func place_behind(player: Player) -> void:
 
 ## 지금 F를 누르면 쓸 수 있는 부탁 자리. 없으면 null.
 func available_spot() -> AskSpot:
-	if not is_joined() or is_busy():
+	# 연출(작은 순간·엔딩) 중에는 부탁을 받지 않는다. 받으면 연출이 끊기고 script_arrived가 영영 안 온다(#85).
+	if not is_joined() or is_busy() or state == State.SCRIPTED:
 		return null
 	for node in get_tree().get_nodes_in_group("ask_spot"):
 		var spot := node as AskSpot

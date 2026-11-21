@@ -126,10 +126,10 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 `Node2D` + `scripts/game/moment.gd`. 걷기만 하는 빈 구간에 **대사 없이** 지나가는 연출. 장면표 "빈 구간의 작은 순간" 표가 목록이다.
 
-- 하윤이 원점 - `trigger_before`를 지나면 한 번 일어난다. 플래그를 세우지 않는다(진행과 상관없고, 이어하기 뒤엔 다시 일어난다).
+- 하윤이 원점 - `trigger_before`를 지나면 한 번 일어난다. 처음 알아챘을 때 이미 원점 + `trigger_window`(600px)보다 멀리 가 있으면(옮겨 가기·순간이동) 일어나지 않고 지나간 것으로 친다. 플래그를 세우지 않는다(진행과 상관없고, 이어하기 뒤엔 다시 일어난다).
 - 필요한 것만 채운다: 하늘이 `dog_to`(원점 기준 x)·`dog_hold`·`dog_look`(합류 전이거나 부탁 중이면 건너뜀) / 하윤 `player_pause`·`player_look`(잠금 이유 `moment`) / 그림 `art`가 `art_from` → `art_to`로 `art_seconds` 동안 지나간다(`art_z`, `art_scale`, `art_count`, `art_bob`). 그림은 오른쪽을 보고 그리고, 왼쪽으로 가면 뒤집힌다.
 - 하늘이 연출은 `dog.script_move_to` → `dog.look(dir)` → `dog.release_script`.
-- 이름 `Moment_<장면>_<내용>`. 지금 놓인 것: 들판 `Moment_2-4_Dragonflies`, 간이역 `Moment_3-6_Sniff`·`Moment_3-6_Lead`, 숲 `Moment_4-1_Deer`, 강가 `Moment_5-4_Paw`·`Moment_5-4_Heron`, 철교 `Moment_6-1_Creak`·`Moment_6-3_LookBack`.
+- 이름 `Moment_<장면>_<내용>`. 지금 놓인 것: 들판 `Moment_2-4_Dragonflies`, 간이역 `Moment_3-6_Sniff`·`Moment_3-6_Lead`, 숲 `Moment_4-1_Deer`, 강가 `Moment_5-2_Paw`(물그림자 `Reflection_5-2` 안: 비친 하윤 옆에 비치지 않는 하늘이)·`Moment_5-4_Heron`, 철교 `Moment_6-1_Creak`·`Moment_6-3_LookBack`.
 
 ## 날아간 지도 (MapChase, 장면표 2-3 퍼즐 2)
 
@@ -242,7 +242,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1), `moment`(작은 순간). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 인물 컷아웃 (Cutout)
 
