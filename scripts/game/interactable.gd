@@ -58,7 +58,7 @@ func _ready() -> void:
 	_prompt_label.add_theme_constant_override("outline_size", 6)
 	_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_prompt_label.size = Vector2(320.0, 34.0)
-	_prompt_label.position = Vector2(-160.0, -330.0)
+	_prompt_label.position = Vector2(-160.0, -280.0)
 	_prompt_label.z_index = 20
 	_prompt_label.visible = false
 	add_child(_prompt_label)
