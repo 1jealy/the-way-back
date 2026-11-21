@@ -4,7 +4,7 @@ extends CharacterBody2D
 ## 담당: A(게임플레이).
 
 ## 걷는 속도(px/초). 화면 하나(1920px)를 약 7.7초에 지난다. 장소 폭은 200 기준으로 잡았다(#29).
-@export var walk_speed: float = 250.0
+@export var walk_speed: float = 300.0
 @export var gravity: float = 2400.0
 
 ## 조작을 막고 있는 이유들. 하나라도 있으면 걷지 않는다.
@@ -17,7 +17,7 @@ var controls_enabled: bool:
 var facing: int = 1
 var crouching: bool = false
 
-## 이만큼 걸을 때마다 발소리 하나(px). 250px/초면 약 0.44초.
+## 이만큼 걸을 때마다 발소리 하나(px). 300px/초면 약 0.37초.
 const STEP_DISTANCE := 110.0
 
 var _step_left: float = STEP_DISTANCE * 0.5

@@ -30,6 +30,12 @@ signal locked
 ## 1~5면 조사할 때 지도를 펼치고 그 동그라미에 체크한다(장면 2-2, 3-1, 4-3, 5-4, 7-2).
 ## 하윤이 지도를 접은 뒤에 lines가 나온다.
 @export_range(0, 5) var map_circle: int = 0
+## 주운 물건 그림 이름(assets/art, 확장자 뺀 것, 예: "prop_key"). 조사하면 그 그림이 대상 위로 떠올랐다 사라진다.
+## 대사 없이 "뭔가 주웠다"를 보여 준다(1-4 액자 뒤 열쇠). 비우면 없음.
+@export var pickup_art: String = ""
+
+const PICKUP_RISE := 70.0
+const PICKUP_SECONDS := 1.4
 
 var used: bool = false
 var player_inside: bool = false
@@ -121,6 +127,7 @@ func interact() -> void:
 	used = true
 	if not grants_flag.is_empty():
 		GameState.set_flag(grants_flag)
+	_show_pickup()
 	interacted.emit()
 	if map_circle > 0:
 		var map := get_tree().get_first_node_in_group("map_screen") as MapScreen
@@ -138,6 +145,29 @@ func interact() -> void:
 			await box.finished
 	_busy = false
 	finished.emit()
+
+
+## 주운 물건 그림을 대상 위로 띄웠다가 사라지게 한다. 조작은 막지 않는다.
+func _show_pickup() -> void:
+	if pickup_art.is_empty():
+		return
+	var path := CutscenePlayer.find_art(pickup_art)
+	if path.is_empty():
+		push_warning("조사 대상 %s: 주운 물건 그림 '%s'이 없다" % [name, pickup_art])
+		return
+	var icon := Sprite2D.new()
+	icon.name = "Pickup"
+	icon.texture = load(path)
+	icon.position = Vector2(0.0, -380.0)
+	icon.z_index = 20
+	icon.scale = Vector2(1.5, 1.5)
+	icon.modulate.a = 0.0
+	add_child(icon)
+	var tween := icon.create_tween()
+	tween.tween_property(icon, "modulate:a", 1.0, 0.2)
+	tween.parallel().tween_property(icon, "position:y", -380.0 - PICKUP_RISE, PICKUP_SECONDS) 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(icon, "modulate:a", 0.0, 0.4).set_delay(PICKUP_SECONDS - 0.4)
+	tween.tween_callback(icon.queue_free)
 
 
 func _process(_delta: float) -> void:

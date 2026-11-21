@@ -20,17 +20,17 @@ const JOIN_FLAG := &"dog_joined"
 ## 하윤 뒤 이 거리에 서려고 한다. 설 자리에서 DEADBAND 안이면 멈춘다 → 80~120px.
 const FOLLOW_GAP := 100.0
 const DEADBAND := 20.0
-const FOLLOW_MAX_SPEED := 300.0
+const FOLLOW_MAX_SPEED := 450.0
 ## 멀어진 거리에 비례해 빨라진다(가까우면 천천히 붙는다).
 const FOLLOW_GAIN := 3.0
-const TASK_SPEED := 260.0
-const MEET_SPEED := 340.0
+const TASK_SPEED := 390.0
+const MEET_SPEED := 510.0
 ## 하윤이 이만큼 가만히 있으면 다음 목표 쪽을 알려 준다(같은 정지 동안 한 번).
 const HINT_DELAY := 8.0
 ## 목표 쪽으로 하윤보다 최대 이만큼 앞서 간다.
 const HINT_STEP := 160.0
 const HINT_LOOK_SECONDS := 1.5
-const HINT_SPEED := 170.0
+const HINT_SPEED := 255.0
 const SIT_DELAY := 2.0
 const ACT_SECONDS := 0.8
 ## 하윤 조작을 막는 이유 이름(Player.lock).
