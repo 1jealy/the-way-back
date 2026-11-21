@@ -368,6 +368,14 @@ func script_move_to(x: float, speed: float = MEET_SPEED) -> void:
 	_refresh_visuals()
 
 
+## 연출용: 멈춘 채로 그쪽을 본다(1 = 오른쪽, -1 = 왼쪽). 작은 순간(Moment)에서 돌아보기.
+func look(dir: int) -> void:
+	if dir == 0:
+		return
+	facing = 1 if dir > 0 else -1
+	_refresh_visuals()
+
+
 func release_script() -> void:
 	if state == State.SCRIPTED:
 		state = State.FOLLOW
