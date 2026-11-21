@@ -104,6 +104,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 | `grants_flag` | 조사하면 세우는 플래그 |
 | `requires_flag` | 이 플래그가 서 있을 때만 조사할 수 있다 |
 | `one_shot` | 한 번 조사하면 다시 안 된다 |
+| `pickup_art` | 주운 물건 그림 이름(예: `prop_key`). 조사하면 그 그림이 대상 위로 떠올랐다 사라진다(1.4초, 조작은 안 막는다). 대사 없이 "주웠다"를 보여 줄 때 |
 | `show_locked` | `requires_flag`가 서기 전에도 안내가 뜨고, 조사하면 잠긴 소리(`sfx_locked_`)만 난다(잠긴 서랍·문). 신호 `locked` |
 | `sound` | 조사할 때 낼 소리 이름 앞머리(예: `sfx_pickup_`) |
 
@@ -115,10 +116,10 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 진행을 막는 곳. **B가 장소 씬에 놓고, 동작은 A가 만든다.** 원점은 땅 위(y = 810).
 
-- **Gate**: `StaticBody2D` + `scripts/game/gate.gd`. 이름 `Gate_<장면>`. `opens_on_flag`가 서면 사라진다(비우면 늘 막는다). 물리 층 4라 **하윤만 막고 하늘이는 지나간다**(징검다리 첫 돌에 하늘이가 가야 한다). 플래그는 `GameState.flag_changed`로 듣고, 이어하기 때는 처음부터 열려 있다.
+- **Gate**: `StaticBody2D` + `scripts/game/gate.gd`. 이름 `Gate_<장면>`. `opens_on_flag`가 서면 사라진다(비우면 늘 막는다). 물리 층 4라 **하윤만 막고 하늘이는 지나간다**(징검다리 첫 돌에 하늘이가 가야 한다). 배경에 막는 물건이 없는 곳은 `art`(그림 이름)를 주면 막는 동안 하윤 앞(`art_z` 5)에 그린다(숲 `Gate_4-2_N`의 `prop_thicket`). 투명한 벽은 왜 못 가는지 안 보여서 막힌 줄 모른다. 플래그는 `GameState.flag_changed`로 듣고, 이어하기 때는 처음부터 열려 있다.
   - 막는 벽의 플래그를 세우는 부품은 그 벽보다 왼쪽(또는 앞 장소)에 있어야 한다(스모크 검사가 본다).
   - 지금 놓인 것: 집 대문 `Gate_1-6`(`has_map`), 들판 `Gate_2-3`(`map_caught`, 날아간 지도), 대합실 문 `Gate_3-6`(`station_door_open`), 징검다리 `Gate_5-3`(`river_stone_held`), 끊긴 철교 `Gate_6-2`(늘 막음).
-  - 숲 4-2 빛 갈림길 두 번: 갈림길마다 냄새 부탁 `AskSpot_4-2_N` + 빛줄기 셋 `Look_4-2_LightNM`(Passage, 맞는 빛은 다음으로, 틀린 빛은 이끼 바위 앞으로) + 늘 막는 `Gate_4-2_N`. 빛줄기 자리는 임시 배경(`tools/placeholder_art.py` `FOREST_FORKS`)과 같다.
+  - 숲 4-2 빛 갈림길 두 번: 갈림길마다 냄새 부탁 `AskSpot_4-2_N` + 덤불 벽 입구 셋 `Look_4-2_LightNM`(Passage, `[E] 이 입구로 들어가기`, 맞는 입구는 다음으로, 틀린 입구는 이끼 바위 앞으로) + 늘 막는 `Gate_4-2_N`(덤불 그림). 덤불 벽과 입구는 임시 배경 props 층에 그린다. 빛줄기 자리는 임시 배경(`tools/placeholder_art.py` `FOREST_FORKS`)과 같다.
 - **Passage**: `Area2D` + `scripts/game/passage.gd`(조사 대상을 이은 것). 조사하면 화면이 어두워졌다 밝아지며 하윤이 같은 장소의 `to_x`로 옮겨 간다(`main.move_player_to`). 바닥 높이로 이어지지 않는 길에 쓴다. 지금은 철교 `Look_6-3_Slope`(냄새 뒤 강둑으로 내려가기).
 
 ## 날아간 지도 (MapChase, 장면표 2-3 퍼즐 2)
@@ -265,7 +266,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 - `scenes/characters/player.tscn` + `scripts/player/player.gd`. 원점은 발밑, **키는 약 200px**(9살 약 130cm, 1cm ≈ 1.55px). 할아버지는 약 265px(모자까지 280), 하늘이는 등 약 75px·귀 끝 약 105px. 인물 그림 크기 기준은 `assets/art/README.md` "크기".
 - **그림자** `scripts/player/player_shadow.gd`(`PlayerShadow`, `Player/Shadow`, CanvasGroup): 하윤 모습을 복사해 땅에 눕힌다. 장소마다 진하기·길이·방향은 `SETTINGS`(place_id별). 장소를 지날수록 옅어지고(복선) 숲부터는 거의 없다. 들판에서는 임시 배경의 전봇대 그림자(진하기 약 0.43)보다 옅게(0.26).
-- 걷는 속도 250px/초 = 화면 하나를 약 7.7초(#29에서 200 → 250). 장소 폭은 200 기준으로 잡았다. 속도를 또 바꾸면 장면표 시간도 다시 본다.
+- 걷는 속도 300px/초 = 화면 하나를 약 6.4초(#29에서 200 → 250, 2026-11-21 250 → 300). 장소 폭은 200 기준으로 잡았다. 하늘이 속도(따라오기·심부름·만남·힌트)는 200 기준의 1.5배로 같이 올렸다. 속도를 또 바꾸면 장면표 시간도 다시 본다.
 
 ## 입력
 

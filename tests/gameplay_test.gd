@@ -313,6 +313,18 @@ func _run() -> void:
 	_check(not once.get_node("Prompt").visible, "한 번만인 조사는 다시 안 된다")
 	once.queue_free()
 
+	var pick := _add_interactable(PackedStringArray(), &"test_pick")
+	pick.pickup_art = "prop_key"
+	await _wait(0.2)
+	await _press(&"interact")
+	await _wait(0.3)
+	var icon := pick.get_node_or_null("Pickup") as Sprite2D
+	_check(icon != null and icon.texture != null and icon.modulate.a > 0.5, "주운 물건: 조사하면 그림이 위로 떠오른다")
+	_check(_player.controls_enabled, "주운 물건: 떠오르는 동안에도 걸을 수 있다")
+	await _wait(1.6)
+	_check(pick.get_node_or_null("Pickup") == null, "주운 물건: 잠시 뒤 사라진다")
+	pick.queue_free()
+
 	var locked := _add_interactable(PackedStringArray(["열렸다"]), &"")
 	locked.requires_flag = &"test_need"
 	await _wait(0.2)
@@ -549,6 +561,17 @@ func _check_gate() -> void:
 	await _hold(&"move_right", 1.5)
 	_check(_player.global_position.x > gate.global_position.x, "벽: 플래그가 서면 지나간다")
 	gate.queue_free()
+	await _hold(&"move_left", 1.5)
+	var drawn: StaticBody2D = load("res://scripts/game/gate.gd").new()
+	drawn.opens_on_flag = &"test_gate_art"
+	drawn.art = "prop_thicket"
+	_main.current_place().add_child(drawn)
+	var art := drawn.get_node_or_null("Art") as Sprite2D
+	_check(art != null and art.visible and art.z_index > 0, "벽: 그림을 주면 하윤 앞에 막는 그림이 보인다")
+	_state.set_flag(&"test_gate_art")
+	await _wait(0.2)
+	_check(art != null and not art.visible, "벽: 열리면 막는 그림도 사라진다")
+	drawn.queue_free()
 	await _hold(&"move_left", 1.5)
 
 
