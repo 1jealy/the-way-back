@@ -5,6 +5,8 @@
 - 본문: Noto Sans KR → assets/fonts/noto_sans_kr_regular_subset.ttf (게임 문구 전부)
 - 지도 할아버지 글씨: Nanum Pen Script → assets/fonts/grandpa_hand_subset.ttf (지도 문구만)
 - 지도 하윤 글씨: Gamja Flower → assets/fonts/hayun_hand_subset.ttf (지도 문구만)
+- 제목: Song Myung → assets/fonts/title_subset.ttf (게임 문구의 한글·영문 — 제목·장소 이름 카드)
+- 메뉴·안내: Gowun Dodum → assets/fonts/ui_subset.ttf (게임 문구 전부)
 
     python3 tools/font_subset.py           # 글꼴을 다시 만든다
     python3 tools/font_subset.py --check   # 쓰는 글자가 글꼴에 다 있는지만 본다(CI)
@@ -41,7 +43,8 @@ SOURCE_COMMIT = "5bd87dfc525c8a0d1d8529d3684716e00c3fc59a"
 GOOGLE_FONTS = f"https://raw.githubusercontent.com/google/fonts/{SOURCE_COMMIT}/ofl/"
 
 # key: 무엇에 쓰나 / out: 만들 파일 / url, sha256: 원본 / weight: 가변 글꼴이면 고정할 굵기
-# family: 고친 글꼴의 이름(원본 예약 이름을 피한다) / chars: "game" 게임 문구 전부, "map" 지도 문구만
+# family: 고친 글꼴의 이름(원본 예약 이름을 피한다) / chars: "game" 게임 문구 전부, "map" 지도 문구만,
+# "title" 게임 문구 중 한글 음절·기본 영문만
 FONTS = [
     {
         "key": "body",
@@ -50,6 +53,24 @@ FONTS = [
         "sha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
         "weight": 400,
         "family": "Noto Sans KR",
+        "chars": "game",
+    },
+    {
+        "key": "title",
+        "out": ROOT / "assets/fonts/title_subset.ttf",
+        "url": GOOGLE_FONTS + "songmyung/SongMyung-Regular.ttf",
+        "sha256": "7f90ab20250911560212cc5819c7b205f9c6644bb96b65095d89fcae096bbf58",
+        "weight": None,
+        "family": "Way Back Title",
+        "chars": "title",
+    },
+    {
+        "key": "ui",
+        "out": ROOT / "assets/fonts/ui_subset.ttf",
+        "url": GOOGLE_FONTS + "gowundodum/GowunDodum-Regular.ttf",
+        "sha256": "a6e457933227483a11758fd0947bc74422a106d46f0bf057fdaa5af94a30067d",
+        "weight": None,
+        "family": "Way Back UI",
         "chars": "game",
     },
     {
@@ -85,6 +106,10 @@ GD_COMMENT_RE = re.compile(r'^\s*#.*$', re.MULTILINE)
 STORY_PLACE_RE = re.compile(r'^## \d+\. ([^(\n]+)', re.MULTILINE)
 
 
+def _title_char(ch: str) -> bool:
+    return "\uac00" <= ch <= "\ud7a3" or (ch in ASCII and ch != "`")
+
+
 def _strings(text: str) -> str:
     return "".join(STRING_RE.findall(text))
 
@@ -108,7 +133,11 @@ def _game_files() -> list[Path]:
 
 
 def collect(scope: str = "game") -> dict[str, list[str]]:
-    """글자 → 처음 나온 파일들. scope "map"이면 지도 문구만."""
+    """글자 → 처음 나온 파일들. scope "map"이면 지도 문구만.
+    scope "title"이면 게임 문구 중 한글 음절과 기본 영문·숫자·문장부호만(제목 글꼴 Song Myung에는
+    화살표·「」 같은 기호가 없다. 제목·장소 이름 카드에는 그런 기호를 쓰지 않는다)."""
+    if scope == "title":
+        return {ch: origin for ch, origin in collect("game").items() if _title_char(ch)}
     where: dict[str, list[str]] = {}
 
     def add(chars: str, origin: str) -> None:

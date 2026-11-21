@@ -264,7 +264,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 ## 하윤
 
-- `scenes/characters/player.tscn` + `scripts/player/player.gd`. 원점은 발밑, 키는 약 250px.
+- `scenes/characters/player.tscn` + `scripts/player/player.gd`. 원점은 발밑, **키는 약 200px**(9살 약 130cm, 1cm ≈ 1.55px). 할아버지는 약 265px(모자까지 280), 하늘이는 등 약 75px·귀 끝 약 105px. 인물 그림 크기 기준은 `assets/art/README.md` "크기".
 - **그림자** `scripts/player/player_shadow.gd`(`PlayerShadow`, `Player/Shadow`, CanvasGroup): 하윤 모습을 복사해 땅에 눕힌다. 장소마다 진하기·길이·방향은 `SETTINGS`(place_id별). 장소를 지날수록 옅어지고(복선) 숲부터는 거의 없다. 들판에서는 임시 배경의 전봇대 그림자(진하기 약 0.43)보다 옅게(0.26).
 - 걷는 속도 300px/초 = 화면 하나를 약 6.4초(#29에서 200 → 250, 2026-11-21 250 → 300). 장소 폭은 200 기준으로 잡았다. 하늘이 속도(따라오기·심부름·만남·힌트)는 200 기준의 1.5배로 같이 올렸다. 속도를 또 바꾸면 장면표 시간도 다시 본다.
 
