@@ -27,6 +27,13 @@ const GHOST_SHADER := preload("res://shaders/ghost.gdshader")
 @export var title_text: String = "돌아가는 길"
 ## 끝나면 타이틀로(검사는 끈다).
 @export var return_to_title: bool = true
+## 7-8 영정사진: 크기, 하윤 사진이 또렷해지는 시간(초).
+@export var portrait_scale: float = 1.6
+@export var portrait_reveal_seconds: float = 4.0
+
+## 7-8 영정사진에서 하윤 사진이 다 또렷해졌다.
+signal portraits_shown
+var portraits_revealed: bool = false
 
 var progress: float = 0.0
 var ghosts_shown: int = 0
@@ -96,6 +103,7 @@ func _run() -> void:
 	cut.play({"art": cut2_art, "seconds": 6.0, "zoom": Vector2(1.0, 1.25), "pan": [Vector2.ZERO, Vector2(-120, 30)], "white_out": true})
 	await cut.finished
 	await _title_card()
+	await _portraits_card()
 	GameState.set_flag(&"ending_seen")
 	ended.emit()
 	var main := get_tree().get_first_node_in_group("main")
@@ -199,6 +207,44 @@ func _hide_hud() -> void:
 		var n := main.get_node_or_null(hud) as CanvasItem if main else null
 		if n:
 			n.visible = false
+
+
+## 7-8: 하얀 화면에 1-2의 영정사진 두 개가 다시 비치고, 흐렸던 하윤 사진이 천천히 또렷해진다. 소리 없이.
+func _portraits_card() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "Portraits"
+	layer.layer = 31
+	add_child(layer)
+	var white := ColorRect.new()
+	white.color = Color(1, 0.99, 0.95, 1)
+	white.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(white)
+	var row := Control.new()
+	row.modulate.a = 0.0
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(row)
+	var hayun_mat := FuneralPortraits.blurred_material(1.0)
+	for pair in [[FuneralPortraits.ART_GRANDPA, -170.0, null], [FuneralPortraits.ART_HAYUN, 170.0, hayun_mat]]:
+		var path := CutscenePlayer.find_art(pair[0])
+		if path.is_empty():
+			continue
+		var tex := TextureRect.new()
+		tex.name = pair[0]
+		tex.texture = load(path)
+		tex.size = tex.texture.get_size() * portrait_scale
+		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tex.position = Vector2(960.0 + pair[1], 540.0) - tex.size * 0.5
+		if pair[2]:
+			tex.material = pair[2]
+		row.add_child(tex)
+	await create_tween().tween_property(row, "modulate:a", 1.0, 2.0).finished
+	await _wait(1.5)
+	await create_tween().tween_method(func(v: float): hayun_mat.set_shader_parameter("amount", v), 1.0, 0.0, portrait_reveal_seconds) \
+			.set_trans(Tween.TRANS_SINE).finished
+	portraits_revealed = true
+	portraits_shown.emit()
+	await _wait(3.0)
+	await create_tween().tween_property(row, "modulate:a", 0.0, 2.0).finished
 
 
 ## 7-7: 화면이 하얗게 번진 채 제목이 뜬다.

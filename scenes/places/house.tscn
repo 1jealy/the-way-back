@@ -12,6 +12,8 @@
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/pos_house_radio.ogg" id="10_mxv64"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_bdaxg"]
 [ext_resource type="Script" path="res://scripts/game/shake_drop.gd" id="shake_script"]
+[ext_resource type="Script" path="res://scripts/game/opening.gd" id="opening_script"]
+[ext_resource type="Script" path="res://scripts/game/funeral_portraits.gd" id="portraits_script"]
 
 [node name="House" unique_id=721323629 instance=ExtResource("1_tpl")]
 place_id = &"house"
@@ -125,3 +127,10 @@ opens_on_flag = &"has_map"
 position = Vector2(5070, 810)
 script = ExtResource("shake_script")
 prompt = "감나무 흔들기"
+
+[node name="Opening_0-1" type="Node" parent="."]
+script = ExtResource("opening_script")
+
+[node name="Portraits_1-2" type="Node2D" parent="."]
+position = Vector2(1340, 810)
+script = ExtResource("portraits_script")

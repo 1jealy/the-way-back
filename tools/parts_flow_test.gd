@@ -323,6 +323,7 @@ func _run() -> void:
 	_check(ride.ghosts_shown == 5, "강 위: 지나온 장소 다섯이 차례로 비쳤다 (%d)" % ride.ghosts_shown)
 	_check(ride.touched, "강 위: 하윤이 물을 한 번 만진다")
 	_check(done, "강 위: 컷신 2(빛 속으로) 뒤 하얀 화면에 제목으로 끝난다")
+	_check(ride.portraits_revealed, "강 위: 제목 뒤 영정사진 두 개가 비치고 하윤 사진이 또렷해진다(7-8)")
 
 	if _failures == 0:
 		print("부품 흐름 검사 통과")

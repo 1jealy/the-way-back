@@ -17,6 +17,8 @@ var flags: Dictionary = {}
 
 ## 이어하기로 시작할 장소 씬. main이 한 번 읽고 비운다.
 var start_place: String = ""
+## 타이틀의 "처음부터"로 시작했다. 집의 오프닝(0-1)이 한 번 읽고 비운다. 이어하기·검사에서는 false.
+var opening_pending: bool = false
 
 ## 저장 파일 자리. 검사는 다른 자리를 쓴다.
 var save_path: String = SAVE_PATH
@@ -41,6 +43,7 @@ func reset() -> void:
 	current_place = &""
 	flags.clear()
 	start_place = ""
+	opening_pending = false
 
 
 ## 장소에 막 들어온 순간을 저장한다. place_path는 그 장소 씬.

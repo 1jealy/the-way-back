@@ -1125,7 +1125,37 @@ def cut_boat() -> Image.Image:
     return L.render()[0].convert("RGB")
 
 
-CUTS = {"cut_bracelet": cut_bracelet, "cut_boat": cut_boat}
+def cut_accident() -> Image.Image:
+    """0-1 오프닝, 사고 뒤 비 오는 밤 길가. 깨진 헤드라이트 빛 속에 둥근 모자와 필름 카메라가 젖은 길에 떨어져 있다.
+    사람은 그리지 않는다. 하윤의 물건도 없다(반전을 지킨다)."""
+    bg = vertical_gradient(SCREEN_W, [(0.0, (14, 16, 22)), (0.55, (22, 26, 34)), (0.62, (30, 32, 38)), (1.0, (18, 20, 24))])
+    add_glow(bg, 1450, 640, 700, (210, 200, 170), 0.35)  # 헤드라이트 빛
+    add_glow(bg, 1450, 640, 160, (240, 232, 205), 0.5)
+    L = Layer(SCREEN_W, bg)
+    rng = random.Random("cut_accident")
+    for _ in range(60):  # 젖은 길의 빛 반사
+        x, y = rng.uniform(600, 1900), rng.uniform(700, 1060)
+        L.line([(x, y), (x + rng.uniform(40, 160), y)], rgba(200, 190, 160, rng.randint(30, 90)), rng.uniform(2, 4))
+    L.line([(0, 690), (1920, 640)], rgba(220, 220, 200, 60), 6)  # 길 가장자리 선
+    for _ in range(14):  # 깨진 유리 조각
+        x, y = rng.uniform(1100, 1600), rng.uniform(760, 900)
+        L.poly([(x, y), (x + rng.uniform(6, 16), y - rng.uniform(2, 8)), (x + rng.uniform(4, 12), y + rng.uniform(4, 10))], rgba(220, 225, 230, 160))
+    # 둥근 모자(뒤집혀 젖은 길에)
+    L.ellipse((640, 860, 860, 910), rgba(48, 44, 42))
+    L.ellipse((690, 820, 810, 880), rgba(58, 52, 48))
+    # 필름 카메라(조금 떨어져서, 렌즈가 빛을 받는다)
+    L.rect(980, 900, 1130, 980, rgba(34, 34, 36))
+    L.rect(1000, 885, 1050, 902, rgba(34, 34, 36))
+    L.ellipse((1030, 912, 1090, 972), rgba(60, 62, 66))
+    L.ellipse((1044, 926, 1076, 958), rgba(150, 150, 140))
+    L.line([(1130, 930), (1300, 990), (1420, 970)], rgba(40, 38, 36), 4)  # 끈
+    for _ in range(420):  # 빗줄기
+        x, y = rng.uniform(0, SCREEN_W), rng.uniform(0, 1080)
+        L.line([(x, y), (x - 10, y + rng.uniform(30, 60))], rgba(180, 190, 210, rng.randint(25, 70)), 1.5)
+    return L.render()[0].convert("RGB")
+
+
+CUTS = {"cut_bracelet": cut_bracelet, "cut_boat": cut_boat, "cut_accident": cut_accident}
 
 
 def build_cuts() -> None:
@@ -1356,7 +1386,48 @@ def prop_persimmon() -> Image.Image:
     return L.render()[0].crop((0, 0, w, h))
 
 
-PROPS = {"prop_map_folded": prop_map_folded, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon}
+def _portrait(sitter) -> Image.Image:
+    """영정사진 액자: 짙은 나무 테, 흑백 사진, 위 두 모서리에 검은 띠. sitter가 사진 속 사람을 그린다."""
+    w, h = 150, 196
+    L = Layer(w)
+    L.rect(0, 0, w, h, rgba(52, 40, 32))  # 테
+    L.rect(12, 12, w - 12, h - 12, rgba(206, 204, 198))  # 사진 바탕
+    L.rect(12, 120, w - 12, h - 12, rgba(184, 182, 178))
+    sitter(L, w / 2)
+    frame = rgba(52, 40, 32)  # 테를 사람 위에 다시(어깨가 테 밖으로 나가지 않게)
+    L.rect(0, 0, w, 12, frame)
+    L.rect(0, h - 12, w, h, frame)
+    L.rect(0, 0, 12, h, frame)
+    L.rect(w - 12, 0, w, h, frame)
+    for x0, x1 in ((0, 46), (w, w - 46)):  # 검은 띠(리본)
+        L.poly([(x0, 0), (x1, 0), (x0, abs(x1 - x0))], rgba(20, 20, 22))
+    return L.render()[0].crop((0, 0, w, h))
+
+
+def prop_portrait_grandpa() -> Image.Image:
+    """1-2 할아버지 영정(흑백). 둥근 모자, 넓은 어깨."""
+    def sitter(L, cx):
+        ink = rgba(70, 68, 66)
+        L.ellipse((cx - 50, 128, cx + 50, 230), ink)  # 어깨
+        L.ellipse((cx - 26, 70, cx + 26, 128), rgba(150, 146, 140))  # 얼굴
+        L.ellipse((cx - 42, 62, cx + 42, 78), ink)  # 모자 챙
+        L.ellipse((cx - 24, 40, cx + 24, 74), ink)  # 모자
+    return _portrait(sitter)
+
+
+def prop_portrait_hayun() -> Image.Image:
+    """1-2 하윤 영정(흑백). 단발 아이. 게임이 흐리게 했다가 7-8에서 또렷하게 한다."""
+    def sitter(L, cx):
+        ink = rgba(64, 62, 62)
+        L.ellipse((cx - 38, 140, cx + 38, 230), rgba(120, 118, 116))  # 어깨
+        L.ellipse((cx - 32, 58, cx + 32, 130), ink)  # 머리카락
+        L.ellipse((cx - 23, 74, cx + 23, 132), rgba(168, 164, 158))  # 얼굴
+        L.rect(cx - 25, 66, cx + 25, 86, ink)  # 앞머리
+    return _portrait(sitter)
+
+
+PROPS = {"prop_map_folded": prop_map_folded, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon,
+         "prop_portrait_grandpa": prop_portrait_grandpa, "prop_portrait_hayun": prop_portrait_hayun}
 
 
 def build_props() -> None:

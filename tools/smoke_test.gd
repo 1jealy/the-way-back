@@ -319,6 +319,14 @@ func _check_parts() -> void:
 	var tractor := _find_by_script("field", "res://scripts/game/tractor_pass.gd")
 	_check(tractor.size() == 1 and String(tractor[0][0]) == "Tractor_2-4" and chases.size() == 1 and tractor[0][1] > 7000.0,
 			"부품: 들판 2-4에 경운기(Tractor_2-4) 하나, 2-3 벽(Gate_2-3) 오른쪽 %s" % [tractor])
+	var opening := _find_by_script("house", "res://scripts/game/opening.gd")
+	var portraits := _find_by_script("house", "res://scripts/game/funeral_portraits.gd")
+	var find_art: Callable = load("res://scripts/ui/cutscene_player.gd").find_art
+	var art_ok := true
+	for art in ["cut_accident", "prop_portrait_grandpa", "prop_portrait_hayun"]:
+		art_ok = art_ok and not find_art.call(art).is_empty()
+	_check(opening.size() == 1 and portraits.size() == 1 and String(portraits[0][0]) == "Portraits_1-2" and art_ok,
+			"부품: 집에 오프닝(0-1)과 영정사진 두 개(1-2), 그림(컷신 0·영정 2장)이 있다 %s %s" % [opening, portraits])
 	var shakes := _find_by_script("house", SHAKE)
 	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
 			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
@@ -341,7 +349,7 @@ func _find_by_script(place_id: String, script_path: String) -> Array:
 	var out := []
 	for node in place.get_children():
 		if _script_path(node) == script_path:
-			out.append([node.name, node.position.x])
+			out.append([node.name, node.position.x if node is Node2D else 0.0])
 	place.free()
 	return out
 
