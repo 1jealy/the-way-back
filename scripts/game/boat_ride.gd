@@ -170,11 +170,12 @@ func _make_boat() -> Node2D:
 	boat.name = "Boat"
 	var hull := Polygon2D.new()
 	hull.color = Color(0.58, 0.45, 0.32)
-	hull.polygon = PackedVector2Array([Vector2(-260, -6), Vector2(270, -12), Vector2(210, 40), Vector2(-200, 42)])
+	# 셋이 앉을 만큼(나루터 배경의 배와 같은 크기, 2026-11-21 "배가 작다" 피드백으로 키움)
+	hull.polygon = PackedVector2Array([Vector2(-400, -14), Vector2(410, -22), Vector2(310, 58), Vector2(-310, 62)])
 	boat.add_child(hull)
 	var rim := Polygon2D.new()
 	rim.color = Color(0.78, 0.66, 0.5)
-	rim.polygon = PackedVector2Array([Vector2(-260, -10), Vector2(270, -16), Vector2(270, -6), Vector2(-260, 0)])
+	rim.polygon = PackedVector2Array([Vector2(-400, -20), Vector2(410, -28), Vector2(410, -16), Vector2(-400, -8)])
 	boat.add_child(rim)
 	return boat
 
@@ -183,7 +184,7 @@ func _make_boat() -> Node2D:
 func _make_reflections() -> void:
 	var water := Node2D.new()
 	water.name = "Reflections"
-	water.position = Vector2(0, 44)
+	water.position = Vector2(0, 62)
 	water.scale = Vector2(1, -1)
 	water.modulate = Color(0.85, 0.9, 1.0, 0.55)
 	_boat.add_child(water)
@@ -195,7 +196,7 @@ func _make_reflections() -> void:
 		if vis == null:
 			continue
 		var copy: Node2D = vis.duplicate()
-		copy.position = Vector2(pair[1], 44)
+		copy.position = Vector2(pair[1], 62)
 		water.add_child(copy)
 	var hull_copy: Node2D = _boat.get_child(0).duplicate()
 	water.add_child(hull_copy)
