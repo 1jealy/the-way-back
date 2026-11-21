@@ -19,45 +19,45 @@ shape = SubResource("RectangleShape2D_dog")
 
 [node name="Body" type="Polygon2D" parent="Visual/Stand"]
 color = Color(0.92, 0.92, 0.9, 1)
-polygon = PackedVector2Array(-50, -30, 30, -30, 30, -80, -50, -80)
+polygon = PackedVector2Array(-45, -27, 27, -27, 27, -72, -45, -72)
 
 [node name="LegBack" type="Polygon2D" parent="Visual/Stand"]
 color = Color(0.85, 0.85, 0.83, 1)
-polygon = PackedVector2Array(-46, 0, -34, 0, -34, -30, -46, -30)
+polygon = PackedVector2Array(-41, 0, -31, 0, -31, -27, -41, -27)
 
 [node name="LegFront" type="Polygon2D" parent="Visual/Stand"]
 color = Color(0.85, 0.85, 0.83, 1)
-polygon = PackedVector2Array(14, 0, 26, 0, 26, -30, 14, -30)
+polygon = PackedVector2Array(13, 0, 23, 0, 23, -27, 13, -27)
 
 [node name="Head" type="Polygon2D" parent="Visual/Stand"]
 color = Color(0.95, 0.95, 0.93, 1)
-polygon = PackedVector2Array(22, -70, 58, -70, 58, -104, 22, -104)
+polygon = PackedVector2Array(20, -63, 52, -63, 52, -94, 20, -94)
 
 [node name="Ear" type="Polygon2D" parent="Visual/Stand"]
 color = Color(0.62, 0.45, 0.3, 1)
-polygon = PackedVector2Array(26, -104, 36, -104, 31, -118)
+polygon = PackedVector2Array(23, -94, 32, -94, 28, -106)
 
 [node name="Sit" type="Node2D" parent="Visual"]
 visible = false
 
 [node name="Body" type="Polygon2D" parent="Visual/Sit"]
 color = Color(0.92, 0.92, 0.9, 1)
-polygon = PackedVector2Array(-40, 0, 24, 0, 24, -64, -40, -40)
+polygon = PackedVector2Array(-36, 0, 22, 0, 22, -58, -36, -36)
 
 [node name="Head" type="Polygon2D" parent="Visual/Sit"]
 color = Color(0.95, 0.95, 0.93, 1)
-polygon = PackedVector2Array(10, -60, 46, -60, 46, -94, 10, -94)
+polygon = PackedVector2Array(9, -54, 41, -54, 41, -85, 9, -85)
 
 [node name="Ear" type="Polygon2D" parent="Visual/Sit"]
 color = Color(0.62, 0.45, 0.3, 1)
-polygon = PackedVector2Array(14, -94, 24, -94, 19, -108)
+polygon = PackedVector2Array(13, -85, 22, -85, 17, -97)
 
 [node name="PawMark" type="Label" parent="."]
 visible = false
 offset_left = -16.0
-offset_top = -170.0
+offset_top = -150.0
 offset_right = 16.0
-offset_bottom = -134.0
+offset_bottom = -114.0
 theme_override_colors/font_color = Color(1, 0.93, 0.7, 1)
 theme_override_font_sizes/font_size = 28
 text = "F"
