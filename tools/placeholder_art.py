@@ -810,6 +810,22 @@ def forest(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         x = x0 + rock_dx
         L.ellipse((x - 180, 620, x + 180, 820), rgba(84, 94, 86))
         L.ellipse((x - 150, 612, x + 140, 700), rgba(82, 124, 70))
+        # 덤불 벽: 빛줄기 셋 앞에서 길을 막고, 빛 자리마다 굴 같은 입구가 난다(옆으로 못 가고 입구를 골라야 한다는 게 보이게).
+        hx0, hx1 = x + shaft_dxs[0] - 220, x + shaft_dxs[-1] + 260
+        hr = random.Random(f"hedge{rock_dx}")  # 숲의 다른 그림(rng 순서)이 바뀌지 않게 따로
+        for _ in range(int((hx1 - hx0) / 26)):
+            cx, cy, r = hr.uniform(hx0, hx1), hr.uniform(380, 760), hr.uniform(60, 130)
+            L.ellipse((cx - r, cy - r * 0.8, cx + r, cy + r * 0.8), rgba(22, 44, 40))
+        for _ in range(int((hx1 - hx0) / 40)):
+            cx, cy, r = hr.uniform(hx0, hx1), hr.uniform(340, 720), hr.uniform(30, 70)
+            L.ellipse((cx - r, cy - r * 0.7, cx + r, cy + r * 0.7), rgba(36, 70, 56))
+        L.rect(hx0 + 40, 620, hx1 - 40, 800, rgba(22, 44, 40))
+        for dx in shaft_dxs:
+            ex = x + dx
+            L.ellipse((ex - 92, 470, ex + 92, 640), rgba(58, 82, 60))  # 입구 테두리(빛 받은 잎)
+            L.rect(ex - 92, 556, ex + 92, 800, rgba(58, 82, 60))
+            L.ellipse((ex - 74, 488, ex + 74, 620), rgba(10, 20, 18))  # 굴 안쪽 어둠
+            L.rect(ex - 74, 554, ex + 74, 800, rgba(10, 20, 18))
         L.haze([("poly", [(x + dx - 160, -10), (x + dx - 60, -10), (x + dx + 70, 792), (x + dx - 70, 792)], gold)
                 for dx in shaft_dxs], 18)
     # 4-3 빈터: 큰 빛과 떠 있는 빛 알갱이(움직임은 나중에 코드로)
@@ -1426,7 +1442,45 @@ def prop_portrait_hayun() -> Image.Image:
     return _portrait(sitter)
 
 
-PROPS = {"prop_map_folded": prop_map_folded, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon,
+def prop_key() -> Image.Image:
+    """1-4 액자 뒤에서 찾는 작은 열쇠(주웠을 때 떠오르는 그림). 놋쇠 빛, 둥근 손잡이, 이 두 개. 진한 테두리로 밝은 벽 앞에서도 보이게."""
+    w, h = 96, 44
+    L = Layer(w)
+    edge, brass, shine = rgba(70, 50, 28), rgba(214, 170, 74), rgba(246, 222, 150)
+    L.ellipse((2, 4, 40, 40), edge)
+    L.ellipse((6, 8, 36, 36), brass)
+    L.ellipse((14, 16, 28, 28), edge)  # 고리 구멍
+    L.ellipse((16, 18, 26, 26), rgba(0, 0, 0, 0))
+    L.rect(34, 17, 92, 27, edge)
+    L.rect(36, 19, 90, 25, brass)
+    L.rect(70, 25, 78, 38, edge)  # 이
+    L.rect(82, 25, 90, 34, edge)
+    L.rect(72, 25, 76, 36, brass)
+    L.rect(84, 25, 88, 32, brass)
+    L.line([(10, 14), (18, 9)], shine, 2.5)
+    L.line([(40, 20), (84, 20)], shine, 1.5)
+    return L.render()[0].crop((0, 0, w, h))
+
+
+def prop_thicket() -> Image.Image:
+    """4-2 갈림길 끝에서 길을 막는 덤불(하윤 앞에 그린다, Gate.art). 그림 아래 가운데가 땅."""
+    w, h = 200, 560  # 폭 200: 벽(입구 셋 끝 +200)에 가운데를 두면 셋째 입구를 가리지 않는다
+    L = Layer(w)
+    rng = random.Random("thicket")
+    for _ in range(40):
+        cx, cy, r = rng.uniform(50, w - 50), rng.uniform(140, h - 40), rng.uniform(36, 60)
+        L.ellipse((cx - r, cy - r * 0.85, cx + r, cy + r * 0.85), rgba(20, 40, 36))
+    for _ in range(30):
+        cx, cy, r = rng.uniform(40, w - 40), rng.uniform(120, h - 60), rng.uniform(20, 46)
+        L.ellipse((cx - r, cy - r * 0.8, cx + r, cy + r * 0.8), rgba(44, 82, 60))
+    for _ in range(14):  # 가시 가지
+        x0, y0 = rng.uniform(30, w - 30), rng.uniform(140, h - 40)
+        L.line([(x0, y0), (x0 + rng.uniform(-60, 60), y0 - rng.uniform(30, 80))], rgba(30, 30, 24), 4)
+    L.rect(20, h - 60, w - 20, h, rgba(20, 40, 36))
+    return L.render()[0].crop((0, 0, w, h))
+
+
+PROPS = {"prop_map_folded": prop_map_folded, "prop_key": prop_key, "prop_thicket": prop_thicket, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon,
          "prop_portrait_grandpa": prop_portrait_grandpa, "prop_portrait_hayun": prop_portrait_hayun}
 
 

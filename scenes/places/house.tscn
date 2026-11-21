@@ -94,6 +94,7 @@ lines = PackedStringArray()
 grants_flag = &"house_drawer_key"
 one_shot = true
 sound = "sfx_pickup_"
+pickup_art = "prop_key"
 
 [node name="Look_1-5_Drawer" type="Area2D" parent="." index="7" unique_id=1434765049]
 position = Vector2(3220, 810)
