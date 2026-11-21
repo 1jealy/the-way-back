@@ -1480,7 +1480,52 @@ def prop_thicket() -> Image.Image:
     return L.render()[0].crop((0, 0, w, h))
 
 
-PROPS = {"prop_map_folded": prop_map_folded, "prop_key": prop_key, "prop_thicket": prop_thicket, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon,
+def prop_deer() -> Image.Image:
+    """4-1 숲에서 나무 사이로 지나가는 사슴 실루엣(작은 순간). 오른쪽을 본다. 청록 그림자 색."""
+    w, h = 240, 230
+    L = Layer(w)
+    c = rgba(30, 58, 54, 235)
+    L.ellipse((50, 92, 182, 152), c)  # 몸통
+    L.poly([(160, 104), (196, 46), (214, 52), (186, 118)], c)  # 목
+    L.ellipse((188, 30, 230, 62), c)  # 머리
+    for x0 in (62, 82, 150, 168):  # 다리
+        L.rect(x0, 140, x0 + 9, 226, c)
+    L.line([(204, 34), (194, 6), (184, 0)], c, 4)  # 뿔
+    L.line([(212, 34), (220, 8), (230, 2)], c, 4)
+    L.line([(196, 18), (186, 14)], c, 3)
+    L.ellipse((40, 96, 58, 112), c)  # 꼬리
+    return L.render()[0].crop((0, 0, w, h))
+
+
+def prop_heron() -> Image.Image:
+    """5-3~5-4 강가 물안개에서 날아오르는 왜가리(작은 순간). 오른쪽으로 난다. 푸른 회색."""
+    w, h = 200, 110
+    L = Layer(w)
+    c, d = rgba(150, 164, 176, 235), rgba(84, 96, 110, 235)
+    L.poly([(30, 40), (110, 8), (150, 30), (100, 46)], c)  # 위 날개
+    L.poly([(40, 62), (120, 96), (150, 70), (100, 58)], d)  # 아래 날개
+    L.ellipse((80, 44, 150, 66), c)  # 몸통
+    L.line([(148, 52), (170, 46), (178, 54)], c, 6)  # 목(접힘)
+    L.poly([(176, 50), (198, 54), (176, 58)], rgba(196, 160, 80, 235))  # 부리
+    L.line([(82, 58), (20, 66)], d, 3)  # 다리
+    return L.render()[0].crop((0, 0, w, h))
+
+
+def prop_dragonfly() -> Image.Image:
+    """2-4 들판에서 하윤 주위를 도는 고추잠자리(작은 순간). 오른쪽을 본다."""
+    w, h = 54, 30
+    L = Layer(w)
+    L.ellipse((6, 2, 30, 13), rgba(240, 244, 236, 170))  # 날개
+    L.ellipse((24, 2, 46, 13), rgba(240, 244, 236, 170))
+    L.ellipse((6, 15, 28, 26), rgba(240, 244, 236, 150))
+    L.ellipse((26, 15, 46, 26), rgba(240, 244, 236, 150))
+    L.line([(4, 15), (44, 14)], rgba(206, 70, 46), 4)  # 몸
+    L.ellipse((42, 10, 52, 19), rgba(170, 52, 36))  # 머리
+    return L.render()[0].crop((0, 0, w, h))
+
+
+PROPS = {"prop_map_folded": prop_map_folded, "prop_key": prop_key, "prop_thicket": prop_thicket,
+         "prop_deer": prop_deer, "prop_heron": prop_heron, "prop_dragonfly": prop_dragonfly, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon,
          "prop_portrait_grandpa": prop_portrait_grandpa, "prop_portrait_hayun": prop_portrait_hayun}
 
 

@@ -486,6 +486,7 @@ func _run() -> void:
 	await _wait(0.5)
 
 	await _check_hint()
+	await _check_moment()
 	await _check_sound()
 	await _check_gate()
 	await _check_bench()
@@ -978,3 +979,36 @@ func _check_hint() -> void:
 		node.used = false
 	await _hold(&"move_left", 0.3)
 	await _wait(1.0)
+
+
+## 작은 순간(Moment): 지나가면 한 번 일어난다. 하늘이가 가서 머물다 돌아오고, 하윤은 잠깐 멈추고, 그림이 지나간다.
+func _check_moment() -> void:
+	var dog: CharacterBody2D = _main.dog()
+	var player: CharacterBody2D = _main.player()
+	await _wait(0.5)
+	var m: Node2D = load("res://scripts/game/moment.gd").new()
+	m.trigger_before = 200.0
+	m.dog_to = 160.0
+	m.dog_hold = 0.6
+	m.dog_look = -1
+	m.player_pause = 0.8
+	m.art = "prop_deer"
+	m.art_from = Vector2(300.0, -120.0)
+	m.art_to = Vector2(-100.0, -120.0)
+	m.art_seconds = 1.0
+	var done := [false]
+	m.finished.connect(func(): done[0] = true)
+	_main.current_place().add_child(m)
+	m.global_position = Vector2(player.global_position.x + 40.0, 810.0)
+	await _wait(0.3)
+	_check(m.triggered, "작은 순간: 하윤이 지나가면 일어난다")
+	_check(not player.controls_enabled, "작은 순간: 하윤이 잠깐 멈춘다")
+	_check(m.get_node_or_null("Art0") != null, "작은 순간: 그림이 지나간다")
+	_check(dog.state == _states["SCRIPTED"], "작은 순간: 하늘이가 그 자리로 간다")
+	var ok := await _wait_until(func(): return done[0], 6.0)
+	_check(ok, "작은 순간: 끝난다")
+	_check(player.controls_enabled, "작은 순간: 끝나면 하윤이 다시 걷는다")
+	_check(dog.state != _states["SCRIPTED"], "작은 순간: 끝나면 하늘이가 다시 따라온다")
+	_check(m.get_node_or_null("Art0") == null, "작은 순간: 그림이 사라진다")
+	m.queue_free()
+	await _wait(0.5)

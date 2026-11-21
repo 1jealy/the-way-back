@@ -12,6 +12,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_bridge.ogg" id="10_qs1fr"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_lllq7"]
 [ext_resource type="Script" path="res://scripts/game/passage.gd" id="12_did7t"]
+[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 
 [node name="Bridge" unique_id=943413289 instance=ExtResource("1_tpl")]
 place_id = &"bridge"
@@ -101,3 +102,15 @@ prompt = "강둑으로 내려가기"
 lines = PackedStringArray()
 requires_flag = &"bridge_bank_path"
 one_shot = true
+
+[node name="Moment_6-1_Creak" type="Node2D" parent="."]
+position = Vector2(2400, 810)
+script = ExtResource("moment_script")
+player_pause = 1.2
+
+[node name="Moment_6-3_LookBack" type="Node2D" parent="."]
+position = Vector2(6600, 810)
+script = ExtResource("moment_script")
+dog_to = 80.0
+dog_hold = 1.8
+dog_look = -1

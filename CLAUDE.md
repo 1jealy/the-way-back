@@ -122,6 +122,15 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
   - 숲 4-2 빛 갈림길 두 번: 갈림길마다 냄새 부탁 `AskSpot_4-2_N` + 덤불 벽 입구 셋 `Look_4-2_LightNM`(Passage, `[E] 이 입구로 들어가기`, 맞는 입구는 다음으로, 틀린 입구는 이끼 바위 앞으로) + 늘 막는 `Gate_4-2_N`(덤불 그림). 덤불 벽과 입구는 임시 배경 props 층에 그린다. 빛줄기 자리는 임시 배경(`tools/placeholder_art.py` `FOREST_FORKS`)과 같다.
 - **Passage**: `Area2D` + `scripts/game/passage.gd`(조사 대상을 이은 것). 조사하면 화면이 어두워졌다 밝아지며 하윤이 같은 장소의 `to_x`로 옮겨 간다(`main.move_player_to`). 바닥 높이로 이어지지 않는 길에 쓴다. 지금은 철교 `Look_6-3_Slope`(냄새 뒤 강둑으로 내려가기).
 
+## 작은 순간 (Moment)
+
+`Node2D` + `scripts/game/moment.gd`. 걷기만 하는 빈 구간에 **대사 없이** 지나가는 연출. 장면표 "빈 구간의 작은 순간" 표가 목록이다.
+
+- 하윤이 원점 - `trigger_before`를 지나면 한 번 일어난다. 플래그를 세우지 않는다(진행과 상관없고, 이어하기 뒤엔 다시 일어난다).
+- 필요한 것만 채운다: 하늘이 `dog_to`(원점 기준 x)·`dog_hold`·`dog_look`(합류 전이거나 부탁 중이면 건너뜀) / 하윤 `player_pause`·`player_look`(잠금 이유 `moment`) / 그림 `art`가 `art_from` → `art_to`로 `art_seconds` 동안 지나간다(`art_z`, `art_scale`, `art_count`, `art_bob`). 그림은 오른쪽을 보고 그리고, 왼쪽으로 가면 뒤집힌다.
+- 하늘이 연출은 `dog.script_move_to` → `dog.look(dir)` → `dog.release_script`.
+- 이름 `Moment_<장면>_<내용>`. 지금 놓인 것: 들판 `Moment_2-4_Dragonflies`, 간이역 `Moment_3-6_Sniff`·`Moment_3-6_Lead`, 숲 `Moment_4-1_Deer`, 강가 `Moment_5-4_Paw`·`Moment_5-4_Heron`, 철교 `Moment_6-1_Creak`·`Moment_6-3_LookBack`.
+
 ## 날아간 지도 (MapChase, 장면표 2-3 퍼즐 2)
 
 `Node2D` + `scripts/game/map_chase.gd`. 들판에 `MapChase_2-3`(땅 위 x 4300)과 그 오른쪽 `Gate_2-3`(`map_caught`, x 7000).

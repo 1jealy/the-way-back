@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/game/map_chase.gd" id="chase_script"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="gate_script"]
 [ext_resource type="Script" path="res://scripts/game/tractor_pass.gd" id="tractor_script"]
+[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
@@ -140,3 +141,14 @@ opens_on_flag = &"map_caught"
 [node name="Tractor_2-4" type="Node2D" parent="."]
 position = Vector2(7337, 810)
 script = ExtResource("tractor_script")
+
+[node name="Moment_2-4_Dragonflies" type="Node2D" parent="."]
+position = Vector2(8200, 810)
+script = ExtResource("moment_script")
+art = "prop_dragonfly"
+art_from = Vector2(-260, -280)
+art_to = Vector2(520, -320)
+art_seconds = 4.5
+art_z = 5
+art_count = 4
+art_bob = 30.0
