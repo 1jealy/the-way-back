@@ -866,6 +866,10 @@ func _check_save() -> void:
 	await process_frame
 	_check(title.get_node("Menu/Continue").disabled, "타이틀: 저장이 없으면 이어하기가 꺼져 있다")
 	_check(title.get_node("Menu/New").has_focus(), "타이틀: 저장이 없으면 처음부터에 초점이 있다")
+	_check(title.get_node("Menu/Quit").visible, "타이틀: 데스크톱에서는 끝내기가 보인다")
+	_check(title.get_node("Background").get_child_count() >= 6, "타이틀: 배경 층·그늘·걷는 실루엣·빛 알갱이가 있다")
+	var title_font: Font = title.get_node("Title").get_theme_font("font")
+	_check(title_font != null and title_font.resource_path.ends_with("title_subset.ttf"), "타이틀: 제목은 제목 글꼴(송명)")
 
 	_main.queue_free()
 	_state.set_flag(&"test_leftover")
@@ -873,7 +877,8 @@ func _check_save() -> void:
 	title.start_new()
 	await process_frame
 	_check(_state.flags.is_empty() and not _state.has_save(), "타이틀: 처음부터는 진행과 저장을 지운다")
-	await _wait(0.5)
+	_check(current_scene == null or current_scene.scene_file_path != "res://scenes/main.tscn", "타이틀: 고르면 바로 넘어가지 않고 어두워진다")
+	await _wait(1.3)
 	var started: Node = current_scene
 	_check(started != null and started.scene_file_path == "res://scenes/main.tscn", "타이틀: 처음부터를 누르면 본편이 시작된다")
 	if started != null:
