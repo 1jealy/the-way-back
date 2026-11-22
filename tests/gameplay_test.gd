@@ -139,6 +139,8 @@ func _run() -> void:
 	_player = _main.player()
 	_dog = _main.dog()
 
+	await _check_place_card()
+
 	# 합류 전
 	_check(not _dog.visible and not _dog.is_joined(), "합류 전에는 하늘이가 보이지 않는다")
 
@@ -844,6 +846,35 @@ func _check_opening() -> void:
 
 
 ## 저장·이어하기·타이틀. 실제 저장 파일(user://save.cfg)은 건드리지 않는다.
+## 장소 이름 카드·처음 걷기 안내(#87): 늘 떠 있던 개발용 글 대신.
+func _check_place_card() -> void:
+	_check(_main.get_node_or_null("Overlay/Hint") == null and _main.get_node_or_null("Overlay/PlaceLabel") == null,
+			"화면에 늘 떠 있던 개발용 안내 글이 없다")
+	var card: Control = _main.get_node("Overlay/PlaceCard")
+	var hint: Label = _main.get_node("Overlay/WalkHint")
+	_check(card.shown_name == _main.current_place().display_name, "장소 카드: 들어선 장소 이름이다")
+	_check(card.get_node("Title").get_theme_font("font").resource_path.ends_with("title_subset.ttf"), "장소 카드: 제목 글꼴")
+	await _wait(0.8)
+	_check(card.visible and card.modulate.a > 0.3, "장소 카드: 들어서면 뜬다")
+	_check(hint.visible, "처음 집에서는 걷기 안내가 뜬다")
+	await _hold(&"move_right", 1.0)
+	_check(not hint.visible and _state.has_flag(&"walked_once"), "걷기 안내: 조금 걸으면 사라진다")
+	await _hold(&"move_left", 1.0)
+	var faded := await _wait_until(func(): return not card.visible, 6.0)
+	_check(faded, "장소 카드: 잠시 뒤 사라진다")
+	# 조작이 막혀 있는 동안(오프닝·연출)에는 뜨지 않고 기다린다
+	_player.lock(&"test_card")
+	card.show_place("시험 장소", _player)
+	await _wait(0.6)
+	_check(not card.visible, "장소 카드: 조작이 막혀 있으면 기다린다")
+	_player.unlock(&"test_card")
+	await _wait(0.6)
+	_check(card.visible and card.get_node("Title").text == "시험 장소", "장소 카드: 조작이 풀리면 뜬다")
+	card.show_place("", _player)
+	await _wait(0.2)
+	_check(not card.visible, "장소 카드: 이름 없는 장소(강 위)는 안 뜬다")
+
+
 func _check_save() -> void:
 	const HOUSE := "res://scenes/places/house.tscn"
 	_check(not _state.autosave, "저장: 헤드리스에서는 자동 저장이 꺼져 있다")
