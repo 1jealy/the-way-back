@@ -118,11 +118,12 @@ position = Vector2(2040, 810)
 script = ExtResource("reflection_script")
 half_width = 380.0
 
-[node name="Moment_5-4_Paw" type="Node2D" parent="."]
-position = Vector2(4900, 810)
+[node name="Moment_5-2_Paw" type="Node2D" parent="."]
+position = Vector2(1950, 810)
 script = ExtResource("moment_script")
-dog_to = 100.0
+dog_to = 110.0
 dog_hold = 2.2
+player_pause = 1.6
 
 [node name="Moment_5-4_Heron" type="Node2D" parent="."]
 position = Vector2(5600, 810)

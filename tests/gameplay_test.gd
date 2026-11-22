@@ -1005,6 +1005,10 @@ func _check_moment() -> void:
 	_check(not player.controls_enabled, "작은 순간: 하윤이 잠깐 멈춘다")
 	_check(m.get_node_or_null("Art0") != null, "작은 순간: 그림이 지나간다")
 	_check(dog.state == _states["SCRIPTED"], "작은 순간: 하늘이가 그 자리로 간다")
+	var ask := _add_spot(_actions["FETCH"], 260.0, &"test_moment_ask")
+	await _wait(0.1)
+	_check(dog.available_spot() == null, "작은 순간: 하늘이가 연출 중이면 부탁을 받지 않는다")
+	ask.queue_free()
 	var ok := await _wait_until(func(): return done[0], 6.0)
 	_check(ok, "작은 순간: 끝난다")
 	_check(player.controls_enabled, "작은 순간: 끝나면 하윤이 다시 걷는다")
@@ -1012,3 +1016,25 @@ func _check_moment() -> void:
 	_check(m.get_node_or_null("Art0") == null, "작은 순간: 그림이 사라진다")
 	m.queue_free()
 	await _wait(0.5)
+	# 그림을 못 찾아도 다른 일(하윤 멈춤)이 끝날 때까지 finished가 나가지 않는다(#85).
+	var lost: Node2D = load("res://scripts/game/moment.gd").new()
+	lost.art = "no_such_art_for_test"
+	lost.player_pause = 0.8
+	var lost_done := [false]
+	lost.finished.connect(func(): lost_done[0] = true)
+	_main.current_place().add_child(lost)
+	lost.global_position = Vector2(player.global_position.x - 10.0, 810.0)
+	await _wait(0.3)
+	_check(lost.triggered and not lost_done[0], "작은 순간: 그림이 없어도 남은 일이 끝나기 전엔 끝나지 않는다")
+	var lost_ok := await _wait_until(func(): return lost_done[0], 3.0)
+	_check(lost_ok and player.controls_enabled, "작은 순간: 그림이 없어도 남은 일이 끝나면 끝난다")
+	lost.queue_free()
+	await _wait(0.3)
+	# 이미 멀리 지나간 하윤(옮겨 가기·순간이동)은 멈추지 않는다(#85).
+	var passed: Node2D = load("res://scripts/game/moment.gd").new()
+	passed.player_pause = 1.0
+	_main.current_place().add_child(passed)
+	passed.global_position = Vector2(player.global_position.x - 900.0, 810.0)
+	await _wait(0.2)
+	_check(passed.triggered and player.controls_enabled, "작은 순간: 멀리 지나간 뒤에 알아채면 건너뛴다")
+	passed.queue_free()
