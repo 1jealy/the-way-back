@@ -902,6 +902,34 @@ func _check_place_card() -> void:
 	await _wait(0.2)
 	_check(not card.visible, "장소 카드: 이름 없는 장소(강 위)는 안 뜬다")
 	await _check_screen_polish()
+	await _check_hayun_rig()
+
+
+## 하윤 컷아웃(#94): PSB 조각이 붙고, 걸으면 다리·팔이 흔들리고, 멈추면 선다. 그림자도 같은 조각을 따른다.
+func _check_hayun_rig() -> void:
+	var rig: Node2D = _player.get_node_or_null("Visual/Rig")
+	_check(rig != null and rig.cutout != null and rig.cutout.parts.has("ponytail") and rig.cutout.parts.has("far_leg_upper"),
+			"하윤 컷아웃: 조각과 먼 쪽 팔다리가 붙는다")
+	if rig == null:
+		return
+	var cut: Node2D = rig.cutout
+	_check(cut.get_child(0).name.begins_with("far_"), "하윤 컷아웃: 먼 쪽 팔다리는 맨 뒤에 그린다")
+	var shadow_cut := _player.get_node_or_null("Shadow/Visual/Rig/Cutout")
+	_check(shadow_cut != null and shadow_cut.get_child_count() == cut.get_child_count(), "하윤 컷아웃: 그림자가 같은 조각을 복사한다")
+	await _wait(0.6)
+	_check(rig.walk_amount() < 0.05, "하윤 컷아웃: 가만히 있으면 서 있는 자세")
+	var leg: Node2D = cut.parts["leg_upper"]
+	var seen := {}
+	for i in 8:
+		await _hold(&"move_right", 0.12)
+		seen[snappedf(leg.rotation, 0.05)] = true
+	_check(rig.walk_amount() > 0.9 and seen.size() >= 3, "하윤 컷아웃: 걸으면 다리가 흔들린다 (%d가지 각도)" % seen.size())
+	var a: Dictionary = rig.joint_angles()
+	_check(signf(a["hip"]) == -signf(a["far_hip"]) or is_zero_approx(a["hip"]), "하윤 컷아웃: 두 다리가 반대로 움직인다")
+	await _wait(0.8)
+	_check(rig.walk_amount() < 0.05 and absf(leg.rotation) < 0.01, "하윤 컷아웃: 멈추면 다시 선다")
+	await _hold(&"move_left", 0.96)
+	await _wait(0.5)
 
 
 ## 화면 다듬기(#90): 카메라가 걷는 쪽을 앞서 보고, 장소마다 떠다니는 알갱이, 가장자리 비네트.

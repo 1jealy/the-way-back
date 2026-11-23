@@ -21,6 +21,12 @@
   자를 때 그 효과가 같이 따라오지 않는다(도구가 찾아서 알려 준다).
 - 숨긴 레이어는 건너뛴다(조각에서 빠진다).
 
+그림 담당 원본이 맨 위 폴더 없이 한글 레이어로 되어 있으면 --char로 자른다(#94):
+    python3 tools/psd_split.py 캐릭터.psb --char hayun --names tools/psd_names/hayun.json --mirror --height 645
+  이름표(JSON)가 레이어 이름을 부위 이름으로 바꾸고, --mirror가 왼쪽을 보고 그린 그림을 뒤집고,
+  --height가 인물 전체 높이를 게임 크기의 2배로 줄인다. 캔버스는 인물 둘레로 잘라 발 가운데가 아래 가운데.
+  레이어에 떨어진 작은 점은 지운다.
+
 만드는 것(assets/art/char/<인물>/):
 - char_<인물>_<부위>.png  조각(투명 배경, 그려진 부분만 잘라 냄)
 - char_<인물>.json        캔버스 크기, 조각마다 캔버스 위 자리(x, y, w, h)와 그리는 순서(z, 0이 맨 아래)
@@ -134,16 +140,144 @@ def split(psd_path: Path, out_dir: Path, write: bool) -> tuple[list[str], list[s
     return errors, warnings
 
 
+def _despeckle(img, keep_ratio: float = 0.02):
+    """레이어에 떨어진 작은 점(붓 자국)을 지운다. 가장 큰 덩어리의 keep_ratio보다 작은 덩어리를 투명하게."""
+    import numpy as np
+    a = np.array(img)
+    alpha = a[:, :, 3] > 8  # 자를 때(>8)와 같은 문턱. 다르면 옅은 가장자리가 남아 상자가 커진다
+    step = 6
+    h, w = alpha.shape
+    gh, gw = (h + step - 1) // step, (w + step - 1) // step
+    pad = np.zeros((gh * step, gw * step), bool)
+    pad[:h, :w] = alpha
+    grid = pad.reshape(gh, step, gw, step).any(axis=(1, 3))
+    label = np.zeros(grid.shape, int)
+    sizes = [0]
+    for y0 in range(gh):
+        for x0 in range(gw):
+            if not grid[y0, x0] or label[y0, x0]:
+                continue
+            n = len(sizes)
+            stack, count = [(y0, x0)], 0
+            label[y0, x0] = n
+            while stack:
+                y, x = stack.pop()
+                count += 1
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        yy, xx = y + dy, x + dx
+                        if 0 <= yy < gh and 0 <= xx < gw and grid[yy, xx] and not label[yy, xx]:
+                            label[yy, xx] = n
+                            stack.append((yy, xx))
+            sizes.append(count)
+    if len(sizes) <= 2:
+        return img, 0
+    biggest = max(sizes)
+    drop = [i for i, c in enumerate(sizes) if i and c < biggest * keep_ratio]
+    if not drop:
+        return img, 0
+    mask = np.isin(label, drop).repeat(step, 0).repeat(step, 1)[:h, :w]
+    a[mask, 3] = 0
+    from PIL import Image
+    return Image.fromarray(a, "RGBA"), len(drop)
+
+
+def split_flat(psd_path: Path, out_dir: Path, write: bool, char: str, names: dict, mirror: bool,
+               height: int) -> tuple[list[str], list[str]]:
+    """맨 위 폴더 없이 레이어만 있는 PSD/PSB(그림 담당 원본 그대로)를 한 인물로 자른다.
+    names: 레이어 이름 → 부위 이름(빈 문자열이면 건너뜀). mirror: 왼쪽을 보고 그렸으면 뒤집는다.
+    height: 인물 전체(맨 위 ~ 발끝) 높이를 이 px로 줄인다. 캔버스는 인물 둘레로 잘라 발끝 가운데가 아래 가운데에 오게."""
+    from psd_tools import PSDImage
+    from PIL import Image, ImageOps
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    psd = PSDImage.open(psd_path)
+    raw = []  # (부위, 그림, left, top)
+    z = 0
+    for layer in psd:  # 아래에서 위 순서
+        if layer.is_group():
+            errors.append(f"'{layer.name}': 폴더는 --char 없이 쓴다(맨 위 폴더 = 인물)")
+            continue
+        if layer.name not in names:
+            errors.append(f"'{layer.name}': 이름표(--names)에 없는 레이어")
+            continue
+        part = names[layer.name]
+        if not part:
+            continue
+        if not layer.is_visible():
+            warnings.append(f"'{layer.name}': 숨긴 레이어라 건너뛴다")
+            continue
+        for p in _layer_problems(layer):
+            warnings.append(f"'{layer.name}': {p} — 합쳐서 일반 레이어로 만들어 달라고 한다")
+        img = layer.composite()
+        if img is None or img.getbbox() is None:
+            warnings.append(f"'{layer.name}': 빈 레이어라 건너뛴다")
+            continue
+        img, dropped = _despeckle(img.convert("RGBA"))
+        if dropped:
+            warnings.append(f"'{layer.name}': 떨어진 점 {dropped}개를 지웠다")
+        box = img.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()  # 거의 투명한 번짐은 빼고
+        raw.append((part, img.crop(box), layer.left + box[0], layer.top + box[1], z))
+        z += 1
+    if errors or not raw:
+        return errors or ["조각이 없다"], warnings
+    x0 = min(r[2] for r in raw)
+    x1 = max(r[2] + r[1].width for r in raw)
+    y0 = min(r[3] for r in raw)
+    foot = [r for r in raw if r[0] == "foot"]
+    y1 = max(r[3] + r[1].height for r in raw) if not foot else foot[0][3] + foot[0][1].height
+    fx = (foot[0][2] + foot[0][1].width / 2) if foot else (x0 + x1) / 2  # 발 가운데가 원점
+    k = height / float(y1 - y0)
+    half = max(fx - x0, x1 - fx)
+    cw, ch = int(round(half * 2 * k)), height
+    parts: dict[str, dict] = {}
+    images = {}
+    for part, img, left, top, zz in raw:
+        w, h = max(1, round(img.width * k)), max(1, round(img.height * k))
+        im = img.resize((w, h), Image.LANCZOS)
+        x = (left - fx) * k + cw / 2
+        if mirror:
+            im = ImageOps.mirror(im)
+            x = cw - (x + w)
+        parts[part] = {"x": round(x), "y": round((top - y0) * k), "w": w, "h": h, "z": zz}
+        images[part] = im
+    print(f"{char}: 조각 {len(parts)}개 — {', '.join(parts)} (캔버스 {cw}x{ch}, 배율 {k:.4f})")
+    if write:
+        d = out_dir / char
+        d.mkdir(parents=True, exist_ok=True)
+        for old in d.glob(f"char_{char}_*.png"):
+            if old.stem.removeprefix(f"char_{char}_") not in parts:
+                old.unlink()
+        for part, im in images.items():
+            im.save(d / f"char_{char}_{part}.png", optimize=True)
+        meta = {"source": psd_path.name, "canvas": [cw, ch], "scale": round(k, 5), "mirrored": mirror, "parts": parts}
+        (d / f"char_{char}.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        print(f"  → {d.relative_to(ROOT) if d.is_relative_to(ROOT) else d}")
+    return errors, warnings
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("psd", type=Path)
     parser.add_argument("--out", type=Path, default=OUT)
     parser.add_argument("--check", action="store_true", help="쓰지 않고 규칙만 본다")
+    parser.add_argument("--char", help="맨 위 폴더 없이 레이어만 있는 원본을 이 인물 하나로 자른다")
+    parser.add_argument("--names", type=Path, help="--char: 레이어 이름 → 부위 이름 JSON(tools/psd_names/)")
+    parser.add_argument("--mirror", action="store_true", help="--char: 왼쪽을 보고 그린 그림을 뒤집는다")
+    parser.add_argument("--height", type=int, default=0, help="--char: 인물 전체 높이(px, 게임 크기의 2배)")
     args = parser.parse_args()
     if args.psd.suffix.lower() == ".clip":
         print("FAIL  .clip은 읽지 않는다. 클립 스튜디오에서 .psd로 저장해서 받는다.")
         return 1
-    errors, warnings = split(args.psd, args.out.resolve(), write=not args.check)
+    if args.char:
+        if not args.names or args.height <= 0:
+            print("FAIL  --char에는 --names와 --height가 필요하다")
+            return 1
+        names = {k: v for k, v in json.loads(args.names.read_text(encoding="utf-8")).items() if not k.startswith("_")}
+        errors, warnings = split_flat(args.psd, args.out.resolve(), not args.check, args.char, names, args.mirror, args.height)
+    else:
+        errors, warnings = split(args.psd, args.out.resolve(), write=not args.check)
     for w in warnings:
         print(f"경고  {w}")
     for e in errors:
