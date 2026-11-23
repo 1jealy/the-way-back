@@ -32,6 +32,11 @@ const PART_JOINT := {
 	"skirt": "skirt", "leg_upper": "hip", "leg_lower": "knee", "foot": "ankle", "bandage": "hip",
 	"arm_upper": "shoulder", "arm_lower": "elbow", "hand": "elbow", "bracelet": "elbow",
 }
+## 팔(어깨·팔꿈치와 거기 붙은 조각)을 원본 자리보다 앞으로 옮긴다(캔버스 px).
+## 원본은 팔이 몸통 뒤쪽 끝에 붙어 있어 옆에서 걸을 때 등에 매달린 것처럼 보였다.
+const ARM_SHIFT := Vector2(20, 0)
+const ARM_JOINTS := ["shoulder", "elbow"]
+
 ## 먼 쪽에 복사할 조각(가까운 쪽 이름). 반창고·팔찌는 화면 쪽에만 있다.
 ## 그리는 순서는 원본 레이어 순서(z)를 따른다 — 정강이가 허벅지 위에 오면 무릎이 인형 관절처럼 보인다.
 ## 바지도 먼 쪽에 하나 더 깔아 먼 다리를 따라 흔든다(뒤쪽 바짓단이 보이게).
@@ -107,6 +112,8 @@ func _setup() -> void:
 		var s := cutout.parts[name] as Sprite2D
 		var base := name.trim_prefix("far_")
 		var joint: String = PART_JOINT.get(base, "root")
+		if joint in ARM_JOINTS:
+			s.position += ARM_SHIFT * ART_SCALE
 		if name.begins_with("far_"):
 			joint = "far_" + joint
 		_bones.append([s, joint, s.transform])
@@ -225,6 +232,8 @@ func _joint_xf(joint: String, ang: Dictionary, cache: Dictionary, bob: float) ->
 	var pivot := _to_local_pt(def[1])
 	if far:
 		pivot += FAR_SHIFT * ART_SCALE
+	if base in ARM_JOINTS:
+		pivot += ARM_SHIFT * ART_SCALE
 	var a := deg_to_rad(float(ang.get(joint, 0.0)))
 	var local := Transform2D(0.0, pivot) * Transform2D(a, Vector2.ZERO) * Transform2D(0.0, -pivot)
 	var xf := parent_xf * local
