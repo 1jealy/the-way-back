@@ -60,7 +60,7 @@ func _wait(seconds: float) -> void:
 func _run() -> void:
 	_player.lock(LOCK)
 	var main := get_tree().get_first_node_in_group("main")
-	for hud in ["Overlay/PlaceLabel", "Overlay/Hint", "Overlay/MapHint"]:
+	for hud in ["Overlay/PlaceCard", "Overlay/WalkHint", "Overlay/MapHint"]:
 		var n := main.get_node_or_null(hud) as CanvasItem if main else null
 		if n:
 			n.visible = false

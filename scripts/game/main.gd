@@ -15,7 +15,13 @@ var _changing: bool = false
 @onready var _dog: Dog = $World/Dog
 @onready var _camera: Camera2D = $World/Player/Camera
 @onready var _fade: ColorRect = $Overlay/Fade
-@onready var _place_label: Label = $Overlay/PlaceLabel
+@onready var _place_card: PlaceCard = $Overlay/PlaceCard
+@onready var _walk_hint: Label = $Overlay/WalkHint
+
+## 처음 걷기 안내(집에서만): 하윤이 이만큼 걸으면 사라지고 플래그를 세운다(#87).
+const WALK_HINT_FLAG := &"walked_once"
+const WALK_HINT_DISTANCE := 240.0
+var _walk_hint_from: float = NAN
 
 
 var _map_hint: Label
@@ -102,8 +108,25 @@ func _swap_place(path: String) -> void:
 
 	GameState.current_place = _place.place_id
 	GameState.save_game(path)
-	_place_label.text = _place.display_name
+	_place_card.show_place(_place.display_name, _player)
+	_walk_hint.visible = false
+	_walk_hint_from = NAN
 	place_changed.emit(_place.place_id)
+
+
+## 처음 시작한 집에서만 "A D / ← →  걷기"를 띄우고, 조금 걸으면 걷는다(#87).
+## 조작이 풀린 뒤에 뜬다(오프닝 위에 겹치지 않게). 한 번 걸었으면 이어하기 뒤에도 안 뜬다.
+func _process(_delta: float) -> void:
+	if GameState.has_flag(WALK_HINT_FLAG) or _place == null or _place.place_id != &"house":
+		return
+	if is_nan(_walk_hint_from):
+		if _player.controls_enabled:
+			_walk_hint_from = _player.global_position.x
+			_walk_hint.visible = true
+		return
+	if absf(_player.global_position.x - _walk_hint_from) >= WALK_HINT_DISTANCE:
+		_walk_hint.visible = false
+		GameState.set_flag(WALK_HINT_FLAG)
 
 
 ## 음악을 튼다(이름 앞머리, 예: "mus_theme_full"). fade초에 걸쳐 volume_db까지 커진다.

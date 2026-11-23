@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/game/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/characters/player.tscn" id="2_player"]
@@ -6,6 +6,9 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/dialogue_box.tscn" id="4_box"]
 [ext_resource type="PackedScene" path="res://scenes/ui/map_screen.tscn" id="5_map"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="6_pause"]
+[ext_resource type="Script" path="res://scripts/ui/place_card.gd" id="7_card"]
+[ext_resource type="FontFile" path="res://assets/fonts/title_subset.ttf" id="8_title_font"]
+[ext_resource type="FontFile" path="res://assets/fonts/ui_subset.ttf" id="9_ui_font"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -26,21 +29,65 @@ position_smoothing_speed = 6.0
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 10
 
-[node name="PlaceLabel" type="Label" parent="Overlay"]
-offset_left = 48.0
-offset_top = 36.0
-offset_right = 900.0
-offset_bottom = 84.0
-theme_override_font_sizes/font_size = 32
+[node name="PlaceCard" type="Control" parent="Overlay"]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 150.0
+offset_bottom = 330.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("7_card")
 
-[node name="Hint" type="Label" parent="Overlay"]
-offset_left = 48.0
-offset_top = 84.0
-offset_right = 900.0
-offset_bottom = 120.0
-theme_override_colors/font_color = Color(1, 1, 1, 0.6)
-theme_override_font_sizes/font_size = 20
-text = "A D / ← → 이동 (회색 네모 뼈대)"
+[node name="Title" type="Label" parent="Overlay/PlaceCard"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 110.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.98, 0.95, 0.88, 1)
+theme_override_colors/font_shadow_color = Color(0.08, 0.05, 0.1, 0.5)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 4
+theme_override_constants/shadow_outline_size = 12
+theme_override_fonts/font = ExtResource("8_title_font")
+theme_override_font_sizes/font_size = 72
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Line" type="ColorRect" parent="Overlay/PlaceCard"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -90.0
+offset_top = 122.0
+offset_right = 90.0
+offset_bottom = 124.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(1, 0.9, 0.7, 0.7)
+
+[node name="WalkHint" type="Label" parent="Overlay"]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -150.0
+offset_right = 300.0
+offset_bottom = -104.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.95, 0.82, 0.9)
+theme_override_colors/font_outline_color = Color(0.12, 0.1, 0.09, 0.8)
+theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("9_ui_font")
+theme_override_font_sizes/font_size = 30
+text = "A D / ← →  걷기"
+horizontal_alignment = 1
 
 [node name="DialogueBox" parent="Overlay" instance=ExtResource("4_box")]
 
