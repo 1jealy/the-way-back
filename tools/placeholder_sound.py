@@ -448,6 +448,14 @@ def make_steps(rng):
         place_event(x, drop, int(rng.uniform(0, secs - 0.05) * RATE), wrap=False)
     edge = np.clip(np.minimum(t / 2.0, (secs - t) / 2.5), 0, 1)
     out["sfx_rain_01"] = db_rms(x * edge, -24)
+    # 5-4 물수제비: 돌이 물을 찰방 스치는 소리(튈 때마다) / 마지막에 퐁 가라앉는 소리
+    for i in range(3):
+        x = one_shot(rng, 0.22, band(1200, 7000, -2), 0.001, 0.035, ring([(rng.uniform(820, 980), 0.25)], 0.04))
+        out[f"sfx_stone_skip_{i + 1:02d}"] = db_rms(x, -26)
+    x = np.zeros(n_samples(0.6))
+    place_event(x, one_shot(rng, 0.3, band(300, 3000, -3), 0.002, 0.06), 0, wrap=False)
+    place_event(x, bubble(rng) * 0.8, n_samples(0.04), wrap=False)
+    out["sfx_stone_sink_01"] = db_rms(x, -25)
     return out
 
 

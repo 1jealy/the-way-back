@@ -138,6 +138,10 @@ func interact() -> void:
 		var memory := MemoryScene.find(get_tree(), map_circle)
 		if memory:
 			await memory.play()
+		# 5-4: 기억(할아버지의 돌 다섯 번) 뒤에 하윤이 돌을 던진다(#32)
+		var skip := StoneSkip.find(get_tree(), map_circle)
+		if skip:
+			await skip.play()
 	if not lines.is_empty():
 		var box := get_tree().get_first_node_in_group("dialogue_box") as DialogueBox
 		if box:
