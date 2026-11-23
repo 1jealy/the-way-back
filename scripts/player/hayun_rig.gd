@@ -32,8 +32,9 @@ const PART_JOINT := {
 	"arm_upper": "shoulder", "arm_lower": "elbow", "hand": "elbow", "bracelet": "elbow",
 }
 ## 먼 쪽에 복사할 조각(가까운 쪽 이름). 반창고·팔찌는 화면 쪽에만 있다.
+## 그리는 순서는 원본 레이어 순서(z)를 따른다 — 정강이가 허벅지 위에 오면 무릎이 인형 관절처럼 보인다.
 const FAR_COPIES := ["arm_upper", "arm_lower", "hand", "leg_upper", "leg_lower", "foot"]
-const FAR_TINT := Color(0.8, 0.74, 0.7)  # 회색이 아니라 같은 색을 그늘지게
+const FAR_TINT := Color(0.86, 0.81, 0.78)  # 회색이 아니라 같은 색을 살짝 그늘지게(진하면 따로 노는 물건처럼 보인다)
 ## 먼 쪽 팔다리는 몸 뒤로 조금 비킨다(캔버스 px).
 const FAR_SHIFT := Vector2(-7, -2)
 
@@ -42,8 +43,10 @@ const CYCLE := 220.0
 const THIGH_SWING := 24.0
 const KNEE_BEND := 34.0
 const ARM_SWING := 20.0
-const ELBOW_BEND := 12.0
-const BOB := 5.0  # 캔버스 px
+## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
+const ELBOW_BEND := 5.0
+## 뒤로 간 발은 뒤꿈치를 든다(발끝으로 차고 나간다).
+const HEEL_LIFT := 16.0
 const HAIR_TRAIL := 7.0
 const HAIR_SWAY := 3.0
 
@@ -77,7 +80,10 @@ func _setup() -> void:
 		return
 	# 먼 쪽 팔다리: 복사해서 맨 뒤에
 	var far: Array = []
-	for name: String in FAR_COPIES:
+	var order := FAR_COPIES.duplicate()
+	order.sort_custom(func(a, b): return cutout.parts.has(a) and cutout.parts.has(b) \
+			and (cutout.parts[a] as Node).get_index() < (cutout.parts[b] as Node).get_index())
+	for name: String in order:
 		var src := cutout.parts.get(name) as Sprite2D
 		if src == null:
 			continue
@@ -134,9 +140,13 @@ func _angles() -> Dictionary:
 	var w := _walk
 	var near_thigh := -THIGH_SWING * s * w
 	var far_thigh := THIGH_SWING * s * w
-	# 무릎은 다리가 뒤에서 앞으로 넘어올 때 굽는다
-	var near_knee := KNEE_BEND * maxf(0.0, -cos(_phase)) * w
-	var far_knee := KNEE_BEND * maxf(0.0, cos(_phase)) * w
+	# 무릎은 다리가 뒤에서 앞으로 넘어올 때(발을 든 쪽) 굽는다. 디딘 다리는 곧게 편다.
+	# 가까운 다리는 cos > 0일 때 허벅지가 뒤(+)에서 앞(-)으로 간다.
+	var near_knee := KNEE_BEND * maxf(0.0, cos(_phase)) * w
+	var far_knee := KNEE_BEND * maxf(0.0, -cos(_phase)) * w
+	# 뒤로 간 발은 뒤꿈치를 든다(시계 방향 = 뒤꿈치가 올라간다)
+	var near_heel := HEEL_LIFT * pow(maxf(0.0, near_thigh / THIGH_SWING), 1.5)
+	var far_heel := HEEL_LIFT * pow(maxf(0.0, far_thigh / THIGH_SWING), 1.5)
 	var breeze := sin(_time * 1.4) * 1.6 + sin(_time * 0.7 + 1.0) * 1.0
 	return {
 		"root": 0.0,
@@ -145,23 +155,44 @@ func _angles() -> Dictionary:
 		"hip": near_thigh, "knee": near_knee,
 		"far_hip": far_thigh, "far_knee": far_knee,
 		# 발은 땅과 거의 나란하게(다리를 따라 돌지 않게 되돌린다). 발끝이 땅에 박히지 않는다.
-		"ankle": -(near_thigh + near_knee) * 0.85,
-		"far_ankle": -(far_thigh + far_knee) * 0.85,
-		"shoulder": ARM_SWING * s * w, "elbow": -ELBOW_BEND * (0.5 + 0.5 * absf(s)) * w,
-		"far_shoulder": -ARM_SWING * s * w, "far_elbow": -ELBOW_BEND * (0.5 + 0.5 * absf(s)) * w,
+		"ankle": -(near_thigh + near_knee) * 0.85 + near_heel,
+		"far_ankle": -(far_thigh + far_knee) * 0.85 + far_heel,
+		# 팔꿈치는 팔이 앞으로 왔을 때만 조금 굽는다
+		"shoulder": ARM_SWING * s * w, "elbow": -ELBOW_BEND * maxf(0.0, -s) * w,
+		"far_shoulder": -ARM_SWING * s * w, "far_elbow": -ELBOW_BEND * maxf(0.0, s) * w,
 	}
 
 
 func _apply(_delta: float) -> void:
 	var ang := _angles()
-	# 걸을 때 디딤발 위로 몸이 오르내린다(한 바퀴에 두 번). 서 있으면 숨쉬듯 아주 조금.
-	var bob := -BOB * absf(cos(_phase)) * _walk + sin(_time * 2.2) * 0.8 * (1.0 - _walk)
+	# 몸 높이는 발이 땅에 닿게 맞춘다: 다리를 벌리면 몸이 내려가고 모일 때 올라간다.
+	# 고정 오르내림을 쓰면 두 발이 벌어질 때 둘 다 땅에서 떠 미끄러지듯 보인다.
+	var bob := _ground_bob(ang) + sin(_time * 2.2) * 0.8 * (1.0 - _walk)
 	var cache := {}
 	for bone in _bones:
 		var s := bone[0] as Sprite2D
 		var t: Transform2D = _joint_xf(bone[1], ang, cache, bob)
 		s.transform = t * (bone[2] as Transform2D)
 	_blink_pose()
+
+
+## 몸을 위아래로 얼마나 옮기면 가장 낮은 발바닥이 땅(발밑 원점)에 닿나(캔버스 px).
+func _ground_bob(ang: Dictionary) -> float:
+	var cache := {}
+	var lowest := -INF
+	for bone in _bones:
+		var joint: String = bone[1]
+		if joint != "ankle" and joint != "far_ankle":
+			continue
+		var s := bone[0] as Sprite2D
+		var xf: Transform2D = _joint_xf(joint, ang, cache, 0.0) * (bone[2] as Transform2D)
+		var r := s.get_rect()
+		for fx in [0.12, 0.5, 0.88]:
+			var pt := xf * Vector2(r.position.x + r.size.x * fx, r.end.y)
+			lowest = maxf(lowest, pt.y)
+	if lowest == -INF:
+		return 0.0
+	return -lowest / ART_SCALE
 
 
 ## 관절의 변환(Cutout 좌표). 축은 캔버스 px → Cutout 좌표(발밑 원점, ART_SCALE).
