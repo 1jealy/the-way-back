@@ -200,7 +200,7 @@ func _make_reflections() -> void:
 		var vis := who.get_node_or_null("Visual")
 		if vis == null:
 			continue
-		var copy: Node2D = vis.duplicate()
+		var copy: Node2D = vis.duplicate(0)  # 모습만(스크립트까지 복사하면 하윤 컷아웃이 조각을 한 번 더 붙인다)
 		copy.position = Vector2(pair[1], 44)
 		water.add_child(copy)
 	var hull_copy: Node2D = _boat.get_child(0).duplicate()
