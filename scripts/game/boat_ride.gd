@@ -203,7 +203,7 @@ func _make_reflections() -> void:
 
 func _hide_hud() -> void:
 	var main := get_tree().get_first_node_in_group("main")
-	for hud in ["Overlay/PlaceCard", "Overlay/WalkHint", "Overlay/MapHint"]:
+	for hud in ["Overlay/PlaceCard", "Overlay/WalkHint", "Overlay/MapHint", "Overlay/Vignette"]:
 		var n := main.get_node_or_null(hud) as CanvasItem if main else null
 		if n:
 			n.visible = false

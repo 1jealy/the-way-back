@@ -17,6 +17,13 @@ var _changing: bool = false
 @onready var _fade: ColorRect = $Overlay/Fade
 @onready var _place_card: PlaceCard = $Overlay/PlaceCard
 @onready var _walk_hint: Label = $Overlay/WalkHint
+@onready var _dust: AmbientDust = $World/Player/Camera/Dust
+
+## 카메라가 걷는 쪽을 이만큼 앞서 본다(#90). 걸을 때 빨리 따라가고, 멈추면 천천히 돌아온다.
+const LOOK_AHEAD := 150.0
+const LOOK_RATE_WALK := 1.4
+const LOOK_RATE_REST := 0.5
+var _look: float = 0.0
 
 ## 처음 걷기 안내(집에서만): 하윤이 이만큼 걸으면 사라지고 플래그를 세운다(#87).
 const WALK_HINT_FLAG := &"walked_once"
@@ -108,15 +115,32 @@ func _swap_place(path: String) -> void:
 
 	GameState.current_place = _place.place_id
 	GameState.save_game(path)
+	_look = 0.0
+	_camera.offset.x = 0.0
+	_dust.set_place(_place.place_id)
 	_place_card.show_place(_place.display_name, _player)
 	_walk_hint.visible = false
 	_walk_hint_from = NAN
 	place_changed.emit(_place.place_id)
 
 
-## 처음 시작한 집에서만 "A D / ← →  걷기"를 띄우고, 조금 걸으면 걷는다(#87).
+func _process(delta: float) -> void:
+	_update_look(delta)
+	_update_walk_hint()
+
+
+## 걷는 쪽을 앞서 본다. 조작이 막혀 있으면(대사·연출) 천천히 가운데로 돌아온다.
+func _update_look(delta: float) -> void:
+	var walking := _player.controls_enabled and absf(_player.velocity.x) > 10.0
+	var target := signf(_player.velocity.x) * LOOK_AHEAD if walking else 0.0
+	var rate := LOOK_RATE_WALK if walking else LOOK_RATE_REST
+	_look = lerpf(_look, target, 1.0 - exp(-rate * delta))
+	_camera.offset.x = _look
+
+
+## 처음 시작한 집에서만 "A D / ← →  걷기"를 띄우고, 조금 걸으면 사라진다(#87).
 ## 조작이 풀린 뒤에 뜬다(오프닝 위에 겹치지 않게). 한 번 걸었으면 이어하기 뒤에도 안 뜬다.
-func _process(_delta: float) -> void:
+func _update_walk_hint() -> void:
 	if GameState.has_flag(WALK_HINT_FLAG) or _place == null or _place.place_id != &"house":
 		return
 	if is_nan(_walk_hint_from):

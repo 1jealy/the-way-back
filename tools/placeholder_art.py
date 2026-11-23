@@ -386,6 +386,11 @@ def reed_clump(L: Layer, rng: random.Random, x: float, scale: float, base: float
 # ---------------------------------------------------------------- 여러 장소가 같이 쓰는 것
 
 
+def soft_rect(x0, y0, x1, y1, color) -> tuple:
+    """앞 층 기둥처럼 초점이 나간 듯 흐리게 그릴 네모(Layer.haze에 넘긴다, #90)."""
+    return ("poly", [(x0, y0), (x1, y0), (x1, y1), (x0, y1)], color)
+
+
 def layer_x(world_x: float, layer: str) -> float:
     """세계 x에 있는 것이 화면 가운데에 올 때, 그 층 그림에서의 x."""
     return (world_x - SCREEN_W / 2) * SCROLL[layer] + SCREEN_W / 2
@@ -617,9 +622,9 @@ def house(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     # 앞: 문틀, 마루 기둥, 감나무 가지
     w = layer_width(width, "front")
     layers["front"] = L = Layer(w)
-    for wx in (1000, 2700, 3900):
-        fx = layer_x(wx, "front")
-        L.rect(fx - 30, -10, fx + 30, H + 10, rgba(70, 48, 32))
+    # 기둥은 하윤을 가리지 않게 가늘고 초점이 나간 듯 흐리게(#90: 60px 진한 기둥이 화면을 갈랐다)
+    L.haze([soft_rect(layer_x(wx, "front") - 13, -10, layer_x(wx, "front") + 13, H + 10, rgba(84, 60, 42))
+            for wx in (1000, 2700, 3900)], 5)
     fx = layer_x(mk("1-6", 5190) + 200, "front")
     for k in range(4):
         sx, ln = fx + k * 70, rng.uniform(220, 380)
@@ -731,8 +736,8 @@ def station(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     layers["front"] = L = Layer(w)
     for i, wx in enumerate(range(1500, int(mk("3-6", 8555) - 900), 1700)):
         fx = layer_x(wx, "front")
-        L.rect(fx - 24, -10, fx + 24, H + 10, rgba(84, 46, 44))
-        L.rect(fx + 8, -10, fx + 24, H + 10, rgba(150, 84, 64))  # 노을 받는 쪽
+        L.haze([soft_rect(fx - 11, -10, fx + 11, H + 10, rgba(96, 54, 50)),
+                soft_rect(fx + 3, -10, fx + 11, H + 10, rgba(158, 92, 70))], 4)  # 노을 받는 쪽. 가늘게 흐리게(#90)
     fx = layer_x(mk("3-4", 4934) + 700, "front")
     L.rect(fx - 10, 320, fx + 10, H + 10, rgba(110, 54, 42))
     L.rect(fx - 40, 300, fx + 40, 470, rgba(70, 38, 36))
@@ -844,8 +849,8 @@ def forest(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     layers["front"] = L = Layer(w)
     x = rng.uniform(300, 700)
     while x < w:
-        tw = rng.uniform(90, 170)
-        L.rect(x - tw / 2, -10, x + tw / 2, H + 10, rgba(18, 34, 34))
+        tw = rng.uniform(90, 170) * 0.45  # 가늘게 흐리게(#90: 170px 줄기가 화면을 덮었다)
+        L.haze([soft_rect(x - tw / 2, -10, x + tw / 2, H + 10, rgba(24, 42, 42))], 6)
         x += rng.uniform(1300, 2400)
     x = rng.uniform(100, 400)
     while x < w:
@@ -996,8 +1001,8 @@ def bridge(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     fend = layer_x(break_x, "front")
     x = 400.0
     while x < fend - 200:
-        L.rect(x - 22, -10, x + 22, H + 10, rgba(54, 38, 38))
-        L.line([(x, -10), (x + 520, H + 10)], rgba(60, 42, 40), 26)
+        L.haze([soft_rect(x - 10, -10, x + 10, H + 10, rgba(62, 44, 44)),
+                ("line", [(x, -10), (x + 520, H + 10)], rgba(66, 46, 44), 12)], 4)  # 가늘게 흐리게(#90)
         x += 900
     x = layer_x(bank_x, "front") + 300
     while x < w:

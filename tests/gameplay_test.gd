@@ -901,6 +901,27 @@ func _check_place_card() -> void:
 	card.show_place("", _player)
 	await _wait(0.2)
 	_check(not card.visible, "장소 카드: 이름 없는 장소(강 위)는 안 뜬다")
+	await _check_screen_polish()
+
+
+## 화면 다듬기(#90): 카메라가 걷는 쪽을 앞서 보고, 장소마다 떠다니는 알갱이, 가장자리 비네트.
+func _check_screen_polish() -> void:
+	var camera: Camera2D = _player.get_node("Camera")
+	await _hold(&"move_right", 1.2)
+	_check(camera.offset.x > 40.0, "카메라: 오른쪽으로 걸으면 오른쪽을 앞서 본다 (%.0f)" % camera.offset.x)
+	await _hold(&"move_left", 1.6)
+	_check(camera.offset.x < -40.0, "카메라: 돌아서 걸으면 반대쪽을 앞서 본다 (%.0f)" % camera.offset.x)
+	await _wait(5.0)
+	_check(absf(camera.offset.x) < 25.0, "카메라: 멈추면 천천히 가운데로 돌아온다 (%.0f)" % camera.offset.x)
+	var dust: CPUParticles2D = camera.get_node("Dust")
+	_check(dust.emitting and dust.place_id == &"house", "알갱이: 집 안에서는 햇빛 속 먼지가 떠다닌다")
+	dust.set_place(&"forest")
+	_check(not dust.emitting, "알갱이: 숲(빛 알갱이가 따로 있는 곳)에서는 안 나온다")
+	dust.set_place(_main.current_place().place_id)
+	var vignette: ColorRect = _main.get_node("Overlay/Vignette")
+	_check(vignette.visible and vignette.material != null and vignette.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"비네트: 화면 가장자리를 살짝 어둡게 하고 마우스를 막지 않는다")
+	_check(vignette.get_index() < _main.get_node("Overlay/DialogueBox").get_index(), "비네트: 대사 상자보다 아래에 깔린다")
 
 
 func _check_save() -> void:
