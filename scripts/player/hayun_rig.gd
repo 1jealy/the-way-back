@@ -19,6 +19,7 @@ const JOINTS := {
 	"head": ["root", Vector2(204, 165)],
 	"ponytail": ["head", Vector2(152, 152)],
 	"hip": ["root", Vector2(187, 336)],
+	"skirt": ["root", Vector2(190, 318)],
 	"knee": ["hip", Vector2(183, 470)],
 	"ankle": ["knee", Vector2(178, 548)],
 	"shoulder": ["root", Vector2(174, 198)],
@@ -28,12 +29,13 @@ const JOINTS := {
 const PART_JOINT := {
 	"head": "head", "mouth_neutral": "head", "eye_open": "head", "eyelid": "head", "brow_neutral": "head",
 	"hair_front": "head", "hair_tie": "head", "hat": "head", "ponytail": "ponytail",
-	"leg_upper": "hip", "leg_lower": "knee", "foot": "ankle", "bandage": "hip",
+	"skirt": "skirt", "leg_upper": "hip", "leg_lower": "knee", "foot": "ankle", "bandage": "hip",
 	"arm_upper": "shoulder", "arm_lower": "elbow", "hand": "elbow", "bracelet": "elbow",
 }
 ## 먼 쪽에 복사할 조각(가까운 쪽 이름). 반창고·팔찌는 화면 쪽에만 있다.
 ## 그리는 순서는 원본 레이어 순서(z)를 따른다 — 정강이가 허벅지 위에 오면 무릎이 인형 관절처럼 보인다.
-const FAR_COPIES := ["arm_upper", "arm_lower", "hand", "leg_upper", "leg_lower", "foot"]
+## 바지도 먼 쪽에 하나 더 깔아 먼 다리를 따라 흔든다(뒤쪽 바짓단이 보이게).
+const FAR_COPIES := ["arm_upper", "arm_lower", "hand", "leg_upper", "leg_lower", "foot", "skirt"]
 const FAR_TINT := Color(0.86, 0.81, 0.78)  # 회색이 아니라 같은 색을 살짝 그늘지게(진하면 따로 노는 물건처럼 보인다)
 ## 먼 쪽 팔다리는 몸 뒤로 조금 비킨다(캔버스 px).
 const FAR_SHIFT := Vector2(-7, -2)
@@ -42,7 +44,12 @@ const FAR_SHIFT := Vector2(-7, -2)
 const CYCLE := 220.0
 const THIGH_SWING := 24.0
 const KNEE_BEND := 34.0
-const ARM_SWING := 20.0
+## 팔은 뒤보다 앞으로 더 흔든다(도).
+const ARM_SWING_FRONT := 30.0
+const ARM_SWING_BACK := 14.0
+## 바지가 허벅지를 따라 도는 몫.
+const SKIRT_FOLLOW := 0.3
+const FAR_SKIRT_FOLLOW := 0.7
 ## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
 const ELBOW_BEND := 5.0
 ## 뒤로 간 발은 뒤꿈치를 든다(발끝으로 차고 나간다).
@@ -147,6 +154,9 @@ func _angles() -> Dictionary:
 	# 뒤로 간 발은 뒤꿈치를 든다(시계 방향 = 뒤꿈치가 올라간다)
 	var near_heel := HEEL_LIFT * pow(maxf(0.0, near_thigh / THIGH_SWING), 1.5)
 	var far_heel := HEEL_LIFT * pow(maxf(0.0, far_thigh / THIGH_SWING), 1.5)
+	# 팔: 앞(-)으로 크게, 뒤(+)로 작게. 가까운 팔은 가까운 다리와 반대로.
+	var near_arm := s * (ARM_SWING_BACK if s > 0.0 else ARM_SWING_FRONT) * w
+	var far_arm := -s * (ARM_SWING_BACK if -s > 0.0 else ARM_SWING_FRONT) * w
 	var breeze := sin(_time * 1.4) * 1.6 + sin(_time * 0.7 + 1.0) * 1.0
 	return {
 		"root": 0.0,
@@ -158,8 +168,9 @@ func _angles() -> Dictionary:
 		"ankle": -(near_thigh + near_knee) * 0.85 + near_heel,
 		"far_ankle": -(far_thigh + far_knee) * 0.85 + far_heel,
 		# 팔꿈치는 팔이 앞으로 왔을 때만 조금 굽는다
-		"shoulder": ARM_SWING * s * w, "elbow": -ELBOW_BEND * maxf(0.0, -s) * w,
-		"far_shoulder": -ARM_SWING * s * w, "far_elbow": -ELBOW_BEND * maxf(0.0, s) * w,
+		"shoulder": near_arm, "elbow": -ELBOW_BEND * maxf(0.0, -near_arm / ARM_SWING_FRONT) * w,
+		"far_shoulder": far_arm, "far_elbow": -ELBOW_BEND * maxf(0.0, -far_arm / ARM_SWING_FRONT) * w,
+		"skirt": near_thigh * SKIRT_FOLLOW, "far_skirt": far_thigh * FAR_SKIRT_FOLLOW,
 	}
 
 
