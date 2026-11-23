@@ -60,10 +60,10 @@ func _process(_delta: float) -> void:
 		_sync(visual, _copy)
 
 
-## [진하기, 길이, 납작함]을 그림자에 건다. 하윤 키(약 200px) 높이가 길이만큼 옆으로 눕는다.
+## [진하기, 길이, 납작함]을 그림자에 건다. 하윤 키(약 300px) 높이가 길이만큼 옆으로 눕는다.
 func _apply(s: Array, smooth: bool) -> void:
 	strength = s[0]
-	var lean: float = s[1] / 200.0
+	var lean: float = s[1] / 300.0
 	transform = Transform2D(Vector2(1.0, 0.0), Vector2(lean, float(s[2])), Vector2.ZERO)
 	if _tween:
 		_tween.kill()

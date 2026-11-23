@@ -71,17 +71,23 @@ func _start() -> void:
 	_run()
 
 
+## 배 위 자리(배 기준 x). 인물이 1.5배가 되어 넓혔다.
+const SEAT_PLAYER := -20.0
+const SEAT_GRANDPA := -190.0
+const SEAT_DOG := 200.0
+
+
 func _process(_delta: float) -> void:
 	if not _started:
 		return
 	_boat.position.x = distance * progress
 	var bx := _boat.global_position.x
-	_player.global_position = Vector2(bx - 20.0, 810.0)
+	_player.global_position = Vector2(bx + SEAT_PLAYER, 810.0)
 	_player.velocity = Vector2.ZERO
 	if _grandpa:
-		_grandpa.global_position = Vector2(bx - 120.0, 810.0)
+		_grandpa.global_position = Vector2(bx + SEAT_GRANDPA, 810.0)
 	if _dog and _dog.is_joined():
-		_dog.global_position = Vector2(bx + 130.0, 810.0)
+		_dog.global_position = Vector2(bx + SEAT_DOG, 810.0)
 		_dog.velocity = Vector2.ZERO
 
 
@@ -170,11 +176,11 @@ func _make_boat() -> Node2D:
 	boat.name = "Boat"
 	var hull := Polygon2D.new()
 	hull.color = Color(0.58, 0.45, 0.32)
-	hull.polygon = PackedVector2Array([Vector2(-260, -6), Vector2(270, -12), Vector2(210, 40), Vector2(-200, 42)])
+	hull.polygon = PackedVector2Array([Vector2(-340, -6), Vector2(350, -12), Vector2(280, 46), Vector2(-270, 48)])
 	boat.add_child(hull)
 	var rim := Polygon2D.new()
 	rim.color = Color(0.78, 0.66, 0.5)
-	rim.polygon = PackedVector2Array([Vector2(-260, -10), Vector2(270, -16), Vector2(270, -6), Vector2(-260, 0)])
+	rim.polygon = PackedVector2Array([Vector2(-340, -10), Vector2(350, -16), Vector2(350, -6), Vector2(-340, 0)])
 	boat.add_child(rim)
 	return boat
 
@@ -187,7 +193,7 @@ func _make_reflections() -> void:
 	water.scale = Vector2(1, -1)
 	water.modulate = Color(0.85, 0.9, 1.0, 0.55)
 	_boat.add_child(water)
-	for pair in [[_player, -20.0], [_grandpa, -120.0], [_dog, 130.0]]:
+	for pair in [[_player, SEAT_PLAYER], [_grandpa, SEAT_GRANDPA], [_dog, SEAT_DOG]]:
 		var who: Node = pair[0]
 		if who == null or not (who as CanvasItem).visible:
 			continue

@@ -17,9 +17,9 @@ signal hinted(target_x: float)
 enum State { HIDDEN, MEETING, FOLLOW, SIT, HINT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN, SCRIPTED }
 
 const JOIN_FLAG := &"dog_joined"
-## 하윤 뒤 이 거리에 서려고 한다. 설 자리에서 DEADBAND 안이면 멈춘다 → 80~120px.
-const FOLLOW_GAP := 100.0
-const DEADBAND := 20.0
+## 하윤 뒤 이 거리에 서려고 한다. 설 자리에서 DEADBAND 안이면 멈춘다 → 120~180px(#92에서 인물 1.5배).
+const FOLLOW_GAP := 150.0
+const DEADBAND := 30.0
 const FOLLOW_MAX_SPEED := 450.0
 ## 멀어진 거리에 비례해 빨라진다(가까우면 천천히 붙는다).
 const FOLLOW_GAIN := 3.0

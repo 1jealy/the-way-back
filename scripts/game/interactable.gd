@@ -64,7 +64,7 @@ func _ready() -> void:
 	_prompt_label.add_theme_constant_override("outline_size", 6)
 	_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_prompt_label.size = Vector2(320.0, 34.0)
-	_prompt_label.position = Vector2(-160.0, -280.0)
+	_prompt_label.position = Vector2(-160.0, -400.0)  # 하윤 키 300px(모자까지 약 320) 위
 	_prompt_label.z_index = 20
 	_prompt_label.visible = false
 	add_child(_prompt_label)
@@ -162,14 +162,14 @@ func _show_pickup() -> void:
 	var icon := Sprite2D.new()
 	icon.name = "Pickup"
 	icon.texture = load(path)
-	icon.position = Vector2(0.0, -380.0)
+	icon.position = Vector2(0.0, -500.0)
 	icon.z_index = 20
 	icon.scale = Vector2(1.5, 1.5)
 	icon.modulate.a = 0.0
 	add_child(icon)
 	var tween := icon.create_tween()
 	tween.tween_property(icon, "modulate:a", 1.0, 0.2)
-	tween.parallel().tween_property(icon, "position:y", -380.0 - PICKUP_RISE, PICKUP_SECONDS) 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(icon, "position:y", -500.0 - PICKUP_RISE, PICKUP_SECONDS) 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(icon, "modulate:a", 0.0, 0.4).set_delay(PICKUP_SECONDS - 0.4)
 	tween.tween_callback(icon.queue_free)
 

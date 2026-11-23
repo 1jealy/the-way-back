@@ -166,7 +166,7 @@ func _run() -> void:
 	await _press(&"interact")
 	_check(_player.crouching and not _player.controls_enabled, "만남: E를 누르면 하윤이 쪼그려 앉고 멈춘다")
 	var opened := await _wait_until(func(): return meet_box.is_open(), 5.0)
-	_check(opened and _gap() <= 100.0, "만남: 하늘이가 다가와 곁에 선다 (%.0f)" % _gap())
+	_check(opened and _gap() <= 150.0, "만남: 하늘이가 다가와 곁에 선다 (%.0f)" % _gap())
 	_check(meet_box.current_speaker() == "" and meet_box.current_text() == "하늘", "만남: 이름표 글 '하늘'")
 	await _press(&"interact")
 	await _press(&"interact")
@@ -178,7 +178,7 @@ func _run() -> void:
 	_check(not is_instance_valid(meeting), "만남: 끝나면 만남 부품이 사라진다")
 	await _hold(&"move_right", 1.2)
 	await _wait(0.8)
-	_check(_gap() >= 80.0 and _gap() <= 120.0 and _is_behind(), "만남: 합류 뒤 하윤 뒤를 따라온다 (%.0f)" % _gap())
+	_check(_gap() >= 120.0 and _gap() <= 180.0 and _is_behind(), "만남: 합류 뒤 하윤 뒤를 따라온다 (%.0f)" % _gap())
 
 	var again: Node2D = load("res://scripts/dog/dog_meeting.gd").new()
 	again.position = Vector2(_player.global_position.x + 500.0, 810.0)
@@ -194,13 +194,13 @@ func _run() -> void:
 
 	await _hold(&"move_right", 2.0)
 	await _wait(0.8)
-	_check(_gap() >= 80.0 and _gap() <= 120.0, "오른쪽으로 걸은 뒤 80~120px 거리 (%.0f)" % _gap())
+	_check(_gap() >= 120.0 and _gap() <= 180.0, "오른쪽으로 걸은 뒤 120~180px 거리 (%.0f)" % _gap())
 	_check(_is_behind(), "하늘이가 하윤 뒤(왼쪽)에 있다")
 	_check(absf(_dog.global_position.y - 810.0) < 4.0, "하늘이가 땅 위에 서 있다")
 
 	await _hold(&"move_left", 1.5)
 	await _wait(0.8)
-	_check(_gap() >= 80.0 and _gap() <= 120.0, "돌아서 걸은 뒤에도 80~120px (%.0f)" % _gap())
+	_check(_gap() >= 120.0 and _gap() <= 180.0, "돌아서 걸은 뒤에도 120~180px (%.0f)" % _gap())
 	_check(_is_behind(), "돌아서면 반대쪽 뒤(오른쪽)로 간다")
 
 	# 앉기
@@ -234,7 +234,7 @@ func _run() -> void:
 	_check(fetched and fetch_acted[0], "가져와: 물어 오고 돌아온다")
 	_check(_state.has_flag(&"test_fetched"), "가져와: 플래그가 선다")
 	_check(_player.controls_enabled, "가져와: 끝나면 다시 걸을 수 있다")
-	_check(_gap() <= 120.0 + 1.0, "가져와: 하윤 곁으로 돌아와 있다")
+	_check(_gap() <= 180.0 + 1.0, "가져와: 하윤 곁으로 돌아와 있다")
 	await _press_ask()
 	_check(not _dog.is_busy(), "한 번 쓴 자리에서는 F가 다시 먹지 않는다")
 	fetch.queue_free()
@@ -508,7 +508,7 @@ func _run() -> void:
 	await _hold(&"move_right", 2.0)
 	await _wait(1.3)
 	_check(_state.current_place == &"field", "들판으로 넘어갔다")
-	_check(_dog.visible and _gap() <= 150.0, "장소를 옮겨도 하늘이가 하윤 곁에 있다 (%.0f)" % _gap())
+	_check(_dog.visible and _gap() <= 225.0, "장소를 옮겨도 하늘이가 하윤 곁에 있다 (%.0f)" % _gap())
 	await _press(&"open_map")
 	await _wait(0.5)
 	_check(canvas.progress >= 1.0 and canvas.progress < 2.0, "지도: 들판에 오면 지나온 길이 들판까지 늘어난다 (%.2f)" % canvas.progress)
