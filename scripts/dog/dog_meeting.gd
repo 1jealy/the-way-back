@@ -15,7 +15,7 @@ const LOCK := &"meeting"
 @export var retreat_distance: float = 300.0
 @export var notice_distance: float = 360.0
 ## 하늘이가 다가와 서는 거리(하윤 앞).
-@export var sniff_gap: float = 90.0
+@export var sniff_gap: float = 135.0
 @export var prompt: String = "쪼그려 앉기"
 ## 이 플래그가 서야 하늘이가 나타난다(3-3 벤치에 앉은 뒤: station_sat). 비우면 처음부터.
 @export var appears_on_flag: StringName = &""
