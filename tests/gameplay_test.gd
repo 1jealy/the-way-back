@@ -474,6 +474,34 @@ func _run() -> void:
 	memory.queue_free()
 	await _wait(0.2)
 
+	# 물수제비(5-4): 지도를 접고 나면 하윤이 돌을 던져 두 번 튀고 가라앉은 뒤에 글이 나온다(#32)
+	var skip: Node2D = load("res://scripts/game/stone_skip.gd").new()
+	skip.circle = 4
+	skip.position = Vector2(_player.global_position.x, 810.0)
+	_main.current_place().add_child(skip)
+	var spot4 := _add_interactable(PackedStringArray(["하윤: …다섯 번은 어렵다."]), &"")
+	spot4.map_circle = 4
+	await _wait(0.2)
+	await _press(&"interact")
+	await _wait_until(func(): return map.is_open(), 2.0)
+	await _wait(1.5)
+	await _press(&"interact")
+	var thrown := await _wait_until(func(): return skip.playing, 2.0)
+	_check(thrown and _player.is_locked_by(&"stone_skip") and not box.is_open(),
+			"물수제비: 지도를 접으면 하윤이 돌을 던지고, 그동안 멈추고 글은 아직 안 나온다")
+	var flying := await _wait_until(func(): return skip.get_node_or_null("Stone") != null, 2.0)
+	_check(flying, "물수제비: 돌이 날아간다")
+	var skip_done := await _wait_until(func(): return not skip.playing, 6.0)
+	_check(skip_done and skip.touches == skip.skips + 1 and skip.skips == 2, "물수제비: 두 번 튀고 가라앉는다")
+	var talked4 := await _wait_until(func(): return box.is_open(), 2.0)
+	_check(talked4 and box.current_text() == "…다섯 번은 어렵다." and skip.get_node_or_null("Stone") == null,
+			"물수제비: 가라앉은 뒤 그 자리의 글이 나온다")
+	await _speak_through(box)
+	_check(not _player.is_locked_by(&"stone_skip"), "물수제비: 끝나면 잠금이 풀린다")
+	spot4.queue_free()
+	skip.queue_free()
+	await _wait(0.2)
+
 	# 장소 전환
 	var place: Node2D = _main.current_place()
 	_player.global_position.x = place.width - 320.0

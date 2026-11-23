@@ -242,7 +242,7 @@ func _run() -> void:
 				await _wait(3.0)
 				_check(absf(_dog.global_position.x - _player.global_position.x) < 250.0, "%s: 건너간 뒤 하늘이가 따라온다" % pid)
 			await _wait(6.0)
-			if pid == "riverside":  # 5-4 동그라미 4 → 지도를 접으면 기억 장면 4(물수제비) → 글
+			if pid == "riverside":  # 5-4 동그라미 4 → 지도를 접으면 기억 장면 4 → 하윤의 물수제비 → 글
 				var shallows: Node2D = place.get_node("Look_5-4_Shallows")
 				var memory: Node = place.get_node("Memory_5-4")
 				await _walk_to(shallows.global_position.x)
@@ -252,8 +252,13 @@ func _run() -> void:
 				await _wait(1.0)
 				_check(memory.playing and not _main.dialogue_box().visible, "강가: 동그라미 4를 접으면 기억 장면 4가 겹쳐 뜬다")
 				await memory.ended
+				# 기억 뒤 하윤이 돌을 던진다(#32): 두 번 튀고 가라앉은 뒤에 글
+				var skip: Node = place.get_node("Skip_5-4")
+				await _wait(0.3)
+				_check(skip.playing and not _main.dialogue_box().visible, "강가: 기억 장면 뒤 하윤이 물수제비를 뜬다")
+				await skip.finished
 				await _wait(0.5)
-				_check(_main.dialogue_box().visible, "강가: 기억 장면이 사라진 뒤 글이 나온다")
+				_check(skip.touches == skip.skips + 1 and _main.dialogue_box().visible, "강가: 두 번 튀고 가라앉은 뒤 글이 나온다")
 				await _close_dialogue()
 			if pid == "bridge":
 				var slope: Node2D = place.get_node("Look_6-3_Slope")
