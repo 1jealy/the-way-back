@@ -217,7 +217,14 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 - `scenes/main.tscn`의 `Overlay/PlaceCard`(`scripts/ui/place_card.gd`, `PlaceCard`): 장소에 들어서면(`main._swap_place`) 그 장소의 `display_name`이 화면 가운데 위에 제목 글꼴(송명)로 떴다가 사라진다(1.0초 들어오고 2.4초 머물고 1.4초 사라짐). **하윤이 조작할 수 있게 된 뒤에** 뜬다(장소 전환 페이드·0-1 오프닝 위에 겹치지 않게). `display_name`이 비면(강 위 구간) 안 뜬다. 늘 떠 있던 장소 이름 글과 "A D / ← → 이동" 개발용 글은 없앴다(#87).
 - `Overlay/WalkHint`: 집에서 처음 조작이 풀리면 아래에 "A D / ← →  걷기". 하윤이 240px 걸으면 사라지고 `walked_once` 플래그를 세운다(이어하기 뒤에도 다시 안 뜬다).
-- 엔딩·배 위에서는 `PlaceCard`·`WalkHint`·`MapHint`를 감춘다(`ending.gd`, `boat_ride.gd`).
+- 엔딩·배 위에서는 `PlaceCard`·`WalkHint`·`MapHint`·`Vignette`를 감춘다(`ending.gd`, `boat_ride.gd`).
+
+## 화면 마무리 (카메라·알갱이·비네트, #90)
+
+- **카메라 앞서 보기**(`main._update_look`): 하윤이 걸으면 카메라 `offset.x`가 걷는 쪽으로 `LOOK_AHEAD`(150px)까지 따라가고, 멈추거나 조작이 막히면 천천히 가운데로 돌아온다. 장소를 옮기면 0부터. `offset.y`·`zoom`은 물그림자(5-2)가 쓴다.
+- **떠다니는 알갱이** `World/Player/Camera/Dust`(`scripts/game/ambient_dust.gd`, `AmbientDust`): 장소마다 `SETTINGS`(집 햇빛 속 먼지, 들판 날리는 씨앗). 없는 장소는 끈다(숲은 빛 알갱이가 따로 있다). z 4(하윤 앞, 앞 층 뒤).
+- **비네트** `Overlay/Vignette`(`shaders/vignette.gdshader`): 화면 가장자리를 살짝 어둡게. 대사 상자·지도보다 아래.
+- 앞 층 기둥(집·간이역·숲·철교)은 가늘고 흐리게 그린다(`placeholder_art.py`의 `soft_rect` + `Layer.haze`). 진짜 그림도 앞 층은 하윤을 가리지 않게 가늘게, 초점이 나간 듯 그리는 것이 좋다.
 
 ## 지도 (MapScreen)
 

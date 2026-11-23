@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/game/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/characters/player.tscn" id="2_player"]
@@ -9,6 +9,11 @@
 [ext_resource type="Script" path="res://scripts/ui/place_card.gd" id="7_card"]
 [ext_resource type="FontFile" path="res://assets/fonts/title_subset.ttf" id="8_title_font"]
 [ext_resource type="FontFile" path="res://assets/fonts/ui_subset.ttf" id="9_ui_font"]
+[ext_resource type="Script" path="res://scripts/game/ambient_dust.gd" id="10_dust"]
+[ext_resource type="Shader" path="res://shaders/vignette.gdshader" id="11_vignette"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("11_vignette")
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -26,8 +31,20 @@ position = Vector2(0, -270)
 position_smoothing_enabled = true
 position_smoothing_speed = 6.0
 
+[node name="Dust" type="CPUParticles2D" parent="World/Player/Camera"]
+script = ExtResource("10_dust")
+
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 10
+
+[node name="Vignette" type="ColorRect" parent="Overlay"]
+material = SubResource("ShaderMaterial_vignette")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
 [node name="PlaceCard" type="Control" parent="Overlay"]
 layout_mode = 3
