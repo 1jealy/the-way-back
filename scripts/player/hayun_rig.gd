@@ -34,7 +34,7 @@ const PART_JOINT := {
 }
 ## 팔(어깨·팔꿈치와 거기 붙은 조각)을 원본 자리보다 앞으로 옮긴다(캔버스 px).
 ## 원본은 팔이 몸통 뒤쪽 끝에 붙어 있어 옆에서 걸을 때 등에 매달린 것처럼 보였다.
-const ARM_SHIFT := Vector2(20, 0)
+const ARM_SHIFT := Vector2(10, 0)
 const ARM_JOINTS := ["shoulder", "elbow"]
 
 ## 먼 쪽에 복사할 조각(가까운 쪽 이름). 반창고·팔찌는 화면 쪽에만 있다.
