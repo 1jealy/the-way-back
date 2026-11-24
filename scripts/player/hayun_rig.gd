@@ -54,8 +54,8 @@ const ARM_SWING_FRONT := 30.0
 const ARM_SWING_BACK := 14.0
 ## 바지가 허벅지를 따라 도는 몫.
 ## 바지는 돌리면 허리선까지 기울어 판자처럼 보인다 — 기울이기(skew)로 바짓단만 민다.
-const SKIRT_FOLLOW := 0.2
-const FAR_SKIRT_FOLLOW := 0.5
+const SKIRT_FOLLOW := 0.6
+const FAR_SKIRT_FOLLOW := 0.6
 const SHEAR_JOINTS := ["skirt"]
 ## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
 const ELBOW_BEND := 5.0
