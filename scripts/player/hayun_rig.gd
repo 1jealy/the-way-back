@@ -16,18 +16,20 @@ const ART_SCALE := 0.5
 ## 관절 → [부모 관절, 축(캔버스 px)]. 부모가 ""면 몸(root).
 const JOINTS := {
 	"root": ["", Vector2(191, 645)],
-	"head": ["root", Vector2(204, 165)],
+	# 상체: 엉덩이를 축으로 앞뒤로 숙인다(몸통·머리·팔·바지). 다리는 root에 붙어 있어 같이 숙지 않는다.
+	"torso": ["root", Vector2(190, 335)],
+	"head": ["torso", Vector2(204, 165)],
 	"ponytail": ["head", Vector2(152, 152)],
 	"hip": ["root", Vector2(187, 336)],
-	"skirt": ["root", Vector2(195, 300)],
+	"skirt": ["torso", Vector2(195, 300)],
 	"knee": ["hip", Vector2(183, 470)],
 	"ankle": ["knee", Vector2(178, 548)],
-	"shoulder": ["root", Vector2(174, 198)],
+	"shoulder": ["torso", Vector2(174, 198)],
 	"elbow": ["shoulder", Vector2(165, 288)],
 }
 ## 조각 → 관절. 여기 없는 조각은 몸(root)에 붙는다.
 const PART_JOINT := {
-	"head": "head", "mouth_neutral": "head", "eye_open": "head", "eyelid": "head", "brow_neutral": "head",
+	"body": "torso", "head": "head", "mouth_neutral": "head", "eye_open": "head", "eyelid": "head", "brow_neutral": "head",
 	"hair_front": "head", "hair_tie": "head", "hat": "head", "ponytail": "ponytail",
 	"skirt": "skirt", "leg_upper": "hip", "leg_lower": "knee", "foot": "ankle", "bandage": "hip",
 	"arm_upper": "shoulder", "arm_lower": "elbow", "hand": "elbow", "bracelet": "elbow",
@@ -76,9 +78,9 @@ const POSES := {
 	# 쪼그려 앉기(하늘이 만남 3-4, 돌 줍기 5-4): 무릎을 가슴 쪽으로, 팔은 앞으로 내린다.
 	&"crouch": {"hip": -100.0, "knee": 120.0, "ankle": -20.0, "far_hip": -95.0, "far_knee": 118.0, "far_ankle": -23.0,
 			"skirt": -30.0, "far_skirt": -30.0, "shoulder": -38.0, "elbow": -25.0, "far_shoulder": -30.0, "far_elbow": -25.0,
-			"head": 8.0, "ponytail": 6.0},
+			"torso": 22.0, "head": -8.0, "ponytail": 6.0},
 	# 벤치에 앉기(2-5, 3-3): 허벅지는 앞으로 눕고 종아리는 내린다. 손은 무릎 위에.
-	&"sit": {"hip": -85.0, "knee": 85.0, "ankle": 0.0, "far_hip": -82.0, "far_knee": 80.0, "far_ankle": 2.0,
+	&"sit": {"torso": 4.0, "hip": -85.0, "knee": 85.0, "ankle": 0.0, "far_hip": -82.0, "far_knee": 80.0, "far_ankle": 2.0,
 			"skirt": -28.0, "far_skirt": -28.0, "shoulder": -22.0, "elbow": -45.0, "far_shoulder": -18.0, "far_elbow": -45.0,
 			"head": 3.0},
 	# 바닥에 앉기(오프닝 0-1 마루, 배 위 7-6): 다리를 앞으로 뻗는다.
@@ -96,16 +98,16 @@ const THROW_KEYS := [
 	[0.0, {}],
 	# 준비: 무릎을 굽혀 몸을 낮추고, 팔을 허리 뒤로 낮게 당긴다
 	[0.35, {"hip": -18.0, "knee": 36.0, "ankle": -18.0, "far_hip": -16.0, "far_knee": 34.0, "far_ankle": -18.0,
-			"shoulder": 44.0, "elbow": -18.0, "head": 6.0, "ponytail": -3.0}],
+			"shoulder": 44.0, "elbow": -18.0, "torso": 14.0, "head": -4.0, "ponytail": -3.0}],
 	# 내딛기: 먼 발을 앞으로, 가까운 다리는 뒤에 버틴다. 팔은 가장 뒤(허리 높이).
 	[0.6, {"hip": 12.0, "knee": 30.0, "ankle": -30.0, "far_hip": -42.0, "far_knee": 44.0, "far_ankle": 2.0,
-			"skirt": 4.0, "far_skirt": -16.0, "shoulder": 52.0, "elbow": -20.0, "head": 7.0, "ponytail": -5.0}],
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": 52.0, "elbow": -20.0, "torso": 8.0, "head": -2.0, "ponytail": -5.0}],
 	# 휘두르기 → 놓기: 손이 몸 앞 허리 높이(어깨 약 -30도)
 	[0.74, {"hip": 14.0, "knee": 28.0, "ankle": -32.0, "far_hip": -44.0, "far_knee": 42.0, "far_ankle": 4.0,
-			"skirt": 4.0, "far_skirt": -16.0, "shoulder": -30.0, "elbow": -6.0, "head": 5.0, "ponytail": 8.0}],
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": -30.0, "elbow": -6.0, "torso": 22.0, "head": -8.0, "ponytail": 8.0}],
 	# 따라가기: 팔이 앞으로 마저 나가고 몸은 낮게 남는다
 	[0.92, {"hip": 12.0, "knee": 26.0, "ankle": -30.0, "far_hip": -42.0, "far_knee": 40.0, "far_ankle": 4.0,
-			"skirt": 4.0, "far_skirt": -16.0, "shoulder": -60.0, "elbow": -12.0, "head": 5.0, "ponytail": 10.0}],
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": -60.0, "elbow": -12.0, "torso": 26.0, "head": -10.0, "ponytail": 10.0}],
 	[1.45, {}],
 ]
 ## 손을 놓는 때(초) = 휘두르기 키.
@@ -377,7 +379,7 @@ func _joint_xf(joint: String, ang: Dictionary, cache: Dictionary, bob: float) ->
 		parent_xf = Transform2D(0.0, Vector2(0.0, bob * ART_SCALE))
 	elif not parent.is_empty():
 		var pj := parent
-		if far and parent != "root":
+		if far and parent != "root" and parent != "torso":
 			pj = "far_" + parent
 		parent_xf = _joint_xf(pj, ang, cache, bob)
 	var pivot := _to_local_pt(def[1])
