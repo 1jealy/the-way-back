@@ -69,6 +69,35 @@ const ANKLE_FLATTEN := 0.5
 const HAIR_TRAIL := 7.0
 const HAIR_SWAY := 3.0
 
+## 자세(#98): 관절 → 각도(도). 걷기 각도에 더해진다. 땅에 닿는 높이는 발로 맞춘다(_ground_bob).
+## 앞(오른쪽)으로 드는 쪽이 음수. 발목은 다리를 다 되돌리면 발바닥이 땅과 나란하다.
+const POSES := {
+	&"stand": {},
+	# 쪼그려 앉기(하늘이 만남 3-4, 돌 줍기 5-4): 무릎을 가슴 쪽으로, 팔은 앞으로 내린다.
+	&"crouch": {"hip": -100.0, "knee": 120.0, "ankle": -20.0, "far_hip": -95.0, "far_knee": 118.0, "far_ankle": -23.0,
+			"skirt": -30.0, "far_skirt": -30.0, "shoulder": -38.0, "elbow": -25.0, "far_shoulder": -30.0, "far_elbow": -25.0,
+			"head": 8.0, "ponytail": 6.0},
+	# 벤치에 앉기(2-5, 3-3): 허벅지는 앞으로 눕고 종아리는 내린다. 손은 무릎 위에.
+	&"sit": {"hip": -85.0, "knee": 85.0, "ankle": 0.0, "far_hip": -82.0, "far_knee": 80.0, "far_ankle": 2.0,
+			"skirt": -28.0, "far_skirt": -28.0, "shoulder": -22.0, "elbow": -45.0, "far_shoulder": -18.0, "far_elbow": -45.0,
+			"head": 3.0},
+	# 바닥에 앉기(오프닝 0-1 마루, 배 위 7-6): 다리를 앞으로 뻗는다.
+	&"sit_floor": {"hip": -92.0, "knee": 10.0, "ankle": -6.0, "far_hip": -90.0, "far_knee": 14.0, "far_ankle": -6.0,
+			"skirt": -8.0, "far_skirt": -10.0, "shoulder": -30.0, "elbow": -30.0, "far_shoulder": -26.0, "far_elbow": -30.0,
+			"head": 4.0},
+}
+## 자세가 바뀌는 빠르기(클수록 빠르다, 약 0.3초).
+const POSE_RATE := 9.0
+## 돌 던지기(5-4): 걸리는 시간과 손을 놓는 때(0~1). 키: [때, 어깨, 팔꿈치](도).
+const THROW_SECONDS := 0.8
+const THROW_RELEASE := 0.5
+const THROW_KEYS := [[0.0, 0.0, 0.0], [0.4, 70.0, -40.0], [0.55, -100.0, -8.0], [0.75, -70.0, -15.0], [1.0, 0.0, 0.0]]
+
+## 지금 자세.
+var pose: StringName = &"stand"
+var _pose_cur: Dictionary = {}
+var _throw_k: float = -1.0
+
 var cutout: Cutout
 ## 조각 이름 → [Sprite2D, 관절, 처음 변환]
 var _bones: Array = []
@@ -145,8 +174,59 @@ func _process(delta: float) -> void:
 		_phase = fmod(_phase + speed * delta / CYCLE * TAU, TAU)
 	elif _walk <= 0.0:
 		_phase = 0.0
+	_tick_pose(delta)
 	_tick_blink(delta)
 	_apply(delta)
+
+
+## 자세를 바꾼다(stand / crouch / sit / sit_floor). 관절이 약 0.3초에 걸쳐 옮겨 간다.
+func set_pose(p: StringName) -> void:
+	if not POSES.has(p):
+		push_warning("HayunRig: 모르는 자세 %s" % p)
+		p = &"stand"
+	pose = p
+
+
+## 돌 던지기 팔 동작. 손을 놓는 순간에 돌아오고(돌을 그때 띄운다), 팔은 그 뒤로 마저 돌아간다.
+func play_throw() -> void:
+	var t := create_tween()
+	t.tween_method(func(k: float): _throw_k = k, 0.0, 1.0, THROW_SECONDS)
+	t.tween_callback(func(): _throw_k = -1.0)
+	await get_tree().create_timer(THROW_SECONDS * THROW_RELEASE, false).timeout
+
+
+## 화면 쪽 손의 자리(전역 좌표). 던진 돌이 여기서 출발한다.
+func hand_point() -> Vector2:
+	var hand := cutout.parts.get("hand") as Sprite2D if cutout else null
+	if hand == null:
+		return global_position
+	return hand.get_global_transform() * hand.get_rect().get_center()
+
+
+func _tick_pose(delta: float) -> void:
+	var target: Dictionary = POSES[pose]
+	var k := 1.0 - exp(-POSE_RATE * delta)
+	var keys := {}
+	for j in _pose_cur:
+		keys[j] = true
+	for j in target:
+		keys[j] = true
+	for j: String in keys:
+		var v := lerpf(float(_pose_cur.get(j, 0.0)), float(target.get(j, 0.0)), k)
+		if absf(v) < 0.05 and not target.has(j):
+			_pose_cur.erase(j)
+		else:
+			_pose_cur[j] = v
+
+
+func _throw_angles(k: float) -> Vector2:
+	for i in range(1, THROW_KEYS.size()):
+		var b: Array = THROW_KEYS[i]
+		if k <= b[0]:
+			var a: Array = THROW_KEYS[i - 1]
+			var u := smoothstep(0.0, 1.0, (k - a[0]) / (b[0] - a[0]))
+			return Vector2(lerpf(a[1], b[1], u), lerpf(a[2], b[2], u))
+	return Vector2.ZERO
 
 
 func _tick_blink(delta: float) -> void:
@@ -179,7 +259,7 @@ func _angles() -> Dictionary:
 	var near_arm := s * (ARM_SWING_BACK if s > 0.0 else ARM_SWING_FRONT) * w
 	var far_arm := -s * (ARM_SWING_BACK if -s > 0.0 else ARM_SWING_FRONT) * w
 	var breeze := sin(_time * 1.4) * 1.6 + sin(_time * 0.7 + 1.0) * 1.0
-	return {
+	var out := {
 		"root": 0.0,
 		"head": sin(_phase * 2.0) * 1.2 * w,
 		"ponytail": HAIR_TRAIL * w + sin(_phase * 2.0 + 0.8) * HAIR_SWAY * w + breeze,
@@ -195,6 +275,13 @@ func _angles() -> Dictionary:
 		"far_shoulder": far_arm, "far_elbow": -ELBOW_BEND * maxf(0.0, -far_arm / ARM_SWING_FRONT) * w,
 		"skirt": near_thigh * SKIRT_FOLLOW, "far_skirt": far_thigh * FAR_SKIRT_FOLLOW,
 	}
+	for joint: String in _pose_cur:
+		out[joint] = float(out.get(joint, 0.0)) + float(_pose_cur[joint])
+	if _throw_k >= 0.0:
+		var t := _throw_angles(_throw_k)
+		out["shoulder"] = float(out["shoulder"]) + t.x
+		out["elbow"] = float(out["elbow"]) + t.y
+	return out
 
 
 func _apply(_delta: float) -> void:
@@ -235,7 +322,8 @@ func _ground_bob(ang: Dictionary) -> float:
 	var lowest := -INF
 	for bone in _bones:
 		var joint: String = bone[1]
-		if joint != "ankle" and joint != "far_ankle":
+		# 발바닥, 그리고 바닥에 앉았을 때는 엉덩이(바지 아랫단)가 땅에 닿는다
+		if joint != "ankle" and joint != "far_ankle" and joint != "skirt":
 			continue
 		var s := bone[0] as Sprite2D
 		var xf: Transform2D = _joint_xf(joint, ang, cache, 0.0) * (bone[2] as Transform2D)

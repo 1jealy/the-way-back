@@ -930,6 +930,27 @@ func _check_hayun_rig() -> void:
 	_check(rig.walk_amount() < 0.05 and absf(leg.rotation) < 0.01, "하윤 컷아웃: 멈추면 다시 선다")
 	await _hold(&"move_left", 0.96)
 	await _wait(0.5)
+	# 자세(#98): 쪼그려 앉으면 관절이 접히고 몸이 내려가며(그림은 찌그러지지 않는다), 일어서면 돌아온다.
+	var head: Node2D = cut.parts["head"]
+	var head_y := head.position.y
+	_player.set_pose(&"crouch")
+	await _wait(0.8)
+	var ca: Dictionary = rig.joint_angles()
+	_check(rig.pose == &"crouch" and float(ca["hip"]) < -80.0 and float(ca["knee"]) > 90.0 and head.position.y > head_y + 20.0
+			and is_equal_approx(_player.get_node("Visual").scale.y, 1.0),
+			"하윤 자세: 쪼그려 앉으면 무릎이 접히고 몸이 내려간다 (머리 %.0f → %.0f)" % [head_y, head.position.y])
+	_player.set_pose(&"sit_floor")
+	await _wait(0.8)
+	_check(float(rig.joint_angles()["knee"]) < 30.0 and head.position.y > head_y + 20.0, "하윤 자세: 바닥에 앉으면 다리를 뻗는다")
+	_player.set_pose(&"stand")
+	await _wait(0.8)
+	_check(absf(float(rig.joint_angles()["hip"])) < 2.0 and absf(head.position.y - head_y) < 3.0, "하윤 자세: 일어서면 서 있는 자세로 돌아온다")
+	var t0 := Time.get_ticks_msec()
+	await _player.play_throw()
+	var released := Time.get_ticks_msec() - t0
+	var sa := float(rig.joint_angles()["shoulder"])
+	_check(released >= 300 and released < 700 and sa < -40.0, "하윤 자세: 던지기는 팔이 앞으로 올 때 손을 놓는다 (%d ms, 어깨 %.0f도)" % [released, sa])
+	await _wait(0.6)
 
 
 ## 화면 다듬기(#90): 카메라가 걷는 쪽을 앞서 보고, 장소마다 떠다니는 알갱이, 가장자리 비네트.
