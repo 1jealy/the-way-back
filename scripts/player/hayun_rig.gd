@@ -59,7 +59,9 @@ const FAR_SKIRT_FOLLOW := 0.6
 ## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
 const ELBOW_BEND := 18.0
 ## 아래팔 소매 그림의 위쪽을 이만큼(그림 px) 잘라 낸다(팔꿈치 축 위의 둥근 윗단).
-const FOREARM_CROP := 24
+const FOREARM_CROP := 14
+## 그 아래로 이만큼(그림 px)에 걸쳐 서서히 나타난다.
+const FOREARM_FADE := 22
 ## 뒤로 간 발은 뒤꿈치를 든다(발끝으로 차고 나간다).
 const HEEL_LIFT := 6.0
 ## 발목이 다리 기울기를 되돌리는 몫(1 = 늘 땅과 나란히).
@@ -95,15 +97,12 @@ static func available() -> bool:
 func _setup() -> void:
 	if cutout.parts.is_empty():
 		return
-	# 아래팔 소매의 둥근 윗단(팔꿈치 축 위)을 잘라 낸다: 팔꿈치를 굽히면 그 윗단이 윗소매 밖으로 튀어나왔다.
-	# 잘린 자리는 윗소매 안쪽이라 같은 소매 색 위에 놓여 보이지 않는다.
+	# 아래팔 소매의 둥근 윗단(팔꿈치 축 위)을 지운다: 팔꿈치를 굽히면 그 윗단이 윗소매 밖으로 튀어나왔다.
+	# 딱 자르면 윤곽선이 끊긴 자리에 턱이 생겨서, 위에서부터 서서히 투명해지게 한다.
+	# 지운 자리는 윗소매 안쪽이라 같은 소매 색 위에 놓여 보이지 않는다.
 	var lower := cutout.parts.get("arm_lower") as Sprite2D
 	if lower:
-		var cut := float(FOREARM_CROP)
-		var size := lower.texture.get_size()
-		lower.region_enabled = true
-		lower.region_rect = Rect2(0.0, cut, size.x, size.y - cut)
-		lower.position.y += cut * lower.scale.y
+		lower.texture = _fade_top(lower.texture, FOREARM_CROP, FOREARM_FADE)
 	# 먼 쪽 팔다리: 복사해서 맨 뒤에
 	var far: Array = []
 	var order := FAR_COPIES.duplicate()
@@ -209,6 +208,25 @@ func _apply(_delta: float) -> void:
 		var t: Transform2D = _joint_xf(bone[1], ang, cache, bob)
 		s.transform = t * (bone[2] as Transform2D)
 	_blink_pose()
+
+
+## 그림 위쪽 `cut`줄은 지우고, 그 아래 `fade`줄에 걸쳐 서서히 나타나게 한 사본.
+static func _fade_top(tex: Texture2D, cut: int, fade: int) -> Texture2D:
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	for y in mini(cut + fade, img.get_height()):
+		var k := clampf(float(y - cut) / float(fade), 0.0, 1.0)
+		k = k * k * (3.0 - 2.0 * k)
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			c.a *= k
+			img.set_pixel(x, y, c)
+	return ImageTexture.create_from_image(img)
 
 
 ## 몸을 위아래로 얼마나 옮기면 가장 낮은 발바닥이 땅(발밑 원점)에 닿나(캔버스 px).
