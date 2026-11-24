@@ -202,7 +202,7 @@ func _process(delta: float) -> void:
 ## 자세를 바꾼다(stand / crouch / sit / sit_floor). 관절이 약 0.3초에 걸쳐 옮겨 간다.
 func set_pose(p: StringName) -> void:
 	if not POSES.has(p):
-		push_warning("HayunRig: 모르는 자세 %s" % p)
+		push_warning("HayunRig: unknown pose %s" % p)
 		p = &"stand"
 	pose = p
 
