@@ -19,7 +19,9 @@ const ART_SCALE := 0.5
 const JOINTS := {
 	"root": ["", Vector2(215, 346)],
 	"rear": ["root", Vector2(300, 165)],
-	"head": ["root", Vector2(300, 112)],
+	# 목: 가슴 앞 아래를 축으로 머리를 통째로 내린다(물어 오기·냄새). 목줄도 같이 간다.
+	"neck": ["root", Vector2(318, 178)],
+	"head": ["neck", Vector2(300, 112)],
 	"ear": ["head", Vector2(320, 34)],
 	"shoulder": ["root", Vector2(300, 160)],
 	"wrist": ["shoulder", Vector2(295, 236)],
@@ -30,7 +32,7 @@ const JOINTS := {
 	"tail3": ["tail2", Vector2(36, 64)],
 }
 const PART_JOINT := {
-	"body": "rear", "head": "head", "face": "head", "ear": "ear", "collar": "root",
+	"body": "rear", "head": "head", "face": "head", "ear": "ear", "collar": "neck",
 	"front_upper": "shoulder", "front_lower": "wrist",
 	"hind_upper": "hip", "hind_lower": "hock",
 	"tail1": "tail1", "tail2": "tail2", "tail3": "tail3",
@@ -55,8 +57,22 @@ const POSES := {
 	# 뒷발은 앞다리 뒤 땅에 놓는다. 꼬리는 땅에 내려놓고, 머리는 들어 앞을 본다.
 	&"sit": {"rear": -42.0, "hip": -50.0, "hock": -10.0, "far_hip": -50.0, "far_hock": -10.0,
 			"head": -10.0, "tail1": -20.0, "tail2": -15.0, "tail3": -10.0},
+	# 물어 오기(가져와): 목을 내려 입을 땅에 대고, 앞다리를 조금 굽힌다.
+	&"fetch": {"neck": 60.0, "head": 24.0, "ear": 12.0, "shoulder": 8.0, "wrist": -14.0, "far_shoulder": 8.0, "far_wrist": -14.0,
+			"tail1": -6.0},
+	# 냄새 맡기: 목을 내려 코를 땅 가까이, 귀는 앞으로. 맡는 동안 머리가 잘게 움직인다(_angles).
+	&"sniff": {"neck": 38.0, "head": 18.0, "ear": 10.0, "shoulder": 6.0, "wrist": -10.0, "far_shoulder": 6.0, "far_wrist": -10.0},
+	# 냄새를 따라 걸어가기: 목만 내린다(다리는 걷기 그대로).
+	&"sniff_walk": {"neck": 24.0, "head": 10.0, "ear": 6.0},
+	# 버티기(징검다리 돌): 앞다리를 앞으로, 뒷다리를 뒤로 조금 벌려 버틴다. 고개는 숙여 힘을 준다.
+	&"hold": {"shoulder": -14.0, "wrist": 6.0, "far_shoulder": -14.0, "far_wrist": 6.0,
+			"hip": 12.0, "hock": -6.0, "far_hip": 12.0, "far_hock": -6.0,
+			"neck": 16.0, "head": 6.0, "ear": -6.0, "tail1": -14.0, "tail2": -8.0},
 }
 const POSE_RATE := 9.0
+## 짖기: 고개를 위로 젖혔다 돌아온다(초).
+const BARK_SECONDS := 0.35
+const BARK_HEAD := -24.0
 
 var cutout: Cutout
 var pose: StringName = &"stand"
@@ -65,6 +81,7 @@ var _phase: float = 0.0
 var _walk: float = 0.0
 var _time: float = 0.0
 var _pose_cur: Dictionary = {}
+var _bark_t: float = -1.0
 
 
 func _ready() -> void:
@@ -83,6 +100,11 @@ static func available() -> bool:
 
 func set_pose(p: StringName) -> void:
 	pose = p if POSES.has(p) else &"stand"
+
+
+## 한 번 짖는다(고개를 젖혔다 돌아온다). 소리는 dog.gd가 낸다.
+func bark() -> void:
+	_bark_t = 0.0
 
 
 func walk_amount() -> float:
@@ -134,6 +156,10 @@ func _process(delta: float) -> void:
 		_phase = fmod(_phase + speed * delta / CYCLE * TAU, TAU)
 	elif _walk <= 0.0:
 		_phase = 0.0
+	if _bark_t >= 0.0:
+		_bark_t += delta
+		if _bark_t > BARK_SECONDS:
+			_bark_t = -1.0
 	var target: Dictionary = POSES[pose]
 	var k := 1.0 - exp(-POSE_RATE * delta)
 	var keys := {}
@@ -172,6 +198,10 @@ func _angles() -> Dictionary:
 	}
 	for j: String in _pose_cur:
 		out[j] = float(out.get(j, 0.0)) + float(_pose_cur[j])
+	if pose == &"sniff" or pose == &"sniff_walk":
+		out["head"] = float(out["head"]) + sin(_time * 22.0) * 2.5  # 킁킁
+	if _bark_t >= 0.0:
+		out["head"] = float(out["head"]) + BARK_HEAD * sin(clampf(_bark_t / BARK_SECONDS, 0.0, 1.0) * PI)
 	return out
 
 

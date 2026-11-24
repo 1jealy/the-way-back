@@ -230,6 +230,10 @@ func _run() -> void:
 	await _press_ask()
 	_check(_dog.is_busy(), "가져와: F를 누르면 출발한다")
 	_check(not _player.controls_enabled, "가져와: 그동안 하윤은 기다린다")
+	var dog_rig: Node2D = _dog.get_node_or_null("Visual/Rig")
+	if dog_rig:
+		var bit := await _wait_until(func(): return dog_rig.pose == &"fetch", 6.0)
+		_check(bit, "가져와: 하늘이가 고개를 숙여 문다(컷아웃 자세 fetch)")
 	var fetched := await _wait_until(func(): return fetch.used, 8.0)
 	_check(fetched and fetch_acted[0], "가져와: 물어 오고 돌아온다")
 	_check(_state.has_flag(&"test_fetched"), "가져와: 플래그가 선다")
@@ -244,6 +248,10 @@ func _run() -> void:
 	var sniff := _add_spot(_actions["SNIFF"], -300.0, &"test_sniffed")
 	await _wait(0.2)
 	await _press_ask()
+	if dog_rig:
+		var nose := await _wait_until(func(): return dog_rig.pose == &"sniff_walk", 3.0)
+		var sniffing := await _wait_until(func(): return dog_rig.pose == &"sniff", 6.0)
+		_check(nose and sniffing, "냄새: 코를 숙이고 걸어가 냄새를 맡는다(sniff_walk → sniff)")
 	var sniffed := await _wait_until(func(): return sniff.used, 8.0)
 	_check(sniffed and _state.has_flag(&"test_sniffed"), "냄새: 맞는 길 쪽으로 가서 짖고 돌아온다")
 	sniff.queue_free()
@@ -256,6 +264,9 @@ func _run() -> void:
 	await _press_ask()
 	var holding := await _wait_until(func(): return _dog.state == _states["HOLD"], 6.0)
 	_check(holding, "기다려: 정해진 자리에서 버틴다")
+	if dog_rig:
+		await _wait(0.1)
+		_check(dog_rig.pose == &"hold", "기다려: 다리를 벌려 버티는 자세(hold)")
 	_check(_player.controls_enabled, "기다려: 버티는 동안 하윤은 움직일 수 있다")
 	_check(_state.has_flag(&"test_holding"), "기다려: 버티기 시작하면 플래그가 선다")
 	await _wait(1.0)
@@ -986,6 +997,13 @@ func _check_dog_rig() -> void:
 	await _wait(0.8)
 	_check(float(test_rig.joint_angles()["rear"]) < -30.0 and float(test_rig.joint_angles()["hip"]) < -30.0,
 			"하늘이 컷아웃: 앉으면 몸 뒤쪽이 내려가고 뒷다리를 접는다 (머리 %.0f → %.0f)" % [head_y, head.position.y])
+	test_rig.set_pose(&"fetch")
+	await _wait(0.8)
+	_check(float(test_rig.joint_angles()["neck"]) > 40.0, "하늘이 컷아웃: 물어 올 때 목을 내린다")
+	test_rig.set_pose(&"stand")
+	test_rig.bark()
+	await _wait(test_rig.BARK_SECONDS * 0.5)
+	_check(float(test_rig.joint_angles()["head"]) < -10.0, "하늘이 컷아웃: 짖을 때 고개를 젖힌다")
 	holder.queue_free()
 
 
