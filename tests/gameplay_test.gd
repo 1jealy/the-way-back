@@ -1024,7 +1024,7 @@ func _check_save() -> void:
 	_check(title.get_node("Menu/Quit").visible, "타이틀: 데스크톱에서는 끝내기가 보인다")
 	_check(title.get_node("Background").get_child_count() >= 6, "타이틀: 배경 층·그늘·걷는 실루엣·빛 알갱이가 있다")
 	var title_font: Font = title.get_node("Title").get_theme_font("font")
-	_check(title_font != null and title_font.resource_path.ends_with("title_subset.ttf"), "타이틀: 제목은 제목 글꼴(송명)")
+	_check(title_font != null and title_font.resource_path.ends_with("title_subset.ttf"), "타이틀: 제목은 제목 글꼴(고운바탕 굵게)")
 
 	_main.queue_free()
 	_state.set_flag(&"test_leftover")

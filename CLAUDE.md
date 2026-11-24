@@ -211,11 +211,12 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 - `scenes/ui/dialogue_box.tscn`, `main.tscn`의 `Overlay` 아래. 그룹 `dialogue_box`로 찾는다.
 - `play(lines)` → 한 줄씩 글자가 찍히고(초당 30자) E로 넘긴다 → 다 넘기면 `finished`.
+- 글꼴은 기본 테마 글꼴(`project.godot` `gui/theme/custom_font` = `ui_subset.ttf`, 고운돋움 — 메뉴와 같은 글꼴, #100). 제목·장소 이름 카드는 `title_subset.ttf`(고운바탕 굵게). 본고딕 서브셋은 지도 손글씨에 없는 글자를 대신 그리는 데만 쓴다.
 - 열려 있는 동안 하윤 조작을 막는다.
 
 ## 장소 이름 카드·걷기 안내
 
-- `scenes/main.tscn`의 `Overlay/PlaceCard`(`scripts/ui/place_card.gd`, `PlaceCard`): 장소에 들어서면(`main._swap_place`) 그 장소의 `display_name`이 화면 가운데 위에 제목 글꼴(송명)로 떴다가 사라진다(1.0초 들어오고 2.4초 머물고 1.4초 사라짐). **하윤이 조작할 수 있게 된 뒤에** 뜬다(장소 전환 페이드·0-1 오프닝 위에 겹치지 않게). `display_name`이 비면(강 위 구간) 안 뜬다. 늘 떠 있던 장소 이름 글과 "A D / ← → 이동" 개발용 글은 없앴다(#87).
+- `scenes/main.tscn`의 `Overlay/PlaceCard`(`scripts/ui/place_card.gd`, `PlaceCard`): 장소에 들어서면(`main._swap_place`) 그 장소의 `display_name`이 화면 가운데 위에 제목 글꼴(고운바탕 굵게, #100)로 떴다가 사라진다(1.0초 들어오고 2.4초 머물고 1.4초 사라짐). **하윤이 조작할 수 있게 된 뒤에** 뜬다(장소 전환 페이드·0-1 오프닝 위에 겹치지 않게). `display_name`이 비면(강 위 구간) 안 뜬다. 늘 떠 있던 장소 이름 글과 "A D / ← → 이동" 개발용 글은 없앴다(#87).
 - `Overlay/WalkHint`: 집에서 처음 조작이 풀리면 아래에 "A D / ← →  걷기". 하윤이 240px 걸으면 사라지고 `walked_once` 플래그를 세운다(이어하기 뒤에도 다시 안 뜬다).
 - 엔딩·배 위에서는 `PlaceCard`·`WalkHint`·`MapHint`·`Vignette`를 감춘다(`ending.gd`, `boat_ride.gd`).
 

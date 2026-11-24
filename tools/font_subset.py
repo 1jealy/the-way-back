@@ -2,11 +2,11 @@
 """게임에서 쓰는 글자만 남긴 한글 서브셋 글꼴을 만든다. 웹에는 OS 글꼴이 없다.
 
 만드는 글꼴 (FONTS)
-- 본문: Noto Sans KR → assets/fonts/noto_sans_kr_regular_subset.ttf (게임 문구 전부)
+- 본문 대신 그리기: Noto Sans KR → assets/fonts/noto_sans_kr_regular_subset.ttf (게임 문구 전부, 지도 손글씨에 없는 글자를 그린다)
 - 지도 할아버지 글씨: Nanum Pen Script → assets/fonts/grandpa_hand_subset.ttf (지도 문구만)
 - 지도 하윤 글씨: Gamja Flower → assets/fonts/hayun_hand_subset.ttf (지도 문구만)
-- 제목: Song Myung → assets/fonts/title_subset.ttf (게임 문구의 한글·영문 — 제목·장소 이름 카드)
-- 메뉴·안내: Gowun Dodum → assets/fonts/ui_subset.ttf (게임 문구 전부)
+- 제목: Gowun Batang Bold → assets/fonts/title_subset.ttf (게임 문구의 한글·영문 — 제목·장소 이름 카드)
+- 대사·메뉴·안내(기본 글꼴): Gowun Dodum → assets/fonts/ui_subset.ttf (게임 문구 전부, #100)
 
     python3 tools/font_subset.py           # 글꼴을 다시 만든다
     python3 tools/font_subset.py --check   # 쓰는 글자가 글꼴에 다 있는지만 본다(CI)
@@ -58,8 +58,8 @@ FONTS = [
     {
         "key": "title",
         "out": ROOT / "assets/fonts/title_subset.ttf",
-        "url": GOOGLE_FONTS + "songmyung/SongMyung-Regular.ttf",
-        "sha256": "7f90ab20250911560212cc5819c7b205f9c6644bb96b65095d89fcae096bbf58",
+        "url": GOOGLE_FONTS + "gowunbatang/GowunBatang-Bold.ttf",
+        "sha256": "dbfcaa646e5831e7478524924f02906f550285a5050699b4e38c9950b3ec4b94",
         "weight": None,
         "family": "Way Back Title",
         "chars": "title",
@@ -134,7 +134,7 @@ def _game_files() -> list[Path]:
 
 def collect(scope: str = "game") -> dict[str, list[str]]:
     """글자 → 처음 나온 파일들. scope "map"이면 지도 문구만.
-    scope "title"이면 게임 문구 중 한글 음절과 기본 영문·숫자·문장부호만(제목 글꼴 Song Myung에는
+    scope "title"이면 게임 문구 중 한글 음절과 기본 영문·숫자·문장부호만(제목 글꼴에는
     화살표·「」 같은 기호가 없다. 제목·장소 이름 카드에는 그런 기호를 쓰지 않는다)."""
     if scope == "title":
         return {ch: origin for ch, origin in collect("game").items() if _title_char(ch)}
