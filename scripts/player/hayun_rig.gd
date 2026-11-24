@@ -36,7 +36,7 @@ const PART_JOINT := {
 }
 ## 팔(어깨·팔꿈치와 거기 붙은 조각)을 원본 자리보다 앞으로 옮긴다(캔버스 px).
 ## 원본은 팔이 몸통 뒤쪽 끝에 붙어 있어 옆에서 걸을 때 등에 매달린 것처럼 보였다.
-const ARM_SHIFT := Vector2(10, 0)
+const ARM_SHIFT := Vector2(0, 0)
 const ARM_JOINTS := ["shoulder", "elbow"]
 
 ## 먼 쪽에 복사할 조각(가까운 쪽 이름). 반창고·팔찌는 화면 쪽에만 있다.
@@ -60,6 +60,11 @@ const SKIRT_FOLLOW := 0.5
 const FAR_SKIRT_FOLLOW := 0.6
 ## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
 const ELBOW_BEND := 18.0
+## 몸통 그림의 겨드랑이 그늘 색과, 그것을 바꿀 몸통 옆면 색. 그림 위쪽 이만큼 줄 안에서만 바꾼다.
+const ARMPIT_SHADE := Color8(239, 146, 64)
+const BODY_SIDE := Color8(255, 185, 131)
+const ARMPIT_ROWS := 120
+
 ## 아래팔 소매 그림의 위쪽을 이만큼(그림 px) 잘라 낸다(팔꿈치 축 위의 둥근 윗단).
 const FOREARM_CROP := 14
 ## 그 아래로 이만큼(그림 px)에 걸쳐 서서히 나타난다.
@@ -152,6 +157,11 @@ func _setup() -> void:
 	var lower := cutout.parts.get("arm_lower") as Sprite2D
 	if lower:
 		lower.texture = _fade_top(lower.texture, FOREARM_CROP, FOREARM_FADE)
+	# 몸통 그림에 팔이 붙는 자리(겨드랑이)를 진한 주황 그늘로 칠해 두었다. 팔을 흔들면 그 그늘이 드러나
+	# 색이 튄다 — 몸통 옆면 색으로 바꿔 둔다(위쪽 ARMPIT_ROWS줄 안에서만).
+	var body := cutout.parts.get("body") as Sprite2D
+	if body:
+		body.texture = _recolor(body.texture, ARMPIT_SHADE, BODY_SIDE, ARMPIT_ROWS)
 	# 먼 쪽 팔다리: 복사해서 맨 뒤에
 	var far: Array = []
 	var order := FAR_COPIES.duplicate()
@@ -325,6 +335,28 @@ func _apply(_delta: float) -> void:
 		var t: Transform2D = _joint_xf(bone[1], ang, cache, bob)
 		s.transform = t * (bone[2] as Transform2D)
 	_blink_pose()
+
+
+## `from`에 가까운 색을 `to` 쪽으로 옮긴 사본(가까울수록 많이). 위쪽 `rows`줄만. 윤곽선·다른 색은 그대로.
+static func _recolor(tex: Texture2D, from: Color, to: Color, rows: int) -> Texture2D:
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	var shift := Color(to.r - from.r, to.g - from.g, to.b - from.b, 0.0)
+	for y in mini(rows, img.get_height()):
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.a < 0.02:
+				continue
+			var d := Vector3(c.r - from.r, c.g - from.g, c.b - from.b).length()
+			var w := clampf(1.0 - d / 0.3, 0.0, 1.0)
+			if w > 0.0:
+				img.set_pixel(x, y, Color(c.r + shift.r * w, c.g + shift.g * w, c.b + shift.b * w, c.a))
+	return ImageTexture.create_from_image(img)
 
 
 ## 그림 위쪽 `cut`줄은 지우고, 그 아래 `fade`줄에 걸쳐 서서히 나타나게 한 사본.
