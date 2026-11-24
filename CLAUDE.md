@@ -279,7 +279,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하늘이
 
 - `scenes/characters/dog.tscn` + `scripts/dog/dog.gd`. 하윤처럼 `main.tscn`이 들고 있다.
-- **그림·움직임**(#101): 그림 담당의 원본 PSB(한글 레이어 12장)를 `python3 tools/psd_split.py 하늘이.psb --char dog --names tools/psd_names/haneul.json --mirror --height 346`로 잘라 `assets/art/char/dog/`에 둔다(왼쪽을 보고 그려서 뒤집고, 2배 크기, 귀 끝 약 160px·등 약 120px). 원본 PSB는 저장소에 넣지 않는다(팀 드라이브). `dog.gd`가 그림이 있으면 `Visual/Rig`(`scripts/dog/dog_rig.gd`, `DogRig`)를 만들고 회색 네모(`Stand`/`Sit`)를 숨긴다. 하윤과 같은 방식(조각은 한 층, 관절은 계산, 먼 쪽 다리는 복사해 그늘 색, 발이 땅에 닿게 몸 높이). 걷기는 속보(가까운 앞다리 = 먼 뒷다리, `CYCLE` 170px), 꼬리 세 마디는 늘 흔들고 걸을 때 더 크게, 앉기(`SIT`·만남·연출 정지)는 몸 뒤쪽(`rear`)을 앞 어깨 축으로 내리고 뒷다리를 접는다. 그림은 지금 모습(밝은 강아지 느낌) 그대로 간다(사람이 정함).
+- **그림·움직임**(#101): 그림 담당의 원본 PSB(한글 레이어 12장)를 `python3 tools/psd_split.py 하늘이.psb --char dog --names tools/psd_names/haneul.json --mirror --height 346`로 잘라 `assets/art/char/dog/`에 둔다(왼쪽을 보고 그려서 뒤집고, 2배 크기, 귀 끝 약 160px·등 약 120px). 원본 PSB는 저장소에 넣지 않는다(팀 드라이브). `dog.gd`가 그림이 있으면 `Visual/Rig`(`scripts/dog/dog_rig.gd`, `DogRig`)를 만들고 회색 네모(`Stand`/`Sit`)를 숨긴다. 하윤과 같은 방식(조각은 한 층, 관절은 계산, 먼 쪽 다리는 복사해 그늘 색, 발이 땅에 닿게 몸 높이). 걷기는 속보(가까운 앞다리 = 먼 뒷다리, `CYCLE` 170px), 꼬리 세 마디는 늘 흔들고 걸을 때 더 크게, 앉기(`SIT`·만남·연출 정지)는 몸 뒤쪽(`rear`)을 앞 어깨 축으로 내려 엉덩이를 땅에 대고, 허벅지를 앞으로 눕혀 뒷발을 앞다리 뒤 땅에 놓고, 꼬리를 땅에 내려놓는다. 그림은 지금 모습(밝은 강아지 느낌) 그대로 간다(사람이 정함).
 - 합류 전에는 보이지 않는다. 합류는 만남 부품(아래)이 시킨다. 코드로는 `dog.join(player)`이고 `dog_joined` 플래그를 세운다.
 
 ### 하늘이 만남 (DogMeeting, 장면표 3-4)

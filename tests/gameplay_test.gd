@@ -984,7 +984,7 @@ func _check_dog_rig() -> void:
 	var head_y := head.position.y
 	test_rig.set_pose(&"sit")
 	await _wait(0.8)
-	_check(float(test_rig.joint_angles()["rear"]) < -25.0 and float(test_rig.joint_angles()["hock"]) > 90.0,
+	_check(float(test_rig.joint_angles()["rear"]) < -30.0 and float(test_rig.joint_angles()["hip"]) < -30.0,
 			"하늘이 컷아웃: 앉으면 몸 뒤쪽이 내려가고 뒷다리를 접는다 (머리 %.0f → %.0f)" % [head_y, head.position.y])
 	holder.queue_free()
 
