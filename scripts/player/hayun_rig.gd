@@ -19,7 +19,7 @@ const JOINTS := {
 	"head": ["root", Vector2(204, 165)],
 	"ponytail": ["head", Vector2(152, 152)],
 	"hip": ["root", Vector2(187, 336)],
-	"skirt": ["root", Vector2(190, 318)],
+	"skirt": ["root", Vector2(195, 300)],
 	"knee": ["hip", Vector2(183, 470)],
 	"ankle": ["knee", Vector2(178, 548)],
 	"shoulder": ["root", Vector2(174, 198)],
@@ -53,10 +53,9 @@ const KNEE_BEND := 22.0
 const ARM_SWING_FRONT := 30.0
 const ARM_SWING_BACK := 14.0
 ## 바지가 허벅지를 따라 도는 몫.
-## 바지는 돌리면 허리선까지 기울어 판자처럼 보인다 — 기울이기(skew)로 바짓단만 민다.
-const SKIRT_FOLLOW := 0.6
+## 바지는 모양 그대로 돌린다(기울이기로 밀면 늘어나 보인다). 축은 윗옷 밑단에 가려지는 높이라 허리선은 안 보인다.
+const SKIRT_FOLLOW := 0.5
 const FAR_SKIRT_FOLLOW := 0.6
-const SHEAR_JOINTS := ["skirt"]
 ## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
 const ELBOW_BEND := 5.0
 ## 뒤로 간 발은 뒤꿈치를 든다(발끝으로 차고 나간다).
@@ -242,10 +241,7 @@ func _joint_xf(joint: String, ang: Dictionary, cache: Dictionary, bob: float) ->
 	if base in ARM_JOINTS:
 		pivot += ARM_SHIFT * ART_SCALE
 	var a := deg_to_rad(float(ang.get(joint, 0.0)))
-	# 바지는 통째로 돌리지 않고 기울인다(허리선은 그대로, 바짓단만 다리 쪽으로 밀린다).
-	var bend := Transform2D(0.0, Vector2.ONE, a, Vector2.ZERO) if base in SHEAR_JOINTS \
-			else Transform2D(a, Vector2.ZERO)
-	var local := Transform2D(0.0, pivot) * bend * Transform2D(0.0, -pivot)
+	var local := Transform2D(0.0, pivot) * Transform2D(a, Vector2.ZERO) * Transform2D(0.0, -pivot)
 	var xf := parent_xf * local
 	cache[joint] = xf
 	return xf
