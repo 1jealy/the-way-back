@@ -57,7 +57,9 @@ const ARM_SWING_BACK := 14.0
 const SKIRT_FOLLOW := 0.5
 const FAR_SKIRT_FOLLOW := 0.6
 ## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
-const ELBOW_BEND := 5.0
+const ELBOW_BEND := 18.0
+## 아래팔 소매 그림의 위쪽을 이만큼(그림 px) 잘라 낸다(팔꿈치 축 위의 둥근 윗단).
+const FOREARM_CROP := 24
 ## 뒤로 간 발은 뒤꿈치를 든다(발끝으로 차고 나간다).
 const HEEL_LIFT := 6.0
 ## 발목이 다리 기울기를 되돌리는 몫(1 = 늘 땅과 나란히).
@@ -93,6 +95,15 @@ static func available() -> bool:
 func _setup() -> void:
 	if cutout.parts.is_empty():
 		return
+	# 아래팔 소매의 둥근 윗단(팔꿈치 축 위)을 잘라 낸다: 팔꿈치를 굽히면 그 윗단이 윗소매 밖으로 튀어나왔다.
+	# 잘린 자리는 윗소매 안쪽이라 같은 소매 색 위에 놓여 보이지 않는다.
+	var lower := cutout.parts.get("arm_lower") as Sprite2D
+	if lower:
+		var cut := float(FOREARM_CROP)
+		var size := lower.texture.get_size()
+		lower.region_enabled = true
+		lower.region_rect = Rect2(0.0, cut, size.x, size.y - cut)
+		lower.position.y += cut * lower.scale.y
 	# 먼 쪽 팔다리: 복사해서 맨 뒤에
 	var far: Array = []
 	var order := FAR_COPIES.duplicate()
