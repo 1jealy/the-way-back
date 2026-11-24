@@ -88,15 +88,33 @@ const POSES := {
 }
 ## 자세가 바뀌는 빠르기(클수록 빠르다, 약 0.3초).
 const POSE_RATE := 9.0
-## 돌 던지기(5-4): 걸리는 시간과 손을 놓는 때(0~1). 키: [때, 어깨, 팔꿈치](도).
-const THROW_SECONDS := 0.8
-const THROW_RELEASE := 0.5
-const THROW_KEYS := [[0.0, 0.0, 0.0], [0.4, 70.0, -40.0], [0.55, -100.0, -8.0], [0.75, -70.0, -15.0], [1.0, 0.0, 0.0]]
+## 돌 던지기(물수제비 5-4). 물수제비는 옆으로 낮게 던진다(사이드암): 무릎을 굽혀 몸을 낮추고,
+## 던지는 팔 반대쪽 발(먼 발)을 앞으로 내딛고, 팔을 허리 높이로 뒤에서 앞으로 휘둘러
+## 손이 몸 앞 허리 높이에 왔을 때 놓는다(돌이 물과 약 20도로 낮고 평평하게 날아가야 잘 튄다). 팔은 앞으로 마저 따라간다.
+## 키: [초, {관절: 도}]. 사이는 부드럽게 잇는다. 걷기·자세 각도에 더해진다.
+const THROW_KEYS := [
+	[0.0, {}],
+	# 준비: 무릎을 굽혀 몸을 낮추고, 팔을 허리 뒤로 낮게 당긴다
+	[0.35, {"hip": -18.0, "knee": 36.0, "ankle": -18.0, "far_hip": -16.0, "far_knee": 34.0, "far_ankle": -18.0,
+			"shoulder": 44.0, "elbow": -18.0, "head": 6.0, "ponytail": -3.0}],
+	# 내딛기: 먼 발을 앞으로, 가까운 다리는 뒤에 버틴다. 팔은 가장 뒤(허리 높이).
+	[0.6, {"hip": 12.0, "knee": 30.0, "ankle": -30.0, "far_hip": -42.0, "far_knee": 44.0, "far_ankle": 2.0,
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": 52.0, "elbow": -20.0, "head": 7.0, "ponytail": -5.0}],
+	# 휘두르기 → 놓기: 손이 몸 앞 허리 높이(어깨 약 -30도)
+	[0.74, {"hip": 14.0, "knee": 28.0, "ankle": -32.0, "far_hip": -44.0, "far_knee": 42.0, "far_ankle": 4.0,
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": -30.0, "elbow": -6.0, "head": 5.0, "ponytail": 8.0}],
+	# 따라가기: 팔이 앞으로 마저 나가고 몸은 낮게 남는다
+	[0.92, {"hip": 12.0, "knee": 26.0, "ankle": -30.0, "far_hip": -42.0, "far_knee": 40.0, "far_ankle": 4.0,
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": -60.0, "elbow": -12.0, "head": 5.0, "ponytail": 10.0}],
+	[1.45, {}],
+]
+## 손을 놓는 때(초) = 휘두르기 키.
+const THROW_RELEASE_AT := 0.74
 
 ## 지금 자세.
 var pose: StringName = &"stand"
 var _pose_cur: Dictionary = {}
-var _throw_k: float = -1.0
+var _throw_t: float = -1.0
 
 var cutout: Cutout
 ## 조각 이름 → [Sprite2D, 관절, 처음 변환]
@@ -189,10 +207,11 @@ func set_pose(p: StringName) -> void:
 
 ## 돌 던지기 팔 동작. 손을 놓는 순간에 돌아오고(돌을 그때 띄운다), 팔은 그 뒤로 마저 돌아간다.
 func play_throw() -> void:
+	var total: float = THROW_KEYS[-1][0]
 	var t := create_tween()
-	t.tween_method(func(k: float): _throw_k = k, 0.0, 1.0, THROW_SECONDS)
-	t.tween_callback(func(): _throw_k = -1.0)
-	await get_tree().create_timer(THROW_SECONDS * THROW_RELEASE, false).timeout
+	t.tween_method(func(v: float): _throw_t = v, 0.0, total, total)
+	t.tween_callback(func(): _throw_t = -1.0)
+	await get_tree().create_timer(THROW_RELEASE_AT, false).timeout
 
 
 ## 화면 쪽 손의 자리(전역 좌표). 던진 돌이 여기서 출발한다.
@@ -219,14 +238,23 @@ func _tick_pose(delta: float) -> void:
 			_pose_cur[j] = v
 
 
-func _throw_angles(k: float) -> Vector2:
+func _throw_angles(t: float) -> Dictionary:
 	for i in range(1, THROW_KEYS.size()):
 		var b: Array = THROW_KEYS[i]
-		if k <= b[0]:
+		if t <= b[0]:
 			var a: Array = THROW_KEYS[i - 1]
-			var u := smoothstep(0.0, 1.0, (k - a[0]) / (b[0] - a[0]))
-			return Vector2(lerpf(a[1], b[1], u), lerpf(a[2], b[2], u))
-	return Vector2.ZERO
+			var u := smoothstep(0.0, 1.0, (t - a[0]) / (b[0] - a[0]))
+			var ka: Dictionary = a[1]
+			var kb: Dictionary = b[1]
+			var out := {}
+			for j in ka:
+				out[j] = true
+			for j in kb:
+				out[j] = true
+			for j: String in out:
+				out[j] = lerpf(float(ka.get(j, 0.0)), float(kb.get(j, 0.0)), u)
+			return out
+	return {}
 
 
 func _tick_blink(delta: float) -> void:
@@ -277,10 +305,10 @@ func _angles() -> Dictionary:
 	}
 	for joint: String in _pose_cur:
 		out[joint] = float(out.get(joint, 0.0)) + float(_pose_cur[joint])
-	if _throw_k >= 0.0:
-		var t := _throw_angles(_throw_k)
-		out["shoulder"] = float(out["shoulder"]) + t.x
-		out["elbow"] = float(out["elbow"]) + t.y
+	if _throw_t >= 0.0:
+		var t := _throw_angles(_throw_t)
+		for joint: String in t:
+			out[joint] = float(out.get(joint, 0.0)) + float(t[joint])
 	return out
 
 

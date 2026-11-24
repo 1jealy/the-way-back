@@ -949,8 +949,10 @@ func _check_hayun_rig() -> void:
 	await _player.play_throw()
 	var released := Time.get_ticks_msec() - t0
 	var sa := float(rig.joint_angles()["shoulder"])
-	_check(released >= 300 and released < 700 and sa < -40.0, "하윤 자세: 던지기는 팔이 앞으로 올 때 손을 놓는다 (%d ms, 어깨 %.0f도)" % [released, sa])
-	await _wait(0.6)
+	var ha := float(rig.joint_angles()["far_hip"])
+	_check(released >= 600 and released < 950 and sa < -15.0 and sa > -60.0 and ha < -25.0,
+			"하윤 자세: 옆으로 낮게 던진다 — 먼 발을 내딛고 손이 몸 앞 허리 높이에 올 때 놓는다 (%d ms, 어깨 %.0f도, 먼 허벅지 %.0f도)" % [released, sa, ha])
+	await _wait(1.0)
 
 
 ## 화면 다듬기(#90): 카메라가 걷는 쪽을 앞서 보고, 장소마다 떠다니는 알갱이, 가장자리 비네트.
