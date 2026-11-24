@@ -19,7 +19,7 @@ const JOINTS := {
 	"head": ["root", Vector2(204, 165)],
 	"ponytail": ["head", Vector2(152, 152)],
 	"hip": ["root", Vector2(187, 336)],
-	"skirt": ["root", Vector2(190, 318)],
+	"skirt": ["root", Vector2(195, 300)],
 	"knee": ["hip", Vector2(183, 470)],
 	"ankle": ["knee", Vector2(178, 548)],
 	"shoulder": ["root", Vector2(174, 198)],
@@ -48,17 +48,24 @@ const FAR_SHIFT := Vector2(-7, -2)
 ## 걸음 한 바퀴(두 걸음)의 거리(게임 px). 발소리 간격(110px)의 두 배.
 const CYCLE := 220.0
 const THIGH_SWING := 24.0
-const KNEE_BEND := 34.0
+const KNEE_BEND := 22.0
 ## 팔은 뒤보다 앞으로 더 흔든다(도).
 const ARM_SWING_FRONT := 30.0
 const ARM_SWING_BACK := 14.0
 ## 바지가 허벅지를 따라 도는 몫.
-const SKIRT_FOLLOW := 0.3
-const FAR_SKIRT_FOLLOW := 0.7
+## 바지는 모양 그대로 돌린다(기울이기로 밀면 늘어나 보인다). 축은 윗옷 밑단에 가려지는 높이라 허리선은 안 보인다.
+const SKIRT_FOLLOW := 0.5
+const FAR_SKIRT_FOLLOW := 0.6
 ## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
-const ELBOW_BEND := 5.0
+const ELBOW_BEND := 18.0
+## 아래팔 소매 그림의 위쪽을 이만큼(그림 px) 잘라 낸다(팔꿈치 축 위의 둥근 윗단).
+const FOREARM_CROP := 14
+## 그 아래로 이만큼(그림 px)에 걸쳐 서서히 나타난다.
+const FOREARM_FADE := 22
 ## 뒤로 간 발은 뒤꿈치를 든다(발끝으로 차고 나간다).
-const HEEL_LIFT := 16.0
+const HEEL_LIFT := 6.0
+## 발목이 다리 기울기를 되돌리는 몫(1 = 늘 땅과 나란히).
+const ANKLE_FLATTEN := 0.5
 const HAIR_TRAIL := 7.0
 const HAIR_SWAY := 3.0
 
@@ -90,6 +97,12 @@ static func available() -> bool:
 func _setup() -> void:
 	if cutout.parts.is_empty():
 		return
+	# 아래팔 소매의 둥근 윗단(팔꿈치 축 위)을 지운다: 팔꿈치를 굽히면 그 윗단이 윗소매 밖으로 튀어나왔다.
+	# 딱 자르면 윤곽선이 끊긴 자리에 턱이 생겨서, 위에서부터 서서히 투명해지게 한다.
+	# 지운 자리는 윗소매 안쪽이라 같은 소매 색 위에 놓여 보이지 않는다.
+	var lower := cutout.parts.get("arm_lower") as Sprite2D
+	if lower:
+		lower.texture = _fade_top(lower.texture, FOREARM_CROP, FOREARM_FADE)
 	# 먼 쪽 팔다리: 복사해서 맨 뒤에
 	var far: Array = []
 	var order := FAR_COPIES.duplicate()
@@ -156,8 +169,9 @@ func _angles() -> Dictionary:
 	var far_thigh := THIGH_SWING * s * w
 	# 무릎은 다리가 뒤에서 앞으로 넘어올 때(발을 든 쪽) 굽는다. 디딘 다리는 곧게 편다.
 	# 가까운 다리는 cos > 0일 때 허벅지가 뒤(+)에서 앞(-)으로 간다.
-	var near_knee := KNEE_BEND * maxf(0.0, cos(_phase)) * w
-	var far_knee := KNEE_BEND * maxf(0.0, -cos(_phase)) * w
+	# 발을 든 가운데에서만 뾰족하게 굽힌다(넓게 굽히면 종아리가 흐물거린다).
+	var near_knee := KNEE_BEND * pow(maxf(0.0, cos(_phase)), 2.0) * w
+	var far_knee := KNEE_BEND * pow(maxf(0.0, -cos(_phase)), 2.0) * w
 	# 뒤로 간 발은 뒤꿈치를 든다(시계 방향 = 뒤꿈치가 올라간다)
 	var near_heel := HEEL_LIFT * pow(maxf(0.0, near_thigh / THIGH_SWING), 1.5)
 	var far_heel := HEEL_LIFT * pow(maxf(0.0, far_thigh / THIGH_SWING), 1.5)
@@ -172,8 +186,10 @@ func _angles() -> Dictionary:
 		"hip": near_thigh, "knee": near_knee,
 		"far_hip": far_thigh, "far_knee": far_knee,
 		# 발은 땅과 거의 나란하게(다리를 따라 돌지 않게 되돌린다). 발끝이 땅에 박히지 않는다.
-		"ankle": -(near_thigh + near_knee) * 0.85 + near_heel,
-		"far_ankle": -(far_thigh + far_knee) * 0.85 + far_heel,
+		# 발은 다리를 절반만 따라 돈다: 종아리와 신발이 한 덩어리로 움직이고(반대로 돌리면 발목이 휘어 보인다),
+		# 앞발은 발끝이 들리고(뒤꿈치로 디딤) 뒷발은 뒤꿈치가 들린다(발끝으로 참).
+		"ankle": -(near_thigh + near_knee) * ANKLE_FLATTEN + near_heel,
+		"far_ankle": -(far_thigh + far_knee) * ANKLE_FLATTEN + far_heel,
 		# 팔꿈치는 팔이 앞으로 왔을 때만 조금 굽는다
 		"shoulder": near_arm, "elbow": -ELBOW_BEND * maxf(0.0, -near_arm / ARM_SWING_FRONT) * w,
 		"far_shoulder": far_arm, "far_elbow": -ELBOW_BEND * maxf(0.0, -far_arm / ARM_SWING_FRONT) * w,
@@ -192,6 +208,25 @@ func _apply(_delta: float) -> void:
 		var t: Transform2D = _joint_xf(bone[1], ang, cache, bob)
 		s.transform = t * (bone[2] as Transform2D)
 	_blink_pose()
+
+
+## 그림 위쪽 `cut`줄은 지우고, 그 아래 `fade`줄에 걸쳐 서서히 나타나게 한 사본.
+static func _fade_top(tex: Texture2D, cut: int, fade: int) -> Texture2D:
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	for y in mini(cut + fade, img.get_height()):
+		var k := clampf(float(y - cut) / float(fade), 0.0, 1.0)
+		k = k * k * (3.0 - 2.0 * k)
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			c.a *= k
+			img.set_pixel(x, y, c)
+	return ImageTexture.create_from_image(img)
 
 
 ## 몸을 위아래로 얼마나 옮기면 가장 낮은 발바닥이 땅(발밑 원점)에 닿나(캔버스 px).
