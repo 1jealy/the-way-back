@@ -35,7 +35,7 @@ const PART_JOINT := {
 	"body": "rear", "head": "head", "face": "head", "ear": "ear", "collar": "neck",
 	"front_upper": "shoulder", "front_lower": "wrist",
 	"hind_upper": "hip", "hind_lower": "hock",
-	"tail1": "tail1", "tail2": "tail2", "tail3": "tail3",
+	"tail1": "tail1", "tail2": "tail2", "tail3": "tail3", "eye": "head",
 }
 const FAR_COPIES := ["front_upper", "front_lower", "hind_upper", "hind_lower"]
 const FAR_TINT := Color(0.84, 0.79, 0.74)
@@ -70,6 +70,11 @@ const POSES := {
 			"neck": 16.0, "head": 6.0, "ear": -6.0, "tail1": -14.0, "tail2": -8.0},
 }
 const POSE_RATE := 9.0
+## 깜빡임(#105): 얼굴 조각(face)은 눈썹 두 줄 + 눈 하나다. 눈 부분(그림 위에서 EYE_FROM줄 아래)만
+## 따로 떼어 내 가끔 위아래로 눌렀다 편다(감은 눈 그림이 없어서). 짖거나 걸을 때도 깜빡인다.
+const EYE_FROM := 11
+const BLINK_SECONDS := 0.16
+const BLINK_EVERY := Vector2(2.5, 6.0)
 ## 짖기: 고개를 위로 젖혔다 돌아온다(초).
 const BARK_SECONDS := 0.35
 const BARK_HEAD := -24.0
@@ -82,6 +87,8 @@ var _walk: float = 0.0
 var _time: float = 0.0
 var _pose_cur: Dictionary = {}
 var _bark_t: float = -1.0
+var _blink_t: float = -1.0
+var _blink_left: float = 2.0
 
 
 func _ready() -> void:
@@ -118,6 +125,7 @@ func joint_angles() -> Dictionary:
 func _setup() -> void:
 	if cutout.parts.is_empty():
 		return
+	_split_eye()
 	var far: Array = []
 	var order := FAR_COPIES.duplicate()
 	order.sort_custom(func(a, b): return cutout.parts.has(a) and cutout.parts.has(b) \
@@ -156,6 +164,15 @@ func _process(delta: float) -> void:
 		_phase = fmod(_phase + speed * delta / CYCLE * TAU, TAU)
 	elif _walk <= 0.0:
 		_phase = 0.0
+	if _blink_t >= 0.0:
+		_blink_t += delta
+		if _blink_t > BLINK_SECONDS:
+			_blink_t = -1.0
+	else:
+		_blink_left -= delta
+		if _blink_left <= 0.0:
+			_blink_left = randf_range(BLINK_EVERY.x, BLINK_EVERY.y)
+			_blink_t = 0.0
 	if _bark_t >= 0.0:
 		_bark_t += delta
 		if _bark_t > BARK_SECONDS:
@@ -211,7 +228,111 @@ func _apply() -> void:
 	var cache := {}
 	for bone in _bones:
 		var s := bone[0] as Sprite2D
-		s.transform = _joint_xf(bone[1], ang, cache, bob) * (bone[2] as Transform2D)
+		var xf: Transform2D = _joint_xf(bone[1], ang, cache, bob) * (bone[2] as Transform2D)
+		if s.name == "eye" and _blink_t >= 0.0:
+			# 눈의 가운데를 축으로 세로만 누른다(머리가 기울어도 눈 모양대로)
+			var k := 1.0 - sin(clampf(_blink_t / BLINK_SECONDS, 0.0, 1.0) * PI) * 0.9
+			var c := s.get_rect().get_center()
+			xf = xf * Transform2D(0.0, c) * Transform2D(0.0, Vector2(1.0, k), 0.0, Vector2.ZERO) * Transform2D(0.0, -c)
+		s.transform = xf
+
+
+## 얼굴 조각에서 눈만 떼어 "eye" 조각으로 만든다(눈썹은 face에 남는다).
+func _split_eye() -> void:
+	var face := cutout.parts.get("face") as Sprite2D
+	if face == null or face.texture == null or face.texture.get_height() <= EYE_FROM:
+		return
+	var size := face.texture.get_size()
+	var eye := face.duplicate(0) as Sprite2D
+	eye.name = "eye"
+	eye.region_enabled = true
+	eye.region_rect = Rect2(0.0, EYE_FROM, size.x, size.y - EYE_FROM)
+	eye.position.y += EYE_FROM * face.scale.y
+	face.region_enabled = true
+	face.region_rect = Rect2(0.0, 0.0, size.x, EYE_FROM)
+	cutout.add_child(eye)
+	cutout.move_child(eye, face.get_index() + 1)
+	cutout.parts["eye"] = eye
+	# 머리 그림은 눈 자리가 비어 있다(눈 레이어가 그 구멍을 채운다). 눈을 누르면 배경이 비치므로 메운다.
+	var head := cutout.parts.get("head") as Sprite2D
+	if head:
+		head.texture = _fill_holes(head.texture)
+
+
+## 그림 안쪽의 투명한 구멍(바깥과 이어지지 않은 칸)을 둘레 털 색으로 메운 사본.
+static func _fill_holes(tex: Texture2D) -> Texture2D:
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	var w := img.get_width()
+	var h := img.get_height()
+	var outside := PackedByteArray()
+	outside.resize(w * h)
+	var stack: Array[Vector2i] = []
+	for x in w:
+		stack.append(Vector2i(x, 0))
+		stack.append(Vector2i(x, h - 1))
+	for y in h:
+		stack.append(Vector2i(0, y))
+		stack.append(Vector2i(w - 1, y))
+	while not stack.is_empty():
+		var p: Vector2i = stack.pop_back()
+		if p.x < 0 or p.y < 0 or p.x >= w or p.y >= h or outside[p.y * w + p.x] == 1:
+			continue
+		if img.get_pixel(p.x, p.y).a > 0.5:
+			continue
+		outside[p.y * w + p.x] = 1
+		stack.append(p + Vector2i.LEFT)
+		stack.append(p + Vector2i.RIGHT)
+		stack.append(p + Vector2i.UP)
+		stack.append(p + Vector2i.DOWN)
+	# 구멍 칸과 그 둘레 3칸(구멍 테두리의 흐린 선·밝은 테)을 함께 메운다
+	var hole := PackedByteArray()
+	hole.resize(w * h)
+	for y in h:
+		for x in w:
+			if img.get_pixel(x, y).a <= 0.5 and outside[y * w + x] == 0:
+				for oy in range(-3, 4):
+					for ox in range(-3, 4):
+						var qx := x + ox
+						var qy := y + oy
+						if qx >= 0 and qy >= 0 and qx < w and qy < h and outside[qy * w + qx] == 0:
+							hole[qy * w + qx] = 1
+	for y in h:
+		for x in w:
+			if hole[y * w + x] == 0:
+				continue
+			# 같은 줄 양옆의 가장 가까운 털 색을 거리로 섞어 채운다(털의 명암이 이어지게)
+			var left := Color(0, 0, 0, 0)
+			var right := Color(0, 0, 0, 0)
+			var dl := 0
+			var dr := 0
+			for d in range(1, w):
+				if left.a == 0.0 and x - d >= 0:
+					var n := img.get_pixel(x - d, y)
+					if n.a > 0.95 and n.r > 0.8 and hole[y * w + x - d] == 0:
+						left = n
+						dl = d
+				if right.a == 0.0 and x + d < w:
+					var n := img.get_pixel(x + d, y)
+					if n.a > 0.95 and n.r > 0.8 and hole[y * w + x + d] == 0:
+						right = n
+						dr = d
+				if left.a > 0.0 and right.a > 0.0:
+					break
+			var fill := left if right.a == 0.0 else right if left.a == 0.0 else left.lerp(right, float(dl) / float(dl + dr))
+			if fill.a > 0.0:
+				img.set_pixel(x, y, Color(fill.r, fill.g, fill.b, 1.0))
+	return ImageTexture.create_from_image(img)
+
+
+## 검사용: 깜빡이는 중인가.
+func blinking() -> bool:
+	return _blink_t >= 0.0
 
 
 ## 가장 낮은 발바닥이 땅(발밑 원점)에 닿게 몸을 위아래로 얼마나 옮기나(캔버스 px).

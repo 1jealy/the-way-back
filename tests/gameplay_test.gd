@@ -997,6 +997,12 @@ func _check_dog_rig() -> void:
 	await _wait(0.8)
 	_check(float(test_rig.joint_angles()["rear"]) < -30.0 and float(test_rig.joint_angles()["hip"]) < -30.0,
 			"하늘이 컷아웃: 앉으면 몸 뒤쪽이 내려가고 뒷다리를 접는다 (머리 %.0f → %.0f)" % [head_y, head.position.y])
+	_check(test_rig.cutout.parts.has("eye") and test_rig.cutout.parts.has("face"), "하늘이 컷아웃: 눈을 얼굴에서 떼어 따로 둔다")
+	test_rig._blink_left = 0.0
+	await _wait(0.06)
+	var eye: Node2D = test_rig.cutout.parts["eye"]
+	_check(test_rig.blinking() and eye.transform.get_scale().y < (test_rig.cutout.parts["face"] as Node2D).transform.get_scale().y * 0.9,
+			"하늘이 컷아웃: 가끔 눈을 깜빡인다(눈만 눌린다)")
 	test_rig.set_pose(&"fetch")
 	await _wait(0.8)
 	_check(float(test_rig.joint_angles()["neck"]) > 40.0, "하늘이 컷아웃: 물어 올 때 목을 내린다")
