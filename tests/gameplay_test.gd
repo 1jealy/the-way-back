@@ -903,6 +903,7 @@ func _check_place_card() -> void:
 	_check(not card.visible, "장소 카드: 이름 없는 장소(강 위)는 안 뜬다")
 	await _check_screen_polish()
 	await _check_hayun_rig()
+	await _check_dog_rig()
 
 
 ## 하윤 컷아웃(#94): PSB 조각이 붙고, 걸으면 다리·팔이 흔들리고, 멈추면 선다. 그림자도 같은 조각을 따른다.
@@ -930,6 +931,62 @@ func _check_hayun_rig() -> void:
 	_check(rig.walk_amount() < 0.05 and absf(leg.rotation) < 0.01, "하윤 컷아웃: 멈추면 다시 선다")
 	await _hold(&"move_left", 0.96)
 	await _wait(0.5)
+	# 자세(#98): 쪼그려 앉으면 관절이 접히고 몸이 내려가며(그림은 찌그러지지 않는다), 일어서면 돌아온다.
+	var head: Node2D = cut.parts["head"]
+	var head_y := head.position.y
+	_player.set_pose(&"crouch")
+	await _wait(0.8)
+	var ca: Dictionary = rig.joint_angles()
+	_check(rig.pose == &"crouch" and float(ca["hip"]) < -80.0 and float(ca["knee"]) > 90.0 and head.position.y > head_y + 20.0
+			and is_equal_approx(_player.get_node("Visual").scale.y, 1.0),
+			"하윤 자세: 쪼그려 앉으면 무릎이 접히고 몸이 내려간다 (머리 %.0f → %.0f)" % [head_y, head.position.y])
+	_player.set_pose(&"sit_floor")
+	await _wait(0.8)
+	_check(float(rig.joint_angles()["knee"]) < 30.0 and head.position.y > head_y + 20.0, "하윤 자세: 바닥에 앉으면 다리를 뻗는다")
+	_player.set_pose(&"stand")
+	await _wait(0.8)
+	_check(absf(float(rig.joint_angles()["hip"])) < 2.0 and absf(head.position.y - head_y) < 3.0, "하윤 자세: 일어서면 서 있는 자세로 돌아온다")
+	var t0 := Time.get_ticks_msec()
+	await _player.play_throw()
+	var released := Time.get_ticks_msec() - t0
+	var sa := float(rig.joint_angles()["shoulder"])
+	var ha := float(rig.joint_angles()["far_hip"])
+	_check(released >= 600 and released < 950 and sa < -15.0 and sa > -60.0 and ha < -25.0,
+			"하윤 자세: 옆으로 낮게 던진다 — 먼 발을 내딛고 손이 몸 앞 허리 높이에 올 때 놓는다 (%d ms, 어깨 %.0f도, 먼 허벅지 %.0f도)" % [released, sa, ha])
+	await _wait(1.0)
+
+
+## 하늘이 컷아웃(#101): 그림이 있으면 회색 네모 대신 조각이 서고, 걸으면 대각선 다리가 같이 움직이고, 앉으면 몸 뒤쪽이 내려간다.
+func _check_dog_rig() -> void:
+	var rig: Node2D = _dog.get_node_or_null("Visual/Rig")
+	_check(rig != null and rig.cutout != null and rig.cutout.parts.has("tail3") and rig.cutout.parts.has("far_hind_upper")
+			and not _dog.get_node("Visual/Stand").visible and not _dog.get_node("Visual/Sit").visible,
+			"하늘이 컷아웃: 조각과 먼 쪽 다리가 붙고 회색 네모는 숨는다")
+	# 따로 하나 만들어 움직여 본다(진짜 하늘이의 상태는 건드리지 않는다)
+	var holder := Node2D.new()
+	_main.add_child(holder)
+	var test_rig: Node2D = load("res://scripts/dog/dog_rig.gd").new()
+	holder.add_child(test_rig)
+	await _wait(0.1)
+	test_rig.set_process(false)
+	test_rig._walk = 1.0
+	test_rig._phase = PI * 0.5
+	var a: Dictionary = test_rig.joint_angles()
+	_check(signf(a["shoulder"]) == signf(a["far_hip"]) and signf(a["shoulder"]) == -signf(a["far_shoulder"]) and absf(a["shoulder"]) > 10.0,
+			"하늘이 컷아웃: 속보 — 가까운 앞다리와 먼 뒷다리가 같이, 앞다리 둘은 반대로")
+	test_rig._walk = 0.0
+	test_rig.set_process(true)
+	var tail: Node2D = test_rig.cutout.parts["tail3"]
+	var r0 := tail.rotation
+	await _wait(0.2)
+	_check(absf(tail.rotation - r0) > 0.005, "하늘이 컷아웃: 서 있어도 꼬리를 흔든다")
+	var head: Node2D = test_rig.cutout.parts["head"]
+	var head_y := head.position.y
+	test_rig.set_pose(&"sit")
+	await _wait(0.8)
+	_check(float(test_rig.joint_angles()["rear"]) < -30.0 and float(test_rig.joint_angles()["hip"]) < -30.0,
+			"하늘이 컷아웃: 앉으면 몸 뒤쪽이 내려가고 뒷다리를 접는다 (머리 %.0f → %.0f)" % [head_y, head.position.y])
+	holder.queue_free()
 
 
 ## 화면 다듬기(#90): 카메라가 걷는 쪽을 앞서 보고, 장소마다 떠다니는 알갱이, 가장자리 비네트.
@@ -1001,7 +1058,7 @@ func _check_save() -> void:
 	_check(title.get_node("Menu/Quit").visible, "타이틀: 데스크톱에서는 끝내기가 보인다")
 	_check(title.get_node("Background").get_child_count() >= 6, "타이틀: 배경 층·그늘·걷는 실루엣·빛 알갱이가 있다")
 	var title_font: Font = title.get_node("Title").get_theme_font("font")
-	_check(title_font != null and title_font.resource_path.ends_with("title_subset.ttf"), "타이틀: 제목은 제목 글꼴(송명)")
+	_check(title_font != null and title_font.resource_path.ends_with("title_subset.ttf"), "타이틀: 제목은 제목 글꼴(고운바탕 굵게)")
 
 	_main.queue_free()
 	_state.set_flag(&"test_leftover")

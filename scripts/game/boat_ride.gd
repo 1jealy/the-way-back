@@ -62,7 +62,7 @@ func _start() -> void:
 	_hide_hud()
 	if _dog and _dog.is_joined():
 		_dog.script_move_to(_dog.global_position.x)  # 멈춰 앉힌다(뱃머리)
-	_player.set_crouching(true)  # 배 위에 앉은 자세(회색 네모 단계: 키를 줄여 보여 준다)
+	_player.set_pose(&"sit_floor")  # 배 위에 앉은 자세
 	_make_reflections()
 	var main := get_tree().get_first_node_in_group("main")
 	if main and main.has_method("play_music"):
@@ -152,7 +152,7 @@ func _show_ghost_later(place_id: String, at: float) -> void:
 func _touch_water_later(at: float) -> void:
 	await _wait(at)
 	touched = true
-	_player.set_crouching(true)
+	_player.set_pose(&"crouch")  # 몸을 숙여 물을 만진다
 	var ripple := Line2D.new()
 	ripple.width = 3.0
 	ripple.default_color = Color(1, 1, 1, 0.8)
@@ -168,6 +168,8 @@ func _touch_water_later(at: float) -> void:
 	t.tween_property(ripple, "modulate:a", 0.0, 2.5)
 	await t.finished
 	ripple.queue_free()
+	if _player and _player.is_inside_tree():
+		_player.set_pose(&"sit_floor")
 
 
 

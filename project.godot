@@ -33,7 +33,7 @@ window/stretch/aspect="keep"
 
 [gui]
 
-theme/custom_font="res://assets/fonts/noto_sans_kr_regular_subset.ttf"
+theme/custom_font="res://assets/fonts/ui_subset.ttf"
 
 [input]
 

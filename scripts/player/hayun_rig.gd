@@ -16,25 +16,27 @@ const ART_SCALE := 0.5
 ## 관절 → [부모 관절, 축(캔버스 px)]. 부모가 ""면 몸(root).
 const JOINTS := {
 	"root": ["", Vector2(191, 645)],
-	"head": ["root", Vector2(204, 165)],
+	# 상체: 엉덩이를 축으로 앞뒤로 숙인다(몸통·머리·팔·바지). 다리는 root에 붙어 있어 같이 숙지 않는다.
+	"torso": ["root", Vector2(190, 335)],
+	"head": ["torso", Vector2(204, 165)],
 	"ponytail": ["head", Vector2(152, 152)],
 	"hip": ["root", Vector2(187, 336)],
-	"skirt": ["root", Vector2(195, 300)],
+	"skirt": ["torso", Vector2(195, 300)],
 	"knee": ["hip", Vector2(183, 470)],
 	"ankle": ["knee", Vector2(178, 548)],
-	"shoulder": ["root", Vector2(174, 198)],
+	"shoulder": ["torso", Vector2(174, 198)],
 	"elbow": ["shoulder", Vector2(165, 288)],
 }
 ## 조각 → 관절. 여기 없는 조각은 몸(root)에 붙는다.
 const PART_JOINT := {
-	"head": "head", "mouth_neutral": "head", "eye_open": "head", "eyelid": "head", "brow_neutral": "head",
+	"body": "torso", "head": "head", "mouth_neutral": "head", "eye_open": "head", "eyelid": "head", "brow_neutral": "head",
 	"hair_front": "head", "hair_tie": "head", "hat": "head", "ponytail": "ponytail",
 	"skirt": "skirt", "leg_upper": "hip", "leg_lower": "knee", "foot": "ankle", "bandage": "hip",
 	"arm_upper": "shoulder", "arm_lower": "elbow", "hand": "elbow", "bracelet": "elbow",
 }
 ## 팔(어깨·팔꿈치와 거기 붙은 조각)을 원본 자리보다 앞으로 옮긴다(캔버스 px).
 ## 원본은 팔이 몸통 뒤쪽 끝에 붙어 있어 옆에서 걸을 때 등에 매달린 것처럼 보였다.
-const ARM_SHIFT := Vector2(10, 0)
+const ARM_SHIFT := Vector2(0, 0)
 const ARM_JOINTS := ["shoulder", "elbow"]
 
 ## 먼 쪽에 복사할 조각(가까운 쪽 이름). 반창고·팔찌는 화면 쪽에만 있다.
@@ -58,6 +60,11 @@ const SKIRT_FOLLOW := 0.5
 const FAR_SKIRT_FOLLOW := 0.6
 ## 팔꿈치는 거의 굽히지 않는다: 소매가 통으로 그려져 있어 많이 굽히면 아래팔 소매 윗단이 꺾여 드러난다.
 const ELBOW_BEND := 18.0
+## 몸통 그림의 겨드랑이 그늘 색과, 그것을 바꿀 몸통 옆면 색. 그림 위쪽 이만큼 줄 안에서만 바꾼다.
+const ARMPIT_SHADE := Color8(239, 146, 64)
+const BODY_SIDE := Color8(255, 185, 131)
+const ARMPIT_ROWS := 120
+
 ## 아래팔 소매 그림의 위쪽을 이만큼(그림 px) 잘라 낸다(팔꿈치 축 위의 둥근 윗단).
 const FOREARM_CROP := 14
 ## 그 아래로 이만큼(그림 px)에 걸쳐 서서히 나타난다.
@@ -68,6 +75,53 @@ const HEEL_LIFT := 6.0
 const ANKLE_FLATTEN := 0.5
 const HAIR_TRAIL := 7.0
 const HAIR_SWAY := 3.0
+
+## 자세(#98): 관절 → 각도(도). 걷기 각도에 더해진다. 땅에 닿는 높이는 발로 맞춘다(_ground_bob).
+## 앞(오른쪽)으로 드는 쪽이 음수. 발목은 다리를 다 되돌리면 발바닥이 땅과 나란하다.
+const POSES := {
+	&"stand": {},
+	# 쪼그려 앉기(하늘이 만남 3-4, 돌 줍기 5-4): 무릎을 가슴 쪽으로, 팔은 앞으로 내린다.
+	&"crouch": {"hip": -100.0, "knee": 120.0, "ankle": -20.0, "far_hip": -95.0, "far_knee": 118.0, "far_ankle": -23.0,
+			"skirt": -30.0, "far_skirt": -30.0, "shoulder": -38.0, "elbow": -25.0, "far_shoulder": -30.0, "far_elbow": -25.0,
+			"torso": 22.0, "head": -8.0, "ponytail": 6.0},
+	# 벤치에 앉기(2-5, 3-3): 허벅지는 앞으로 눕고 종아리는 내린다. 손은 무릎 위에.
+	&"sit": {"torso": 4.0, "hip": -85.0, "knee": 85.0, "ankle": 0.0, "far_hip": -82.0, "far_knee": 80.0, "far_ankle": 2.0,
+			"skirt": -28.0, "far_skirt": -28.0, "shoulder": -22.0, "elbow": -45.0, "far_shoulder": -18.0, "far_elbow": -45.0,
+			"head": 3.0},
+	# 바닥에 앉기(오프닝 0-1 마루, 배 위 7-6): 다리를 앞으로 뻗는다.
+	&"sit_floor": {"hip": -92.0, "knee": 10.0, "ankle": -6.0, "far_hip": -90.0, "far_knee": 14.0, "far_ankle": -6.0,
+			"skirt": -8.0, "far_skirt": -10.0, "shoulder": -30.0, "elbow": -30.0, "far_shoulder": -26.0, "far_elbow": -30.0,
+			"head": 4.0},
+}
+## 자세가 바뀌는 빠르기(클수록 빠르다, 약 0.3초).
+const POSE_RATE := 9.0
+## 돌 던지기(물수제비 5-4). 물수제비는 옆으로 낮게 던진다(사이드암): 무릎을 굽혀 몸을 낮추고,
+## 던지는 팔 반대쪽 발(먼 발)을 앞으로 내딛고, 팔을 허리 높이로 뒤에서 앞으로 휘둘러
+## 손이 몸 앞 허리 높이에 왔을 때 놓는다(돌이 물과 약 20도로 낮고 평평하게 날아가야 잘 튄다). 팔은 앞으로 마저 따라간다.
+## 키: [초, {관절: 도}]. 사이는 부드럽게 잇는다. 걷기·자세 각도에 더해진다.
+const THROW_KEYS := [
+	[0.0, {}],
+	# 준비: 무릎을 굽혀 몸을 낮추고, 팔을 허리 뒤로 낮게 당긴다
+	[0.35, {"hip": -18.0, "knee": 36.0, "ankle": -18.0, "far_hip": -16.0, "far_knee": 34.0, "far_ankle": -18.0,
+			"shoulder": 44.0, "elbow": -18.0, "torso": 14.0, "head": -4.0, "ponytail": -3.0}],
+	# 내딛기: 먼 발을 앞으로, 가까운 다리는 뒤에 버틴다. 팔은 가장 뒤(허리 높이).
+	[0.6, {"hip": 12.0, "knee": 30.0, "ankle": -30.0, "far_hip": -42.0, "far_knee": 44.0, "far_ankle": 2.0,
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": 52.0, "elbow": -20.0, "torso": 8.0, "head": -2.0, "ponytail": -5.0}],
+	# 휘두르기 → 놓기: 손이 몸 앞 허리 높이(어깨 약 -30도)
+	[0.74, {"hip": 14.0, "knee": 28.0, "ankle": -32.0, "far_hip": -44.0, "far_knee": 42.0, "far_ankle": 4.0,
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": -30.0, "elbow": -6.0, "torso": 22.0, "head": -8.0, "ponytail": 8.0}],
+	# 따라가기: 팔이 앞으로 마저 나가고 몸은 낮게 남는다
+	[0.92, {"hip": 12.0, "knee": 26.0, "ankle": -30.0, "far_hip": -42.0, "far_knee": 40.0, "far_ankle": 4.0,
+			"skirt": 4.0, "far_skirt": -16.0, "shoulder": -60.0, "elbow": -12.0, "torso": 26.0, "head": -10.0, "ponytail": 10.0}],
+	[1.45, {}],
+]
+## 손을 놓는 때(초) = 휘두르기 키.
+const THROW_RELEASE_AT := 0.74
+
+## 지금 자세.
+var pose: StringName = &"stand"
+var _pose_cur: Dictionary = {}
+var _throw_t: float = -1.0
 
 var cutout: Cutout
 ## 조각 이름 → [Sprite2D, 관절, 처음 변환]
@@ -103,6 +157,11 @@ func _setup() -> void:
 	var lower := cutout.parts.get("arm_lower") as Sprite2D
 	if lower:
 		lower.texture = _fade_top(lower.texture, FOREARM_CROP, FOREARM_FADE)
+	# 몸통 그림에 팔이 붙는 자리(겨드랑이)를 진한 주황 그늘로 칠해 두었다. 팔을 흔들면 그 그늘이 드러나
+	# 색이 튄다 — 몸통 옆면 색으로 바꿔 둔다(위쪽 ARMPIT_ROWS줄 안에서만).
+	var body := cutout.parts.get("body") as Sprite2D
+	if body:
+		body.texture = _recolor(body.texture, ARMPIT_SHADE, BODY_SIDE, ARMPIT_ROWS)
 	# 먼 쪽 팔다리: 복사해서 맨 뒤에
 	var far: Array = []
 	var order := FAR_COPIES.duplicate()
@@ -145,8 +204,69 @@ func _process(delta: float) -> void:
 		_phase = fmod(_phase + speed * delta / CYCLE * TAU, TAU)
 	elif _walk <= 0.0:
 		_phase = 0.0
+	_tick_pose(delta)
 	_tick_blink(delta)
 	_apply(delta)
+
+
+## 자세를 바꾼다(stand / crouch / sit / sit_floor). 관절이 약 0.3초에 걸쳐 옮겨 간다.
+func set_pose(p: StringName) -> void:
+	if not POSES.has(p):
+		push_warning("HayunRig: unknown pose %s" % p)
+		p = &"stand"
+	pose = p
+
+
+## 돌 던지기 팔 동작. 손을 놓는 순간에 돌아오고(돌을 그때 띄운다), 팔은 그 뒤로 마저 돌아간다.
+func play_throw() -> void:
+	var total: float = THROW_KEYS[-1][0]
+	var t := create_tween()
+	t.tween_method(func(v: float): _throw_t = v, 0.0, total, total)
+	t.tween_callback(func(): _throw_t = -1.0)
+	await get_tree().create_timer(THROW_RELEASE_AT, false).timeout
+
+
+## 화면 쪽 손의 자리(전역 좌표). 던진 돌이 여기서 출발한다.
+func hand_point() -> Vector2:
+	var hand := cutout.parts.get("hand") as Sprite2D if cutout else null
+	if hand == null:
+		return global_position
+	return hand.get_global_transform() * hand.get_rect().get_center()
+
+
+func _tick_pose(delta: float) -> void:
+	var target: Dictionary = POSES[pose]
+	var k := 1.0 - exp(-POSE_RATE * delta)
+	var keys := {}
+	for j in _pose_cur:
+		keys[j] = true
+	for j in target:
+		keys[j] = true
+	for j: String in keys:
+		var v := lerpf(float(_pose_cur.get(j, 0.0)), float(target.get(j, 0.0)), k)
+		if absf(v) < 0.05 and not target.has(j):
+			_pose_cur.erase(j)
+		else:
+			_pose_cur[j] = v
+
+
+func _throw_angles(t: float) -> Dictionary:
+	for i in range(1, THROW_KEYS.size()):
+		var b: Array = THROW_KEYS[i]
+		if t <= b[0]:
+			var a: Array = THROW_KEYS[i - 1]
+			var u := smoothstep(0.0, 1.0, (t - a[0]) / (b[0] - a[0]))
+			var ka: Dictionary = a[1]
+			var kb: Dictionary = b[1]
+			var out := {}
+			for j in ka:
+				out[j] = true
+			for j in kb:
+				out[j] = true
+			for j: String in out:
+				out[j] = lerpf(float(ka.get(j, 0.0)), float(kb.get(j, 0.0)), u)
+			return out
+	return {}
 
 
 func _tick_blink(delta: float) -> void:
@@ -179,7 +299,7 @@ func _angles() -> Dictionary:
 	var near_arm := s * (ARM_SWING_BACK if s > 0.0 else ARM_SWING_FRONT) * w
 	var far_arm := -s * (ARM_SWING_BACK if -s > 0.0 else ARM_SWING_FRONT) * w
 	var breeze := sin(_time * 1.4) * 1.6 + sin(_time * 0.7 + 1.0) * 1.0
-	return {
+	var out := {
 		"root": 0.0,
 		"head": sin(_phase * 2.0) * 1.2 * w,
 		"ponytail": HAIR_TRAIL * w + sin(_phase * 2.0 + 0.8) * HAIR_SWAY * w + breeze,
@@ -195,6 +315,13 @@ func _angles() -> Dictionary:
 		"far_shoulder": far_arm, "far_elbow": -ELBOW_BEND * maxf(0.0, -far_arm / ARM_SWING_FRONT) * w,
 		"skirt": near_thigh * SKIRT_FOLLOW, "far_skirt": far_thigh * FAR_SKIRT_FOLLOW,
 	}
+	for joint: String in _pose_cur:
+		out[joint] = float(out.get(joint, 0.0)) + float(_pose_cur[joint])
+	if _throw_t >= 0.0:
+		var t := _throw_angles(_throw_t)
+		for joint: String in t:
+			out[joint] = float(out.get(joint, 0.0)) + float(t[joint])
+	return out
 
 
 func _apply(_delta: float) -> void:
@@ -208,6 +335,28 @@ func _apply(_delta: float) -> void:
 		var t: Transform2D = _joint_xf(bone[1], ang, cache, bob)
 		s.transform = t * (bone[2] as Transform2D)
 	_blink_pose()
+
+
+## `from`에 가까운 색을 `to` 쪽으로 옮긴 사본(가까울수록 많이). 위쪽 `rows`줄만. 윤곽선·다른 색은 그대로.
+static func _recolor(tex: Texture2D, from: Color, to: Color, rows: int) -> Texture2D:
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	if img.is_compressed():
+		img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	var shift := Color(to.r - from.r, to.g - from.g, to.b - from.b, 0.0)
+	for y in mini(rows, img.get_height()):
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.a < 0.02:
+				continue
+			var d := Vector3(c.r - from.r, c.g - from.g, c.b - from.b).length()
+			var w := clampf(1.0 - d / 0.3, 0.0, 1.0)
+			if w > 0.0:
+				img.set_pixel(x, y, Color(c.r + shift.r * w, c.g + shift.g * w, c.b + shift.b * w, c.a))
+	return ImageTexture.create_from_image(img)
 
 
 ## 그림 위쪽 `cut`줄은 지우고, 그 아래 `fade`줄에 걸쳐 서서히 나타나게 한 사본.
@@ -235,7 +384,8 @@ func _ground_bob(ang: Dictionary) -> float:
 	var lowest := -INF
 	for bone in _bones:
 		var joint: String = bone[1]
-		if joint != "ankle" and joint != "far_ankle":
+		# 발바닥, 그리고 바닥에 앉았을 때는 엉덩이(바지 아랫단)가 땅에 닿는다
+		if joint != "ankle" and joint != "far_ankle" and joint != "skirt":
 			continue
 		var s := bone[0] as Sprite2D
 		var xf: Transform2D = _joint_xf(joint, ang, cache, 0.0) * (bone[2] as Transform2D)
@@ -261,7 +411,7 @@ func _joint_xf(joint: String, ang: Dictionary, cache: Dictionary, bob: float) ->
 		parent_xf = Transform2D(0.0, Vector2(0.0, bob * ART_SCALE))
 	elif not parent.is_empty():
 		var pj := parent
-		if far and parent != "root":
+		if far and parent != "root" and parent != "torso":
 			pj = "far_" + parent
 		parent_xf = _joint_xf(pj, ang, cache, bob)
 	var pivot := _to_local_pt(def[1])

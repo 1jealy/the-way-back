@@ -1,0 +1,17 @@
+{
+ "_설명": "그림 담당의 하늘이 PSB(맨 위 폴더 없이 한글 레이어) → 컷아웃 부위 이름. python3 tools/psd_split.py <하늘이.psb> --char dog --names tools/psd_names/haneul.json --mirror --height 346",
+ "용지": "",
+ "레이어 2": "",
+ "몸통": "body",
+ "머리통": "head",
+ "귀": "ear",
+ "얼굴": "face",
+ "목줄": "collar",
+ "앞허벅지": "front_upper",
+ "앞다리": "front_lower",
+ "뒷다리허벅지": "hind_upper",
+ "뒷다리": "hind_lower",
+ "꼬리1": "tail1",
+ "꼬리2": "tail2",
+ "꼬리3": "tail3"
+}

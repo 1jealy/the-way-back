@@ -15,7 +15,12 @@ var controls_enabled: bool:
 		return _locks.is_empty()
 ## 1 = 오른쪽, -1 = 왼쪽.
 var facing: int = 1
-var crouching: bool = false
+## 지금 자세(#98): stand / crouch(쪼그려 앉기) / sit(벤치) / sit_floor(바닥).
+var pose: StringName = &"stand"
+## 서 있지 않으면 참(쪼그리기·앉기 모두).
+var crouching: bool:
+	get:
+		return pose != &"stand"
 
 ## 이만큼 걸을 때마다 발소리 하나(px). 300px/초면 약 0.37초.
 const STEP_DISTANCE := 110.0
@@ -55,10 +60,41 @@ func is_locked_by(reason: StringName) -> bool:
 	return _locks.has(reason)
 
 
-## 쪼그려 앉기(회색 네모 단계에서는 키를 줄여 보여 준다). 원점이 발밑이라 발은 그대로다.
+## 자세를 바꾼다(stand / crouch / sit / sit_floor). 하윤 컷아웃이 있으면 관절로 앉고,
+## 없으면(그림이 없을 때) 키를 줄여 보여 준다. 원점이 발밑이라 발은 그대로다.
+func set_pose(p: StringName) -> void:
+	pose = p
+	var rig := _rig()
+	if rig:
+		rig.set_pose(p)
+		_visual.scale.y = 1.0
+	else:
+		_visual.scale.y = 1.0 if p == &"stand" else 0.62
+
+
+## 쪼그려 앉기 / 일어서기.
 func set_crouching(on: bool) -> void:
-	crouching = on
-	_visual.scale.y = 0.62 if on else 1.0
+	set_pose(&"crouch" if on else &"stand")
+
+
+## 돌 던지기 팔 동작(5-4). 손을 놓는 순간에 돌아온다. 컷아웃이 없으면 바로 돌아온다.
+func play_throw() -> void:
+	var rig := _rig()
+	if rig:
+		await rig.play_throw()
+
+
+## 던진 물건이 출발할 손 자리(전역 좌표).
+func hand_point() -> Vector2:
+	var rig := _rig()
+	if rig:
+		return rig.hand_point()
+	return global_position + Vector2(36.0 * facing, -120.0)
+
+
+func _rig() -> Node:
+	var rig := _visual.get_node_or_null("Rig")
+	return rig if rig and rig.has_method("set_pose") else null
 
 
 ## 연출용: 그 쪽을 본다(1 = 오른쪽, -1 = 왼쪽).

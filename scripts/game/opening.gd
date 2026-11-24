@@ -40,7 +40,7 @@ func _run() -> void:
 	var player := get_tree().get_first_node_in_group("player") as Player
 	if player:
 		player.lock(LOCK)
-		player.set_crouching(true)  # 마루에 누워(앉아) 있다
+		player.set_pose(&"sit_floor")  # 마루에 앉아 있다
 	var rain := AudioStreamPlayer.new()
 	rain.stream = SoundBank.pick(rain_sound) if not rain_sound.is_empty() else null
 	rain.bus = SoundBank.BUS_SFX
@@ -61,7 +61,7 @@ func _run() -> void:
 	_cover.queue_free()
 	if player:
 		await get_tree().create_timer(0.8, false).timeout
-		player.set_crouching(false)
+		player.set_pose(&"stand")
 		player.unlock(LOCK)
 	if not done_flag.is_empty():
 		GameState.set_flag(done_flag)

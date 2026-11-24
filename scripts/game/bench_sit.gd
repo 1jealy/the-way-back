@@ -71,14 +71,14 @@ func _sit_down() -> void:
 	_player.lock(LOCK)
 	_player.global_position.x = global_position.x
 	_player.velocity = Vector2.ZERO
-	_player.set_crouching(true)  # 회색 네모 단계: 앉은 자세 대신 키를 줄인다
+	_player.set_pose(&"sit")
 	sat_down.emit()
 
 
 func _stand_up() -> void:
 	sitting = false
 	if _player:
-		_player.set_crouching(false)
+		_player.set_pose(&"stand")
 		_player.unlock(LOCK)
 	stood_up.emit()
 

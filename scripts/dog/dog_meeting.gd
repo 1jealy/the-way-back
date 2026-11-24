@@ -92,7 +92,7 @@ func _offer_crouch() -> void:
 func _on_crouch() -> void:
 	_done = true
 	_player.lock(LOCK)
-	_player.set_crouching(true)
+	_player.set_pose(&"crouch")
 	var side := signf(_dog.global_position.x - _player.global_position.x)
 	if side == 0.0:
 		side = 1.0
@@ -102,7 +102,7 @@ func _on_crouch() -> void:
 	if box and not lines.is_empty():
 		box.play(lines)
 		await box.finished
-	_player.set_crouching(false)
+	_player.set_pose(&"stand")
 	_player.unlock(LOCK)
 	_dog.join(_player, false)
 	met.emit()

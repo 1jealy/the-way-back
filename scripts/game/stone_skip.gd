@@ -51,16 +51,18 @@ func play() -> void:
 		player.lock(LOCK)
 		player.face(1)
 		# 납작한 돌을 줍는다
-		player.set_crouching(true)
-		await _pause(0.5)
-		player.set_crouching(false)
-		await _pause(0.25)
-	var hand := (player.global_position if player else global_position) + Vector2(36.0, -120.0)
+		player.set_pose(&"crouch")
+		await _pause(0.6)
+		player.set_pose(&"stand")
+		await _pause(0.2)
+		# 팔을 뒤로 젖혔다 앞으로 휘두른다. 손을 놓는 순간 돌이 손에서 날아간다.
+		await player.play_throw()
+	var hand := player.hand_point() if player else global_position + Vector2(36.0, -120.0)
 	_stone = _make_stone()
 	_stone.global_position = hand
-	# 던진다: 손에서 첫 물까지 낮게 날아간다
+	# 던진다: 손에서 첫 물까지 낮고 평평하게 날아간다(옆으로 던진 돌은 거의 솟지 않는다)
 	var at := Vector2(hand.x + first_reach, water_y)
-	await _fly(hand, at, 60.0, 0.55)
+	await _fly(hand, at, 18.0, 0.42)
 	for i in skips:
 		touches += 1
 		_ripple(at, 1.0 - 0.25 * i)

@@ -69,6 +69,8 @@ var _script_goal_x: float = 0.0
 var _script_speed: float = 0.0
 var _script_moving: bool = false
 var _claws: AudioStreamPlayer
+## 하늘이 컷아웃(#101). 그림이 있으면 회색 네모(Stand/Sit) 대신 이것이 서고 앉는다.
+var _rig: Node2D
 
 
 func _ready() -> void:
@@ -78,6 +80,10 @@ func _ready() -> void:
 	_claws.bus = SoundBank.BUS_SFX
 	_claws.volume_db = -8.0
 	add_child(_claws)
+	if DogRig.available():
+		_rig = DogRig.new()
+		_rig.name = "Rig"
+		_visual.add_child(_rig)
 	_refresh_visuals()
 
 
@@ -337,8 +343,13 @@ func _refresh_visuals() -> void:
 	_visual.scale.x = facing
 	var sitting := state == State.SIT or (state == State.MEETING and not _meet_moving) \
 			or (state == State.SCRIPTED and not _script_moving)
-	_stand.visible = not sitting
-	_sit.visible = sitting
+	if _rig:
+		_stand.visible = false
+		_sit.visible = false
+		_rig.set_pose(&"sit" if sitting else &"stand")
+	else:
+		_stand.visible = not sitting
+		_sit.visible = sitting
 	_paw.visible = available_spot() != null
 
 
