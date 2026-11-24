@@ -346,7 +346,7 @@ func _refresh_visuals() -> void:
 	if _rig:
 		_stand.visible = false
 		_sit.visible = false
-		_rig.set_pose(&"sit" if sitting else &"stand")
+		_rig.set_pose(_rig_pose(sitting))
 	else:
 		_stand.visible = not sitting
 		_sit.visible = sitting
@@ -394,7 +394,23 @@ func release_script() -> void:
 		_script_moving = false
 
 
+## 컷아웃 자세(#103): 심부름 중이면 그 동작, 아니면 앉기·서기.
+func _rig_pose(sitting: bool) -> StringName:
+	if _spot:
+		match state:
+			State.TASK_ACT:
+				return &"sniff" if _spot.action == AskSpot.Action.SNIFF else &"fetch"
+			State.HOLD:
+				return &"hold"
+			State.TASK_GO:
+				if _spot.action == AskSpot.Action.SNIFF:
+					return &"sniff_walk"
+	return &"sit" if sitting else &"stand"
+
+
 func _bark() -> void:
+	if _rig:
+		_rig.bark()
 	var stream := SoundBank.pick("sfx_dog_bark_near_")
 	if stream:
 		_claws.stream = stream
