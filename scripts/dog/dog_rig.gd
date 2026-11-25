@@ -82,6 +82,9 @@ var _walk: float = 0.0
 var _time: float = 0.0
 var _pose_cur: Dictionary = {}
 var _bark_t: float = -1.0
+## 신나서 꼬리를 크게·빨리 흔드는 정도(0~1). Dog.wag()가 정한다(4-3 빈터).
+var excited: float = 0.0
+var _excited_target: float = 0.0
 
 
 func _ready() -> void:
@@ -103,6 +106,11 @@ func set_pose(p: StringName) -> void:
 
 
 ## 한 번 짖는다(고개를 젖혔다 돌아온다). 소리는 dog.gd가 낸다.
+## 꼬리를 신나게 흔든다 / 그친다. 천천히 바뀐다.
+func set_excited(on: bool) -> void:
+	_excited_target = 1.0 if on else 0.0
+
+
 func bark() -> void:
 	_bark_t = 0.0
 
@@ -148,6 +156,7 @@ func _process(delta: float) -> void:
 	if _bones.is_empty():
 		return
 	_time += delta
+	excited = move_toward(excited, _excited_target, delta * 1.5)
 	var dog := get_parent().get_parent() as CharacterBody2D
 	var speed := absf(dog.velocity.x) if dog else 0.0
 	var walking := speed > 10.0
@@ -183,8 +192,8 @@ func _angles() -> Dictionary:
 	var a := -s  # 앞으로 내딛는 쪽이 음수
 	var lift_a := maxf(0.0, cos(_phase))  # 앞으로 넘어오는 동안 발을 든다
 	var lift_b := maxf(0.0, -cos(_phase))
-	var wag_speed := 7.0 + 5.0 * w
-	var wag_amp := 1.0 + 0.6 * w
+	var wag_speed := 7.0 + 5.0 * w + 7.0 * excited
+	var wag_amp := 1.0 + 0.6 * w + 1.2 * excited
 	var out := {
 		"shoulder": FRONT_SWING * a * w, "wrist": LOWER_BEND * lift_a * lift_a * w,
 		"far_shoulder": -FRONT_SWING * a * w, "far_wrist": LOWER_BEND * lift_b * lift_b * w,

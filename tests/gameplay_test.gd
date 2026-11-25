@@ -567,6 +567,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_clearing()
 	await _check_reflection()
 	await _check_motes()
 	await _check_shadow()
@@ -758,6 +759,42 @@ func _check_shake() -> void:
 	_check(down and is_zero_approx(tree.fallen.position.y) and _player.controls_enabled, "감나무: 땅에 떨어진다(조작은 막지 않는다)")
 	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
 	tree.queue_free()
+	await _wait(0.2)
+
+
+## 4-3 빈터(ClearingLight): 바닥에 앉으면 빛이 쏟아지고, 하늘이가 한쪽을 보며 꼬리를 흔든다. 일어나면 돌아온다.
+func _check_clearing() -> void:
+	var sit: Area2D = load("res://scripts/game/bench_sit.gd").new()
+	sit.prompt = "앉기"
+	sit.pose = &"sit_floor"
+	_main.current_place().add_child(sit)
+	sit.global_position = Vector2(_player.global_position.x + 40.0, 810.0)
+	var light: Node2D = load("res://scripts/game/clearing_light.gd").new()
+	light.pour_seconds = 0.4
+	light.fade_seconds = 0.4
+	_main.current_place().add_child(light)
+	light.global_position = sit.global_position
+	sit.sat_down.connect(light._pour)
+	sit.stood_up.connect(light._fade)
+	var joined: bool = _dog.is_joined()
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.7)
+	var beam: Sprite2D = light.get_node("Beam")
+	var layers: CanvasItem = _main.current_place().get_node("Layers")
+	_check(sit.sitting and _player.pose == &"sit_floor" and light.pouring and beam.modulate.a > 0.45 and layers.modulate.r > 1.05,
+			"빈터: 바닥에 앉으면 빛이 쏟아지고 장소가 밝아진다")
+	if joined:
+		_check(_dog.wagging and _dog.facing == light.look_dir and _dog.state == _dog.State.SCRIPTED,
+				"빈터: 하늘이가 멈춰 한쪽을 보며 꼬리를 흔든다")
+	await _press(&"move_right")
+	await _wait(0.7)
+	_check(not sit.sitting and not light.pouring and beam.modulate.a < 0.1 and is_equal_approx(layers.modulate.r, 1.0),
+			"빈터: 일어나면 빛이 걷히고 장소 색이 돌아온다")
+	if joined:
+		_check(not _dog.wagging and _dog.state != _dog.State.SCRIPTED, "빈터: 일어나면 하늘이가 다시 따라온다")
+	light.queue_free()
+	sit.queue_free()
 	await _wait(0.2)
 
 

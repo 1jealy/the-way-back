@@ -327,6 +327,16 @@ func _check_parts() -> void:
 		art_ok = art_ok and not find_art.call(art).is_empty()
 	_check(opening.size() == 1 and portraits.size() == 1 and String(portraits[0][0]) == "Portraits_1-2" and art_ok,
 			"부품: 집에 오프닝(0-1)과 영정사진 두 개(1-2), 그림(컷신 0·영정 2장)이 있다 %s %s" % [opening, portraits])
+	var forest_scene: Node = load("res://scenes/places/forest.tscn").instantiate()
+	var clear_sit: Node = forest_scene.get_node_or_null("Sit_4-3")
+	var clear_light: Node = forest_scene.get_node_or_null("Light_4-3")
+	var clear_look: Node = forest_scene.get_node_or_null("Look_4-3_Clearing")
+	var clear_ok: bool = clear_sit != null and clear_light != null and clear_look != null \
+			and clear_light.get_node_or_null(clear_light.get("sit")) == clear_sit \
+			and clear_sit.get("pose") == &"sit_floor" and clear_sit.get("requires_flag") == &"map_circle_3" \
+			and absf(clear_sit.position.x - clear_look.position.x) < 400.0
+	_check(clear_ok, "부품: 숲 4-3 빈터에 바닥 앉기(동그라미 3 뒤)와 빛 쏟아지기가 이어져 있다")
+	forest_scene.free()
 	var shakes := _find_by_script("house", SHAKE)
 	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
 			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
