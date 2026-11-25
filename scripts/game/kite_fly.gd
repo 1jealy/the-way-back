@@ -59,6 +59,7 @@ var _glow: Sprite2D
 var _ribbons: Array[Line2D] = []
 var _ribbon_held: Array[float] = []
 var _string: Line2D
+var _tail: Line2D
 var _streaks: Array[Line2D] = []
 
 
@@ -121,9 +122,17 @@ func _build() -> void:
 	_string.name = "String"
 	_string.width = 2.5
 	_string.default_color = Color(0.24, 0.22, 0.2, 0.85)
-	_string.z_index = 5
+	_string.z_index = -1  # 하윤 뒤: 줄이 주먹 안에서 나오는 것처럼 손이 줄 끝을 덮는다(#114)
 	_string.z_as_relative = false
 	add_child(_string)
+
+	_tail = Line2D.new()
+	_tail.name = "StringTail"
+	_tail.width = 2.5
+	_tail.default_color = Color(0.24, 0.22, 0.2, 0.85)
+	_tail.z_index = -1
+	_tail.z_as_relative = false
+	add_child(_tail)
 
 	_kite_root = Node2D.new()
 	_kite_root.name = "Kite"
@@ -316,10 +325,10 @@ func _finish() -> void:
 		GameState.set_flag(grants_flag)  # 지도 자리가 보인다(MapChase.reveal_flag)
 	await _wait(1.6)
 	var fade := create_tween().set_parallel()
-	for n in [_kite_root, _string, _band]:
+	for n in [_kite_root, _string, _band, _tail]:
 		fade.tween_property(n, "modulate:a", 0.0, 0.8)
 	await fade.finished
-	for n in [_kite_root, _string, _band]:
+	for n in [_kite_root, _string, _band, _tail]:
 		n.queue_free()
 	for s in _streaks:
 		s.queue_free()
@@ -355,7 +364,12 @@ func _place_kite(delta: float) -> void:
 		var goal := RED if _ribbon_held[i] > 0.0 else CREAM
 		r.default_color = r.default_color.lerp(goal, minf(1.0, delta * 4.0))
 	# 연줄: 손에서 연까지 살짝 처진다.
-	var hand := _player.hand_point() if _player else _anchor + Vector2(30.0, -150.0)
+	# 줄은 주먹 가운데를 지나간다: 하윤 뒤(z -1)에 그려 손이 덮고, 주먹 아래로 남은 줄이 조금 늘어진다(#114).
+	var hand := (_player.hand_point() + Vector2(6.0, 6.0)) if _player else _anchor + Vector2(30.0, -150.0)
+	if _tail:
+		var sway := sin(_t * 2.3) * 4.0
+		_tail.points = PackedVector2Array([to_local(hand), to_local(hand + Vector2(-4.0 + sway * 0.3, 26.0)),
+				to_local(hand + Vector2(-12.0 + sway, 52.0))])
 	var pts := PackedVector2Array()
 	for k in 13:
 		var u := k / 12.0
