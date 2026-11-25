@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="90" viewBox="0 0 220 90">
+  <!-- 강둑 디딤돌, 단단한 것 (게임 크기의 2배). 윗면이 평평하다 -->
+  <g stroke-linejoin="round">
+    <path d="M14 46 C12 26 52 12 108 12 C166 12 208 24 206 44 C210 64 180 80 110 80 C46 80 16 66 14 46 Z" fill="#6F6C7A" stroke="#2E2B34" stroke-width="3.5"/>
+    <path d="M18 50 C40 66 170 70 204 48 C204 66 176 80 110 80 C50 80 22 68 18 50 Z" fill="#57545F"/>
+    <path d="M30 36 C40 24 80 18 110 18 C150 18 182 24 192 36 C176 44 140 48 110 48 C76 48 44 44 30 36 Z" fill="#9A97A6"/>
+    <path d="M60 26 C80 22 106 22 124 24" fill="none" stroke="#BCB9C6" stroke-width="4" stroke-linecap="round"/>
+    <path d="M150 54 L162 62 M158 50 L172 58" stroke="#46434E" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

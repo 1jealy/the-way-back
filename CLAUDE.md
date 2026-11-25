@@ -136,10 +136,19 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 `Node2D` + `scripts/game/map_chase.gd`. 들판에 `MapChase_2-3`(땅 위 x 4300)과 그 오른쪽 `Gate_2-3`(`map_caught`, x 7000).
 
 - 지도를 가진(`requires_flag` = `has_map`) 하윤이 원점을 지나면 센 바람(`sfx_wind_gust_`)에 지도가 날아가고 "하윤: 어? 기다려!"(그동안 잠금 `map_chase`).
-- 지도는 `stops`(원점 기준 x, 억새 덤불 셋)에 차례로 걸린다. 하윤이 덤불에 `catch_distance`(260px) 안으로 오면 다음 덤불로 또 날아간다. 마지막 덤불에서는 `[E] 지도 줍기`(조사 대상을 그 자리에 만든다) → `grants_flag`(`map_caught`) → 벽이 열린다.
+- 지도는 `stops`(원점 기준 x)에 차례로 걸린다. 들판은 #111부터 **하나**(1600 → x 5900): 한 번에 멀리 날아가 `reveal_flag`(`kite_flown`)가 서기 전까지 억새 속에 묻힌다(`buried`, 안 보이고 줍지도 못한다). 연 날리기가 끝나면 반짝이며 보이고 `[E] 지도 줍기` → `grants_flag`(`map_caught`) → 벽이 열린다. `reveal_flag`를 비우면 예전처럼 덤불마다 다시 날아가다 마지막에서 줍는다.
 - 날아가 있는 동안 `MapScreen.away = true`: M이 먹지 않고 `map_circle` 조사 대상도 안 뜬다.
-- 덤불 자리는 임시 배경 `tools/placeholder_art.py` `FIELD_SNAGS`와 같아야 한다(스모크 검사). 그림은 `prop_map_folded`.
+- 덤불 자리는 임시 배경 `tools/placeholder_art.py` `FIELD_SNAGS` 중 하나여야 한다(스모크 검사). 그림은 `prop_map_folded`.
 - 이어하기는 장소 처음부터라, 줍기 전에 끄면 다시 쫓는다.
+
+## 할아버지 물건 (Keepsake)과 미니게임 (MiniGame, #111)
+
+기획서 "할아버지의 물건과 미니게임"이 목록이다. 물건 다섯(손전등·방패연·회중시계·버들피리·돌 주머니), 미니게임 넷(들판 연·숲 피리·강가 물수제비(선택)·철교 손전등). 장소마다 형태가 다르다.
+
+- **Keepsake**: `Area2D` + `scripts/game/keepsake.gd`(조사 대상을 이은 것). 이름 `Keepsake_<장면>_<물건>`. `item`(`Keepsake.ITEMS`의 열쇠)의 그림이 땅에 놓여 보이고(`art_offset`, `art_rotation`), E로 주우면 빛에 싸여 하윤 머리 위로 떠올랐다 사라진다(1.4초, 조작은 안 막는다). 플래그 `item_<item>`(`Keepsake.flag_for`). 지금 놓인 것: 들판 `Keepsake_2-3_Kite`.
+- **MiniGame**: `scripts/game/minigame.gd`. UI를 화면 안에 녹이는 공통 부품 — 하윤 잠금(이유 `minigame`), 손 옆 작은 키 안내(`show_key_hint(["E"], "꾹 누르면 감기")`, 처음 누르면 사라진다), 어긋남(`miss()`) → `help_after`(3)번이면 `help`(빛이 넓어지거나 하늘이가 먼저 움직인다, `_on_help`), 끝나면 `grants_flag`·`cleared`. 띠·게이지·숫자·실패 화면은 만들지 않는다. 하위 부품은 `_begin`·`_tick`·`_on_help`만 쓴다. 검사는 `MiniGame.autoplay = true`(하위 부품이 스스로 잘 해낸다).
+- **KiteFly**(들판 2-3): `Node2D` + `scripts/game/kite_fly.gd`, `KiteFly_2-3`(방패연과 같은 자리, x 5300). `trigger_flag`(`item_kite`)가 서면 하윤이 가까이 있을 때 1.2초 뒤 시작한다. E를 누르고 있으면 연이 오르고 떼면 내려온다. 하늘의 노을빛 띠(`zone_center` ± `zone_half`, 도움이면 두 배) 안이면 연이 환해진다. 돌풍(`calm`·`warn`·`gust` 초)을 `hold_ratio`(60%) 넘게 띠 안에서 버티면 꼬리 리본 하나가 붉게 물든다(셋). 연이 땅까지 오면 한 번 어긋남. 다 버티면 연이 높이 오르고 `grants_flag`(`kite_flown`) → 지도가 보인다. 하윤 자세 `kite`(두 손으로 줄을 잡고 올려다본다).
+- **소품 그림은 SVG**(`assets/art/prop/*.svg`, 하윤 그림체: 평면 색 + 그늘 한 톤 + 얇은 따뜻한 갈색 윤곽선). 게임 크기의 2배로 그리고 `.import`의 `svg/scale=0.5`로 들인다(새 SVG를 넣으면 `--import` 뒤 `.import`의 `svg/scale`을 0.5로 고치고 한 번 더 임포트). `find_art`는 진짜 그림(png·jpg·webp) → SVG → placeholder 순으로 찾는다. 빛 알갱이 `fx_light_mote`(물건이 떠오를 때·연 둘레·지도 반짝임). 빛줄기·손전등 빛처럼 번지는 것은 SVG가 아니라 게임에서 그라데이션으로 만든다(Godot SVG는 흐림 효과를 못 그린다).
 
 ## 경운기 (TractorPass, 장면표 2-4)
 
@@ -204,7 +213,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - **7-1 안개** `scripts/game/mist_reveal.gd`(`MistReveal`, 나루터 `Mist_7-1`): 들어서면 하얀 안개가 걷히고 휘파람 선율이 작게 시작된다.
 - **7-6 강 위 구간** `scenes/places/crossing.tscn`(place_id `crossing`, 지도에는 없음) + `scripts/game/boat_ride.gd`(`BoatRide_7-6`): 셋이 탄 배가 `ride_seconds`(70초) 동안 저절로 흘러간다(조작 없음, 잠금 `ending`). 강 건너 안개에 지나온 장소 다섯이 차례로 비친다(각 장소의 `bg_<장소>_mid` 그림을 `shaders/ghost.gdshader`로 바래게 — 진짜 그림이 오면 그것이 비친다). 물에 비친 셋은 또렷하다(모습을 뒤집어 복사). 하윤이 물을 한 번 만진다. 휘파람 선율을 처음부터 끝까지(`restart`) → 컷신 2(`cut_boat`, 하얗게 번짐) → 제목 → `ending_seen` → 타이틀로(`return_to_title`, 검사는 끈다).
 - **음악**: `main.play_music(이름, dB, 페이드, restart)` / `fade_music` / `stop_music`. 장소를 옮겨도 끊기지 않는다(`Music` 버스).
-- **컷신 재생** `scripts/ui/cutscene_player.gd`(`CutscenePlayer`, B): 한 장짜리 그림에 천천히 확대·이동, 글자는 글꼴로 얹는다(팔찌 "이하윤 / 9세"). 그림은 이름(`cut_bracelet`)으로 `assets/art` 아래에서 찾고 진짜 그림이 placeholder보다 먼저다. 대사 상자보다 아래 층(5)이라 컷신 위로 대사가 보인다.
+- **컷신 재생** `scripts/ui/cutscene_player.gd`(`CutscenePlayer`, B): 한 장짜리 그림에 천천히 확대·이동, 글자는 글꼴로 얹는다(팔찌 "이하윤 / 9세"). 그림은 이름(`cut_bracelet`)으로 `assets/art` 아래에서 찾고 진짜 그림 → SVG 소품 → placeholder 순이다. 대사 상자보다 아래 층(5)이라 컷신 위로 대사가 보인다.
 - 나루터 `Gate_7-3`(`map_circle_5`): 다섯째 동그라미 전에는 할아버지 쪽으로 못 간다.
 
 ## 대사 상자 (DialogueBox)
@@ -264,7 +273,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1), `moment`(작은 순간), `stone_skip`(물수제비 5-4). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1), `moment`(작은 순간), `stone_skip`(물수제비 5-4), `minigame`(미니게임, #111). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 인물 컷아웃 (Cutout)
 
@@ -303,7 +312,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
   - `Visual/Rig`(`scripts/player/hayun_rig.gd`, `HayunRig`)가 `Cutout`을 만들고 관절을 돌린다. 관절 자리 `JOINTS`(캔버스 px)와 조각→관절 `PART_JOINT`. 조각은 한 층에 그대로 두고 관절은 계산으로 잇는다 — 그림자·물그림자가 `Visual`을 자식 순서대로 복사해 맞추기 때문이다(그래서 `Visual`을 복사할 때는 `duplicate(0)`, 스크립트까지 복사하면 조각을 한 번 더 붙인다).
   - 먼 쪽 팔다리는 가까운 쪽을 복사해 그늘 색(`FAR_TINT`)으로 맨 뒤에 깐다(원본 레이어 순서대로 — 정강이가 허벅지 위에 오면 무릎이 인형 관절처럼 보인다)(그림 담당과 정함: 한 세트만 그린다). 반창고가 허벅지에 같이 그려져 있어 먼 쪽 다리에도 보인다.
   - 걷기는 걸은 거리로 굴린다(`CYCLE` 220px = 두 걸음): 허벅지·무릎·발목(발은 땅과 나란히), 팔을 다리와 반대로, 뒤(14도)보다 앞(30도)으로 크게, 어깨는 원본 자리 그대로(`ARM_SHIFT` 0 — 앞으로 옮겼더니 팔이 앞에 달린 것 같았다). 몸통 그림의 겨드랑이 진한 주황 그늘은 팔을 흔들면 드러나 몸통 옆면 색으로 바꿔 둔다(`ARMPIT_SHADE` → `BODY_SIDE`)(팔꿈치는 팔이 앞으로 올 때만 18도까지 굽힌다. 아래팔 소매의 둥근 윗단은 `FOREARM_CROP`줄 지우고 `FOREARM_FADE`줄에 걸쳐 서서히 나타나게 해 굽혀도 윗소매 밖으로 안 튀어나온다(딱 자르면 윤곽선에 턱이 생긴다)). 바지는 먼 쪽에도 하나 깔아 먼 다리를 따라 흔든다(뒤쪽 바짓단이 보이게). 바지는 모양 그대로 윗옷 밑단에 가려진 축(195,300)을 중심으로 돌린다(앞 0.5·뒤 0.6. 기울이기로 밀면 늘어나 보였다), 무릎은 발을 든 쪽만 가운데에서 뾰족하게(22도) 굽히고, 발은 다리를 절반만 따라 돈다(`ANKLE_FLATTEN` 0.5 — 늘 땅과 나란히 두면 종아리가 흐물거린다, #96). 몸 높이는 낮은 발바닥이 땅에 닿게 계산한다(고정 오르내림이면 다리를 벌릴 때 두 발이 뜬다), 꽁지머리는 뒤로 날리며 가만히 있어도 살랑인다. 눈은 가끔 눌러서 깜빡인다(감은 눈 그림이 없어서). **손목 만지기**(#110, 장면표 대기 동작·팔찌 복선): 5초 넘게 가만히 서 있거나 벤치에 앉아 있으면 화면 쪽 손목을 몸 앞에 들고 먼 손으로 문지르며 내려다본다(약 2.8초, 그 뒤 9~15초마다). `HayunRig.WRIST_KEYS`/`WRIST_SIT_KEYS`, 시작은 `player._update_idle`(잠금은 `sit`만 허용), 신호 `wrist_touched`. 걷기 시작하면 서둘러 내린다. 멈추면 0.25초에 걸쳐 선다.
-  - **자세**(#98): `player.set_pose(&"stand"|&"crouch"|&"sit"|&"sit_floor")`. 컷아웃은 `HayunRig.POSES`의 관절 각도로 약 0.3초에 걸쳐 옮겨 가고, 몸 높이는 발바닥·바지 아랫단 중 낮은 것이 땅에 닿게 맞춘다. 컷아웃이 없으면 예전처럼 `Visual`을 세로로 누른다. 쪼그리기 = 하늘이 만남·돌 줍기·배 위에서 물 만지기, 앉기 = 벤치, 바닥 앉기 = 오프닝 마루·배 위. `player.crouching`은 서 있지 않으면 참. 상체는 엉덩이를 축으로 숙인다(`torso` 관절 — 몸통·머리·팔·바지가 같이 기울고 다리는 그대로. 쪼그리기 22도, 던질 때 8~26도).
+  - **자세**(#98): `player.set_pose(&"stand"|&"crouch"|&"sit"|&"sit_floor")`. 컷아웃은 `HayunRig.POSES`의 관절 각도로 약 0.3초에 걸쳐 옮겨 가고, 몸 높이는 발바닥·바지 아랫단 중 낮은 것이 땅에 닿게 맞춘다. 컷아웃이 없으면 예전처럼 `Visual`을 세로로 누른다. 쪼그리기 = 하늘이 만남·돌 줍기·배 위에서 물 만지기, 앉기 = 벤치, 바닥 앉기 = 오프닝 마루·배 위, `kite` = 연줄 잡기(2-3). `player.crouching`은 서 있지 않으면 참. 상체는 엉덩이를 축으로 숙인다(`torso` 관절 — 몸통·머리·팔·바지가 같이 기울고 다리는 그대로. 쪼그리기 22도, 던질 때 8~26도).
   - **팔찌가 아직 없다**(그림 담당에게 `팔찌` 레이어를 부탁했다, 이름표에는 `bracelet`으로 미리 넣어 둠). 할아버지는 아직 회색 네모(1.5배). 인물 그림 크기 기준은 `assets/art/README.md` "크기".
 - **그림자** `scripts/player/player_shadow.gd`(`PlayerShadow`, `Player/Shadow`, CanvasGroup): 하윤 모습을 복사해 땅에 눕힌다. 장소마다 진하기·길이·방향은 `SETTINGS`(place_id별). 장소를 지날수록 옅어지고(복선) 숲부터는 거의 없다. 들판에서는 임시 배경의 전봇대 그림자(진하기 약 0.43)보다 옅게(0.26).
 - 걷는 속도 300px/초 = 화면 하나를 약 6.4초(#29에서 200 → 250, 2026-11-21 250 → 300). 장소 폭은 200 기준으로 잡았다. 하늘이 속도(따라오기·심부름·만남·힌트)는 200 기준의 1.5배로 같이 올렸다. 속도를 또 바꾸면 장면표 시간도 다시 본다.

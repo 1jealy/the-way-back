@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="96" viewBox="0 0 220 96">
+  <!-- 강둑 디딤돌, 이끼 낀 흔들리는 것 (게임 크기의 2배). 둥글고 기울었다 -->
+  <g stroke-linejoin="round" transform="rotate(-6 110 50)">
+    <path d="M18 52 C14 28 58 14 110 14 C164 14 206 30 202 52 C200 74 168 86 108 86 C50 86 20 74 18 52 Z" fill="#5E6A57" stroke="#2E2B34" stroke-width="3.5"/>
+    <path d="M22 58 C46 74 170 76 200 54 C196 74 166 86 108 86 C52 86 24 74 22 58 Z" fill="#4A5545"/>
+    <path d="M36 40 C40 28 70 20 104 20 C120 30 116 44 100 48 C78 52 50 50 36 40 Z" fill="#7F9468"/>
+    <path d="M120 22 C150 22 182 28 190 40 C176 48 150 50 134 46 C122 40 116 30 120 22 Z" fill="#91A877"/>
+    <path d="M44 38 C50 30 66 26 82 26" fill="none" stroke="#B3C795" stroke-width="4" stroke-linecap="round"/>
+    <g fill="#E4F4CC"><circle cx="70" cy="30" r="3.5"/><circle cx="152" cy="30" r="3"/><circle cx="118" cy="40" r="2.5"/></g>
+  </g>
+</svg>

@@ -33,6 +33,9 @@ const LOCK := &"map_chase"
 ## 지도를 가진 뒤에만 분다.
 @export var requires_flag: StringName = &"has_map"
 @export var gust_sound: String = "sfx_wind_gust_"
+## 이 플래그가 서기 전에는 마지막 자리에 내려앉은 지도가 억새 속에 묻혀 안 보이고 줍지도 못한다(#111).
+## 들판에서는 연 날리기(KiteFly)가 끝나면 서서(kite_flown) 지도가 반짝이며 보인다. 비우면 예전처럼 바로 줍는다.
+@export var reveal_flag: StringName = &""
 @export var pickup_sound: String = "sfx_paper_"
 
 ## 0 = 아직, 1 = 날아다니는 중, 2 = 주웠다(또는 이미 주운 채로 들어왔다).
@@ -41,6 +44,8 @@ var state: State = State.WAITING
 ## 지금 지도가 걸려 있는(또는 날아가는) 덤불 번호. -1 = 하윤 손.
 var stop_index: int = -1
 var flying: bool = false
+## 억새 속에 묻혀 안 보이는 중(reveal_flag 전).
+var buried: bool = false
 
 var _map: Sprite2D
 var _pickup: Interactable
@@ -128,7 +133,38 @@ func _fly_to(i: int) -> void:
 	flying = false
 	snagged.emit(i)
 	if i == stops.size() - 1:
-		_offer_pickup()
+		if reveal_flag.is_empty() or GameState.has_flag(reveal_flag):
+			_offer_pickup()
+		else:
+			_hide_in_reeds()
+
+
+## 억새 속으로 사라진다. reveal_flag가 서면 반짝이며 다시 보이고 줍을 수 있다.
+func _hide_in_reeds() -> void:
+	buried = true
+	var tween := create_tween()
+	tween.tween_property(_map, "modulate:a", 0.0, 0.6)
+	if not GameState.flag_changed.is_connected(_on_flag_changed):
+		GameState.flag_changed.connect(_on_flag_changed)
+
+
+func _on_flag_changed(flag: StringName) -> void:
+	if flag != reveal_flag or not buried or _map == null:
+		return
+	buried = false
+	GameState.flag_changed.disconnect(_on_flag_changed)
+	var glint := Sprite2D.new()
+	glint.name = "Glint"
+	var mote := CutscenePlayer.find_art("fx_light_mote")
+	if not mote.is_empty():
+		glint.texture = load(mote)
+	glint.scale = Vector2(3.5, 3.5)
+	glint.show_behind_parent = true
+	_map.add_child(glint)
+	var tween := create_tween()
+	tween.tween_property(_map, "modulate:a", 1.0, 0.8)
+	tween.parallel().tween_property(glint, "scale", Vector2(2.2, 2.2), 1.2).set_trans(Tween.TRANS_SINE)
+	_offer_pickup()
 
 
 ## 마지막 덤불: "[E] 지도 줍기". 조사 대상(Interactable)을 그 자리에 둔다.

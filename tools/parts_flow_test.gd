@@ -70,6 +70,14 @@ func _wait_flag(flag: StringName, seconds: float) -> bool:
 	return _state.has_flag(flag)
 
 
+func _wait_until(cond: Callable, seconds: float) -> bool:
+	for i in int(seconds * 20.0):
+		if cond.call():
+			return true
+		await _wait(0.05)
+	return cond.call()
+
+
 func _go(place_id: String) -> Node:
 	_main.go_to("res://scenes/places/%s.tscn" % place_id)
 	await _wait(2.0)
@@ -108,23 +116,41 @@ func _run() -> void:
 	await _walk_to(gate.global_position.x + 200.0)
 	_check(_player.global_position.x > gate.global_position.x, "집: 지도를 얻으면 대문을 지나간다")
 
-	# 들판: 2-3 날아간 지도. 지나가면 바람 → 덤불 셋을 따라 걷는다 → 마지막 덤불에서 줍는다. 그 전에는 Gate_2-3.
+	# 들판: 2-3 날아간 지도(#111). 지나가면 바람 → 지도가 억새 속으로 사라진다 → 방패연을 줍고 띄운다 →
+	# 높이 올린 연에서 지도가 보인다 → 줍는다. 그 전에는 Gate_2-3.
 	var field: Node = await _go("field")
 	var chase: Node2D = field.get_node("MapChase_2-3")
 	var field_gate: Node2D = field.get_node("Gate_2-3")
+	var kite_item: Node2D = field.get_node("Keepsake_2-3_Kite")
+	var kite_game: Node2D = field.get_node("KiteFly_2-3")
 	await _walk_to(chase.global_position.x + 60.0)
 	await _wait(0.5)
 	_check(chase.state == 1 and _main.dialogue_box().visible, "들판: 지나가면 바람에 지도가 날아가고 대사가 뜬다")
 	await _close_dialogue()
-	for k in 3:
-		await _walk_to(chase.stop_position(k).x - 40.0)
-		await _wait(2.2)
-	_check(chase.stop_index == 2 and not _state.has_flag(&"map_caught"), "들판: 걸어서 따라가면 지도가 마지막 덤불까지 간다")
+	await _wait(3.0)
+	_check(chase.buried and not _state.has_flag(&"map_caught"), "들판: 지도가 억새 속으로 사라진다")
+	await _walk_to(chase.stop_position(0).x)
+	await _press(&"interact")
+	_check(not _state.has_flag(&"map_caught"), "들판: 연을 띄우기 전에는 지도를 못 줍는다")
 	await _walk_to(field_gate.global_position.x + 200.0)
 	_check(_player.global_position.x < field_gate.global_position.x, "들판: 줍기 전에는 Gate_2-3에서 막힌다")
-	await _walk_to(chase.stop_position(2).x)
+	await _walk_to(kite_item.global_position.x)
 	await _press(&"interact")
-	_check(await _wait_flag(&"map_caught", 2.0), "들판: 마지막 덤불에서 E로 지도를 줍는다(map_caught)")
+	_check(await _wait_flag(&"item_kite", 2.0), "들판: 방패연을 줍는다(item_kite)")
+	kite_game.calm_seconds = 0.6
+	kite_game.warn_seconds = 0.3
+	kite_game.gust_seconds = 0.8
+	var autoplay_script: Script = load("res://scripts/game/minigame.gd")
+	autoplay_script.autoplay = true
+	_check(await _wait_until(func(): return kite_game.running, 4.0), "들판: 연을 주우면 그 자리에서 띄운다")
+	_check(not _player.controls_enabled, "들판: 연을 날리는 동안 하윤은 걷지 않는다")
+	_check(await _wait_flag(&"kite_flown", 20.0), "들판: 돌풍 세 번을 버티면 연이 높이 오른다(kite_flown)")
+	_check(not chase.buried, "들판: 연이 오르면 지도가 다시 보인다")
+	_check(await _wait_until(func(): return _player.controls_enabled, 8.0), "들판: 연을 거두면 다시 걷는다")
+	autoplay_script.autoplay = false
+	await _walk_to(chase.stop_position(0).x)
+	await _press(&"interact")
+	_check(await _wait_flag(&"map_caught", 2.0), "들판: 보인 지도를 E로 줍는다(map_caught)")
 	await _walk_to(field_gate.global_position.x + 200.0)
 	_check(_player.global_position.x > field_gate.global_position.x, "들판: 지도를 주우면 지나간다")
 	# 들판: 2-4 경운기. 다가오면 비켜서서 인사하고, 지나간 뒤에 다시 걷는다.
