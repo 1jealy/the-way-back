@@ -156,6 +156,10 @@ func available_spot() -> AskSpot:
 	# 연출(작은 순간·엔딩) 중에는 부탁을 받지 않는다. 받으면 연출이 끊기고 script_arrived가 영영 안 온다(#85).
 	if not is_joined() or is_busy() or state == State.SCRIPTED:
 		return null
+	# 하윤이 대사·지도·벤치·연출로 막혀 있으면 부탁도 안 받는다. 받으면 돌아와서 띄우는 대사가
+	# 읽던 대사를 덮어썼다(#107).
+	if _player and not _player.controls_enabled:
+		return null
 	for node in get_tree().get_nodes_in_group("ask_spot"):
 		var spot := node as AskSpot
 		if spot and spot.is_inside_tree() and spot.is_available():
@@ -262,6 +266,15 @@ func _track_player_still(delta: float) -> void:
 ## 없으면 장소 끝 지점.
 func hint_target_x() -> float:
 	var px := _player.global_position.x
+	# 아직 안 쓴 부탁 자리를 지나쳐 왔으면 그쪽(뒤)을 가리킨다. 부탁은 진행에 필요한데, 지나친 뒤에는
+	# 앞쪽 목표(잠긴 문·장소 끝)만 가리켜 되돌아가라는 신호가 없었다(간이역 3-5, #107).
+	var behind := -INF
+	for node in get_tree().get_nodes_in_group("ask_spot"):
+		var spot := node as AskSpot
+		if spot and not (spot.one_shot and spot.used) and spot.global_position.x < px - spot.size.x * 0.5:
+			behind = maxf(behind, spot.global_position.x)
+	if behind != -INF:
+		return behind
 	var best := INF
 	for node in get_tree().get_nodes_in_group("ask_spot"):
 		var spot := node as AskSpot

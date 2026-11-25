@@ -73,7 +73,7 @@ func map_screen() -> MapScreen:
 
 
 func pause_menu() -> PauseMenu:
-	return $Overlay/PauseMenu
+	return $MenuLayer/PauseMenu
 
 
 func go_to(path: String) -> void:
@@ -114,7 +114,9 @@ func _swap_place(path: String) -> void:
 	_dog.place_behind(_player)
 
 	GameState.current_place = _place.place_id
-	GameState.save_game(path)
+	# 강 위 구간(엔딩)은 저장하지 않는다: 저장하면 엔딩 뒤 이어하기가 배 장면부터 다시 틀었다(#107).
+	if _place.place_id != &"crossing":
+		GameState.save_game(path)
 	_look = 0.0
 	_camera.offset.x = 0.0
 	_dust.set_place(_place.place_id)
