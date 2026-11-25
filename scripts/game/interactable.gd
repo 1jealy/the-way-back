@@ -33,6 +33,10 @@ signal locked
 ## 주운 물건 그림 이름(assets/art, 확장자 뺀 것, 예: "prop_key"). 조사하면 그 그림이 대상 위로 떠올랐다 사라진다.
 ## 대사 없이 "뭔가 주웠다"를 보여 준다(1-4 액자 뒤 열쇠). 비우면 없음.
 @export var pickup_art: String = ""
+## 펼친 앨범 그림 이름(1-3). 있으면 조사할 때 AlbumView로 한 쪽씩 넘겨 보고, 덮은 뒤에 lines가 나온다.
+@export var album_art: String = ""
+## 앨범 그림의 쪽 수(그림 폭을 이만큼으로 나눈다).
+@export_range(1, 8) var album_pages: int = 3
 
 const PICKUP_RISE := 70.0
 const PICKUP_SECONDS := 1.4
@@ -129,6 +133,13 @@ func interact() -> void:
 		GameState.set_flag(grants_flag)
 	_show_pickup()
 	interacted.emit()
+	if not album_art.is_empty():
+		var album := AlbumView.new()
+		album.name = "Album"
+		var host: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+		host.add_child(album)
+		album.play(album_art, album_pages)
+		await album.finished
 	if map_circle > 0:
 		var map := get_tree().get_first_node_in_group("map_screen") as MapScreen
 		if map:

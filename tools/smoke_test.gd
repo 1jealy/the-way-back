@@ -327,6 +327,12 @@ func _check_parts() -> void:
 		art_ok = art_ok and not find_art.call(art).is_empty()
 	_check(opening.size() == 1 and portraits.size() == 1 and String(portraits[0][0]) == "Portraits_1-2" and art_ok,
 			"부품: 집에 오프닝(0-1)과 영정사진 두 개(1-2), 그림(컷신 0·영정 2장)이 있다 %s %s" % [opening, portraits])
+	var house_scene: Node = load("res://scenes/places/house.tscn").instantiate()
+	var album_look: Node = house_scene.get_node_or_null("Look_1-3_Album")
+	var album_art: String = album_look.get("album_art") if album_look else ""
+	_check(not album_art.is_empty() and not find_art.call(album_art).is_empty() and int(album_look.get("album_pages")) == 3,
+			"부품: 집 1-3 앨범이 펼친 앨범 그림(세 쪽)을 넘긴다 '%s'" % album_art)
+	house_scene.free()
 	var shakes := _find_by_script("house", SHAKE)
 	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
 			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])

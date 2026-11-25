@@ -567,6 +567,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_album()
 	await _check_reflection()
 	await _check_motes()
 	await _check_shadow()
@@ -758,6 +759,42 @@ func _check_shake() -> void:
 	_check(down and is_zero_approx(tree.fallen.position.y) and _player.controls_enabled, "감나무: 땅에 떨어진다(조작은 막지 않는다)")
 	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
 	tree.queue_free()
+	await _wait(0.2)
+
+
+## 1-3 앨범(AlbumView): 조사하면 펼친 앨범이 뜨고 E·→로 한 쪽씩, ←로 앞 쪽. 마지막 쪽에서 E로 덮으면 대사.
+func _check_album() -> void:
+	var look: Area2D = _add_interactable(PackedStringArray(["하윤: …할아버지."]), &"", 30.0)
+	look.album_art = "album_open"
+	look.prompt = "앨범 넘기기"
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.3)
+	var album: Node = _main.get_tree().root.find_child("Album", true, false)
+	_check(album != null and album.is_open and album.page == 0 and _player.is_locked_by(&"album"),
+			"앨범: E로 조사하면 펼친 앨범이 1쪽부터 뜨고 하윤이 멈춘다")
+	if album == null:
+		look.queue_free()
+		return
+	await _press(&"interact")
+	await _wait(0.2)
+	var p1: int = album.page
+	await _press(&"move_left")
+	await _wait(0.2)
+	var p0: int = album.page
+	await _press(&"move_right")
+	await _press(&"interact")
+	await _wait(0.2)
+	_check(p1 == 1 and p0 == 0 and album.page == 2 and not _main.dialogue_box().is_open(),
+			"앨범: E·→로 다음 쪽, ←로 앞 쪽, 넘기는 동안 대사는 아직 없다")
+	await _press(&"interact")
+	var said := await _wait_until(func(): return _main.dialogue_box().is_open(), 2.0)
+	_check(said and _main.dialogue_box().current_text() == "…할아버지." and not _player.is_locked_by(&"album"),
+			"앨범: 마지막 쪽에서 E로 덮으면 \"하윤: …할아버지.\"")
+	await _speak_through(_main.dialogue_box())
+	await _wait(0.2)
+	_check(_player.controls_enabled and not is_instance_valid(album), "앨범: 덮고 대사를 넘기면 다시 걷는다")
+	look.queue_free()
 	await _wait(0.2)
 
 

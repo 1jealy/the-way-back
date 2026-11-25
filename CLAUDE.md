@@ -105,6 +105,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 | `requires_flag` | 이 플래그가 서 있을 때만 조사할 수 있다 |
 | `one_shot` | 한 번 조사하면 다시 안 된다 |
 | `pickup_art` | 주운 물건 그림 이름(예: `prop_key`). 조사하면 그 그림이 대상 위로 떠올랐다 사라진다(1.4초, 조작은 안 막는다). 대사 없이 "주웠다"를 보여 줄 때 |
+| `album_art` | 펼친 앨범 그림 이름(1-3 `album_open`). 있으면 조사할 때 `AlbumView`가 그림을 `album_pages`(3)쪽으로 나눠 한 쪽씩 보여 준다(E·→ 다음, ← 앞, 마지막 쪽에서 E 또는 Esc로 덮음, 잠금 `album`). 덮은 뒤에 `lines` |
 | `show_locked` | `requires_flag`가 서기 전에도 안내가 뜨고, 조사하면 잠긴 소리(`sfx_locked_`)만 난다(잠긴 서랍·문). 신호 `locked` |
 | `sound` | 조사할 때 낼 소리 이름 앞머리(예: `sfx_pickup_`) |
 
@@ -264,7 +265,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1), `moment`(작은 순간), `stone_skip`(물수제비 5-4). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `album`(앨범 1-3), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1), `moment`(작은 순간), `stone_skip`(물수제비 5-4). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 인물 컷아웃 (Cutout)
 
