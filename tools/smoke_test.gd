@@ -319,6 +319,16 @@ func _check_parts() -> void:
 		for x in snags:
 			hit = hit or is_equal_approx(chases[0][1][0], x)
 		chase_ok = hit
+	var flutes := _find_by_script("forest", "res://scripts/game/flute_echo.gd")
+	var flute_items := _find_by_script("forest", "res://scripts/game/keepsake.gd")
+	var forest_scene: Node = load("res://scenes/places/forest.tscn").instantiate()
+	var right2: Node = forest_scene.get_node_or_null("Look_4-2_Light23")
+	var flute_ok: bool = flutes.size() == 1 and flute_items.size() == 1 and flute_items[0][1] < flutes[0][1] \
+			and right2 != null and right2.fallback_until_flag == &"flute_echo_done" \
+			and is_equal_approx(forest_scene.get_node(String(flutes[0][0])).entrance_x, right2.position.x) \
+			and forest_scene.get_node_or_null("AskSpot_4-2_2") == null
+	forest_scene.free()
+	_check(flute_ok, "부품: 숲 둘째 갈림길에 버들피리 → 선율 따라 불기, 메아리 입구 = 맞는 입구(따라 불기 전에는 되돌아옴) %s %s" % [flute_items, flutes])
 	var kites := _find_by_script("field", "res://scripts/game/kite_fly.gd")
 	var keeps := _find_by_script("field", "res://scripts/game/keepsake.gd")
 	_check(kites.size() == 1 and keeps.size() == 1 and kites[0][1] < chases[0][1][0] and kites[0][1] > 4300.0,

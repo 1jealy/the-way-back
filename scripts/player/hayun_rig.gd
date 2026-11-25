@@ -91,6 +91,9 @@ const POSES := {
 	# 연줄 잡기(들판 연 날리기 2-3, #111): 두 손을 앞으로 들어 줄을 잡고 연을 올려다본다.
 	&"kite": {"shoulder": -62.0, "elbow": -28.0, "far_shoulder": -50.0, "far_elbow": -40.0, "head": -12.0,
 			"torso": -3.0, "ponytail": -2.0},
+	# 피리 불기(숲 4-2, #111): 두 손을 입 앞으로 모으고 고개를 살짝 숙인다.
+	&"flute": {"shoulder": -58.0, "elbow": -118.0, "far_shoulder": -50.0, "far_elbow": -122.0, "head": 2.0,
+			"torso": 2.0},
 	# 바닥에 앉기(오프닝 0-1 마루, 배 위 7-6): 다리를 앞으로 뻗는다.
 	&"sit_floor": {"hip": -92.0, "knee": 10.0, "ankle": -6.0, "far_hip": -90.0, "far_knee": 14.0, "far_ankle": -6.0,
 			"skirt": -8.0, "far_skirt": -10.0, "shoulder": -30.0, "elbow": -30.0, "far_shoulder": -26.0, "far_elbow": -30.0,

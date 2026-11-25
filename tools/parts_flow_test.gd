@@ -218,36 +218,61 @@ func _run() -> void:
 	await _walk_to(door_gate.global_position.x + 200.0)
 	_check(_player.global_position.x > door_gate.global_position.x, "간이역: 문을 열면 대합실로 지나간다")
 
-	# 숲 4-2: 빛 갈림길 두 번. 냄새 → 틀린 빛(이끼 바위 앞으로) → 맞는 빛(다음으로).
+	# 숲 4-2: 빛 갈림길 두 번. 첫째는 냄새 → 틀린 빛(이끼 바위 앞으로) → 맞는 빛(다음으로).
+	# 둘째(#111)는 버들피리를 줍고 메아리를 따라 불어야 맞는 빛이 다음으로 이어진다.
 	var forest: Node = await _go("forest")
-	for k in [1, 2]:
-		var ask: Node2D = forest.get_node("AskSpot_4-2_%d" % k)
-		var fork_gate: Node2D = forest.get_node("Gate_4-2_%d" % k)
-		await _walk_to(fork_gate.global_position.x + 200.0)
-		_check(_player.global_position.x < fork_gate.global_position.x, "숲: 갈림길 %d은 걸어서는 못 지나간다" % k)
-		await _walk_to(ask.global_position.x)
-		await _wait(1.0)
-		await _press(&"ask_dog")
-		_check(await _wait_flag(ask.grants_flag, 20.0), "숲: 갈림길 %d에서 냄새 → 맞는 빛 쪽으로 짖는다" % k)
-		await _wait(6.0)
-		var right_x: float = ask.global_position.x + ask.target_offset.x
-		var wrong: Node2D = null
-		var right: Node2D = null
-		for i in 3:
-			var light: Node2D = forest.get_node("Look_4-2_Light%d%d" % [k, i + 1])
-			if is_equal_approx(light.global_position.x, right_x):
-				right = light
-			elif wrong == null:
-				wrong = light
-		await _walk_to(wrong.global_position.x)
-		await _press(&"interact")
-		await _wait(2.0)
-		_check(absf(_player.global_position.x - wrong.to_x) < 5.0 and _player.global_position.x < ask.global_position.x,
-				"숲: 갈림길 %d 틀린 빛을 따라가면 이끼 바위 앞으로 돌아온다" % k)
-		await _walk_to(right.global_position.x)
-		await _press(&"interact")
-		await _wait(2.0)
-		_check(_player.global_position.x > fork_gate.global_position.x, "숲: 갈림길 %d 맞는 빛을 따라가면 지나간다" % k)
+	var ask: Node2D = forest.get_node("AskSpot_4-2_1")
+	var fork_gate: Node2D = forest.get_node("Gate_4-2_1")
+	await _walk_to(fork_gate.global_position.x + 200.0)
+	_check(_player.global_position.x < fork_gate.global_position.x, "숲: 갈림길 1은 걸어서는 못 지나간다")
+	await _walk_to(ask.global_position.x)
+	await _wait(1.0)
+	await _press(&"ask_dog")
+	_check(await _wait_flag(ask.grants_flag, 20.0), "숲: 갈림길 1에서 냄새 → 맞는 빛 쪽으로 짖는다")
+	await _wait(6.0)
+	var right_x: float = ask.global_position.x + ask.target_offset.x
+	var wrong: Node2D = null
+	var right: Node2D = null
+	for i in 3:
+		var light: Node2D = forest.get_node("Look_4-2_Light1%d" % (i + 1))
+		if is_equal_approx(light.global_position.x, right_x):
+			right = light
+		elif wrong == null:
+			wrong = light
+	await _walk_to(wrong.global_position.x)
+	await _press(&"interact")
+	await _wait(2.0)
+	_check(absf(_player.global_position.x - wrong.to_x) < 5.0 and _player.global_position.x < ask.global_position.x,
+			"숲: 갈림길 1 틀린 빛을 따라가면 이끼 바위 앞으로 돌아온다")
+	await _walk_to(right.global_position.x)
+	await _press(&"interact")
+	await _wait(2.0)
+	_check(_player.global_position.x > fork_gate.global_position.x, "숲: 갈림길 1 맞는 빛을 따라가면 지나간다")
+
+	var flute_item: Node2D = forest.get_node("Keepsake_4-2_Flute")
+	var flute_game: Node2D = forest.get_node("FluteEcho_4-2")
+	var gate2: Node2D = forest.get_node("Gate_4-2_2")
+	var right2: Node2D = forest.get_node("Look_4-2_Light23")
+	await _walk_to(right2.global_position.x)
+	await _press(&"interact")
+	await _wait(2.0)
+	_check(_player.global_position.x < gate2.global_position.x and not flute_game.running,
+			"숲: 피리 없이는 맞는 빛도 이끼 바위 앞으로 돌아온다")
+	await _walk_to(flute_item.global_position.x)
+	await _press(&"interact")
+	_check(await _wait_flag(&"item_willow_flute", 2.0), "숲: 버들피리를 줍는다(item_willow_flute)")
+	flute_game.echo_gap = 0.25
+	var auto: Script = load("res://scripts/game/minigame.gd")
+	auto.autoplay = true
+	await _walk_to(flute_game.global_position.x + 60.0)
+	_check(await _wait_until(func(): return flute_game.running or flute_game.done, 3.0), "숲: 피리를 가진 채 지나가면 메아리가 들린다")
+	_check(await _wait_flag(&"flute_echo_done", 15.0), "숲: 메아리를 따라 불면 flute_echo_done")
+	auto.autoplay = false
+	_check(await _wait_until(func(): return _player.controls_enabled, 6.0), "숲: 따라 불고 나면 다시 걷는다")
+	await _walk_to(right2.global_position.x)
+	await _press(&"interact")
+	await _wait(2.0)
+	_check(_player.global_position.x > gate2.global_position.x, "숲: 따라 분 뒤에는 맞는 빛을 따라가면 지나간다")
 
 	# 강가·철교의 부탁 자리
 	for pid in ["riverside", "bridge"]:
