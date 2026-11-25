@@ -236,6 +236,32 @@ func _tick(delta: float) -> void:
 			_tick_phase(delta)
 	_place_kite(delta)
 	_place_hint()
+	_pose_player(hold)
+
+
+## 연 날리는 몸(#114): 감을 때는 두 손을 번갈아 당기고 몸을 조금 뒤로, 돌풍에는 다리를 벌려 버티고
+## 꽁지머리가 날린다. 고개는 연 높이를 따라간다.
+func _pose_player(hold: bool) -> void:
+	if _player == null:
+		return
+	var m := {}
+	var reel := sin(_t * TAU * 2.2) if hold and phase != &"rising" else 0.0
+	m["shoulder"] = reel * 9.0 + (-6.0 if hold else 4.0)
+	m["elbow"] = -reel * 16.0 + (-12.0 if hold else 6.0)
+	m["far_shoulder"] = -reel * 9.0 + (-6.0 if hold else 4.0)
+	m["far_elbow"] = reel * 16.0 + (-12.0 if hold else 6.0)
+	m["torso"] = -4.0 if hold else 1.0
+	m["head"] = -(h - 0.35) * 26.0
+	if phase == &"gust":
+		m["torso"] = float(m["torso"]) - 7.0
+		m["hip"] = 9.0
+		m["knee"] = 12.0
+		m["far_hip"] = -14.0
+		m["far_knee"] = 10.0
+		m["ponytail"] = 14.0 + sin(_t * 17.0) * 4.0
+	elif phase == &"warn":
+		m["head"] = float(m["head"]) + 6.0  # 바람 오는 쪽을 흘끗
+	_player.set_motion(m)
 
 
 func _tick_phase(delta: float) -> void:
@@ -299,6 +325,7 @@ func _finish() -> void:
 		s.queue_free()
 	_streaks.clear()
 	if _player:
+		_player.set_motion({})
 		_player.set_pose(&"stand")
 	clear()
 

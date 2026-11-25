@@ -727,11 +727,12 @@ func _check_kite_fly(place: Node2D, chase: Node2D) -> void:
 	await _wait(0.3)
 	await _press(&"interact")
 	_check(_state.has_flag(&"item_kite"), "연: E로 주우면 item_kite")
+	_check(_player.is_locked_by(&"pickup") and _player.get_node("Visual/Rig").is_gesturing(), "연: 주울 때 하윤이 숙여서 집는다(#114)")
 	game.calm_seconds = 0.4
 	game.warn_seconds = 0.2
 	game.gust_seconds = 0.6
 	_check(await _wait_until(func(): return game.running, 3.0), "연: 주우면 그 자리에서 연 날리기가 시작된다")
-	_check(await _wait_until(func(): return not item.get_node("Art").visible, 2.0), "연: 주운 방패연 그림은 떠올라 사라진다")
+	_check(await _wait_until(func(): return not item.get_node("Art").visible, 4.0), "연: 주운 방패연 그림은 떠올라 사라진다")
 	_check(_player.is_locked_by(&"minigame") and _player.pose == &"kite", "연: 하윤이 멈추고 두 손으로 연줄을 잡는다")
 	_check(game.has_key_hint(), "연: 처음에는 손 옆에 [E] 꾹 누르면 감기")
 	var half: float = game.zone_high() - game.zone_low()

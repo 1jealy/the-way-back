@@ -14,7 +14,7 @@ const ITEMS := {
 	&"stone_pouch": "prop_stone_pouch",
 }
 const FLOAT_HEIGHT := 380.0
-const FLOAT_SECONDS := 1.4
+const FLOAT_SECONDS := 1.2
 
 ## 물건 이름(ITEMS의 열쇠).
 @export var item: StringName = &"kite"
@@ -70,6 +70,22 @@ func _float_away() -> void:
 		return
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	var start := _art.global_position
+	# 하윤이 무릎을 굽혀 숙이고 집는다(#114). 손이 닿는 순간 물건이 손으로 오고, 거기서 떠오른다.
+	if player and player.has_method("play_pickup"):
+		if player.has_method("face"):
+			player.face(1 if global_position.x >= player.global_position.x else -1)
+		await player.play_pickup()
+		var grab := create_tween()
+		grab.tween_property(_art, "global_position", player.hand_point(), 0.12)
+		grab.parallel().tween_property(_art, "rotation", 0.0, 0.12)
+		await grab.finished
+		# 일어나는 동안 손에 들려 따라 올라온다
+		var held := 0.0
+		while held < 0.45 and is_instance_valid(player):
+			_art.global_position = player.hand_point()
+			await get_tree().process_frame
+			if not get_tree().paused:
+				held += get_process_delta_time()
 	var top := (player.global_position if player else global_position) + Vector2(0.0, -FLOAT_HEIGHT)
 	_art.z_index = 20
 	var glow := Sprite2D.new()

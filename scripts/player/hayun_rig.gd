@@ -99,8 +99,23 @@ const POSES := {
 			"skirt": -8.0, "far_skirt": -10.0, "shoulder": -30.0, "elbow": -30.0, "far_shoulder": -26.0, "far_elbow": -30.0,
 			"head": 4.0},
 }
-## 자세가 바뀌는 빠르기(클수록 빠르다, 약 0.3초).
+## 자세가 바뀌는 빠르기(클수록 빠르다, 약 0.3초). 지금은 아래 용수철(POSE_OMEGA)이 쓴다. 남겨 둔 값.
 const POSE_RATE := 9.0
+## 자세 옮기기는 관절마다 용수철로 한다(#114). 모든 관절이 같은 빠르기로 같이 도착하면 꼭두각시처럼 보여서,
+## 몸통·다리가 먼저 가고 팔·머리·꽁지머리가 조금씩 늦게 따라오며 살짝 넘쳤다 돌아온다(끌려오는 느낌).
+## 값 = 고유 진동수(rad/s). 클수록 빨리 따라간다.
+const POSE_OMEGA := {
+	"torso": 13.0, "hip": 13.0, "knee": 13.0, "ankle": 13.0, "far_hip": 12.0, "far_knee": 12.0, "far_ankle": 12.0,
+	"skirt": 11.0, "far_skirt": 11.0, "head": 9.5, "shoulder": 9.0, "elbow": 8.0, "far_shoulder": 8.5,
+	"far_elbow": 7.5, "ponytail": 6.0,
+}
+const POSE_DAMPING := 0.72  # 1보다 작으면 살짝 넘쳤다 돌아온다
+## 숨쉬기(가만히 있을 때): 몸통·어깨가 아주 조금 오르내린다.
+const BREATH_HZ := 0.28
+const BREATH_TORSO := 0.9
+const BREATH_SHOULDER := 1.4
+## 걸을 때 몸이 앞으로 조금 기운다(밀고 나가는 힘), 고개는 반대로 조금 든다.
+const WALK_LEAN := 3.5
 ## 돌 던지기(물수제비 5-4). 물수제비는 옆으로 낮게 던진다(사이드암): 무릎을 굽혀 몸을 낮추고,
 ## 던지는 팔 반대쪽 발(먼 발)을 앞으로 내딛고, 팔을 허리 높이로 뒤에서 앞으로 휘둘러
 ## 손이 몸 앞 허리 높이에 왔을 때 놓는다(돌이 물과 약 20도로 낮고 평평하게 날아가야 잘 튄다). 팔은 앞으로 마저 따라간다.
@@ -137,6 +152,19 @@ const WRIST_SIT_KEYS := [
 	[2.15, {"shoulder": -6.0, "elbow": -12.0, "far_shoulder": -18.0, "far_elbow": -6.0, "head": 11.0, "torso": 4.0}],
 	[2.8, {}],
 ]
+## 줍기(#114): 무릎을 굽히며 허리를 숙여 손을 땅 가까이 → 집고 → 일어난다. 집는 때 = PICKUP_GRAB_AT.
+const PICKUP_KEYS := [
+	[0.0, {}],
+	[0.4, {"torso": 50.0, "hip": -40.0, "knee": 66.0, "ankle": -26.0, "far_hip": -34.0, "far_knee": 62.0,
+			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -34.0, "elbow": -4.0,
+			"far_shoulder": -22.0, "far_elbow": -10.0, "head": 0.0, "ponytail": -34.0}],
+	[0.58, {"torso": 52.0, "hip": -42.0, "knee": 68.0, "ankle": -26.0, "far_hip": -36.0, "far_knee": 64.0,
+			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -28.0, "elbow": -18.0,
+			"far_shoulder": -20.0, "far_elbow": -14.0, "head": -2.0, "ponytail": -36.0}],
+	[1.05, {"shoulder": -24.0, "elbow": -40.0, "head": -4.0, "ponytail": -6.0}],
+	[1.35, {}],
+]
+const PICKUP_GRAB_AT := 0.5
 ## 문지르기: 손목을 잡은 동안 먼 팔꿈치를 잘게 오간다(도, 초당 번).
 const WRIST_RUB := 5.0
 const WRIST_RUB_HZ := 2.2
@@ -144,6 +172,9 @@ const WRIST_RUB_HZ := 2.2
 ## 지금 자세.
 var pose: StringName = &"stand"
 var _pose_cur: Dictionary = {}
+var _pose_vel: Dictionary = {}
+## 장면이 매 프레임 얹는 움직임(연을 감는 손, 돌풍에 버티는 몸, 피리 숨). 자세 위에 더해지고 같은 용수철로 따라간다.
+var motion: Dictionary = {}
 var _throw_t: float = -1.0
 var _gesture_keys: Array = []
 var _gesture_t: float = -1.0
@@ -260,6 +291,13 @@ func play_wrist_touch() -> void:
 		await get_tree().process_frame
 
 
+## 줍기 한 번(#114). 손이 땅 가까이 닿는 때(PICKUP_GRAB_AT)에 돌아오고, 일어나는 동작은 마저 이어진다.
+func play_pickup() -> void:
+	_gesture_keys = PICKUP_KEYS
+	_gesture_t = 0.0
+	await get_tree().create_timer(PICKUP_GRAB_AT, false).timeout
+
+
 func is_gesturing() -> bool:
 	return _gesture_t >= 0.0
 
@@ -291,19 +329,28 @@ func hand_point() -> Vector2:
 
 
 func _tick_pose(delta: float) -> void:
-	var target: Dictionary = POSES[pose]
-	var k := 1.0 - exp(-POSE_RATE * delta)
+	var base: Dictionary = POSES[pose]
 	var keys := {}
 	for j in _pose_cur:
 		keys[j] = true
-	for j in target:
+	for j in base:
 		keys[j] = true
+	for j in motion:
+		keys[j] = true
+	var dt := minf(delta, 1.0 / 30.0)
 	for j: String in keys:
-		var v := lerpf(float(_pose_cur.get(j, 0.0)), float(target.get(j, 0.0)), k)
-		if absf(v) < 0.05 and not target.has(j):
+		var target := float(base.get(j, 0.0)) + float(motion.get(j, 0.0))
+		var x := float(_pose_cur.get(j, 0.0))
+		var v := float(_pose_vel.get(j, 0.0))
+		var om: float = POSE_OMEGA.get(j, POSE_OMEGA.get(j.trim_prefix("far_"), 10.0))
+		v += (om * om * (target - x) - 2.0 * POSE_DAMPING * om * v) * dt
+		x += v * dt
+		if absf(x) < 0.05 and absf(v) < 0.05 and not base.has(j) and not motion.has(j):
 			_pose_cur.erase(j)
+			_pose_vel.erase(j)
 		else:
-			_pose_cur[j] = v
+			_pose_cur[j] = x
+			_pose_vel[j] = v
 
 
 func _throw_angles(t: float) -> Dictionary:
@@ -376,6 +423,13 @@ func _angles() -> Dictionary:
 		"far_shoulder": far_arm, "far_elbow": -ELBOW_BEND * maxf(0.0, -far_arm / ARM_SWING_FRONT) * w,
 		"skirt": near_thigh * SKIRT_FOLLOW, "far_skirt": far_thigh * FAR_SKIRT_FOLLOW,
 	}
+	# 숨쉬기(가만히 있을 때)와 걸을 때 몸이 조금 앞으로 기우는 것(#114)
+	var still := 1.0 - w
+	var breath := sin(_time * TAU * BREATH_HZ)
+	out["torso"] = float(out.get("torso", 0.0)) + breath * BREATH_TORSO * still + WALK_LEAN * w
+	out["head"] = float(out.get("head", 0.0)) - breath * BREATH_TORSO * 0.6 * still - WALK_LEAN * 0.6 * w
+	out["shoulder"] = float(out.get("shoulder", 0.0)) + sin(_time * TAU * BREATH_HZ + 0.6) * BREATH_SHOULDER * still
+	out["far_shoulder"] = float(out.get("far_shoulder", 0.0)) + sin(_time * TAU * BREATH_HZ + 0.9) * BREATH_SHOULDER * still
 	for joint: String in _pose_cur:
 		out[joint] = float(out.get(joint, 0.0)) + float(_pose_cur[joint])
 	if _throw_t >= 0.0:
@@ -386,6 +440,8 @@ func _angles() -> Dictionary:
 		var g := _key_angles(_gesture_keys, _gesture_t)
 		# 잡고 있는 동안만 문지른다(들고 내릴 때는 안 한다)
 		var hold := smoothstep(0.45, 0.7, _gesture_t) * (1.0 - smoothstep(2.0, 2.3, _gesture_t))
+		if _gesture_keys != WRIST_KEYS and _gesture_keys != WRIST_SIT_KEYS:
+			hold = 0.0
 		g["far_elbow"] = float(g.get("far_elbow", 0.0)) + sin(_gesture_t * TAU * WRIST_RUB_HZ) * WRIST_RUB * hold
 		for joint: String in g:
 			out[joint] = float(out.get(joint, 0.0)) + float(g[joint])

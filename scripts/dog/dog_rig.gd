@@ -70,6 +70,12 @@ const POSES := {
 			"neck": 16.0, "head": 6.0, "ear": -6.0, "tail1": -14.0, "tail2": -8.0},
 }
 const POSE_RATE := 9.0
+## 관절마다 용수철 진동수(#114). 클수록 빨리 따라간다.
+const POSE_OMEGA := {
+	"root": 12.0, "rear": 11.0, "hip": 12.0, "hock": 12.0, "shoulder": 12.0, "wrist": 12.0,
+	"neck": 9.0, "head": 8.5, "ear": 7.0, "tail1": 7.0, "tail2": 6.5, "tail3": 6.0,
+}
+const POSE_DAMPING := 0.7
 ## 짖기: 고개를 위로 젖혔다 돌아온다(초).
 const BARK_SECONDS := 0.35
 const BARK_HEAD := -24.0
@@ -80,6 +86,9 @@ var _bones: Array = []
 var _phase: float = 0.0
 var _walk: float = 0.0
 var _time: float = 0.0
+var _pose_vel: Dictionary = {}
+var _ear_left: float = 4.0
+var _ear_t: float = -1.0
 var _pose_cur: Dictionary = {}
 var _bark_t: float = -1.0
 
@@ -160,20 +169,40 @@ func _process(delta: float) -> void:
 		_bark_t += delta
 		if _bark_t > BARK_SECONDS:
 			_bark_t = -1.0
+	_tick_pose(delta)
+	_ear_left -= delta
+	if _ear_left <= 0.0:
+		_ear_left = randf_range(3.0, 7.0)
+		_ear_t = 0.0
+	if _ear_t >= 0.0:
+		_ear_t += delta
+		if _ear_t > 0.35:
+			_ear_t = -1.0
+	_apply()
+
+
+## 자세 옮기기는 관절마다 용수철로(#114): 다리·몸이 먼저, 머리·귀·꼬리는 조금 늦게 따라와 살짝 넘쳤다 돌아온다.
+func _tick_pose(delta: float) -> void:
 	var target: Dictionary = POSES[pose]
-	var k := 1.0 - exp(-POSE_RATE * delta)
 	var keys := {}
 	for j in _pose_cur:
 		keys[j] = true
 	for j in target:
 		keys[j] = true
+	var dt := minf(delta, 1.0 / 30.0)
 	for j: String in keys:
-		var v := lerpf(float(_pose_cur.get(j, 0.0)), float(target.get(j, 0.0)), k)
-		if absf(v) < 0.05 and not target.has(j):
+		var goal := float(target.get(j, 0.0))
+		var x := float(_pose_cur.get(j, 0.0))
+		var v := float(_pose_vel.get(j, 0.0))
+		var om: float = POSE_OMEGA.get(j, POSE_OMEGA.get(j.trim_prefix("far_"), 11.0))
+		v += (om * om * (goal - x) - 2.0 * POSE_DAMPING * om * v) * dt
+		x += v * dt
+		if absf(x) < 0.05 and absf(v) < 0.05 and not target.has(j):
 			_pose_cur.erase(j)
+			_pose_vel.erase(j)
 		else:
-			_pose_cur[j] = v
-	_apply()
+			_pose_cur[j] = x
+			_pose_vel[j] = v
 
 
 func _angles() -> Dictionary:
@@ -196,6 +225,10 @@ func _angles() -> Dictionary:
 		"tail2": sin(_time * wag_speed - 0.7) * TAIL_WAG.y * wag_amp,
 		"tail3": sin(_time * wag_speed - 1.4) * TAIL_WAG.z * wag_amp,
 	}
+	# 숨쉬기(가만히 있을 때 목이 아주 조금 오르내린다)와 가끔 귀를 털 듯 움찔(#114)
+	out["neck"] = float(out.get("neck", 0.0)) + sin(_time * TAU * 0.35) * 1.4 * (1.0 - w)
+	if _ear_t >= 0.0:
+		out["ear"] = float(out["ear"]) + sin(_ear_t / 0.35 * TAU) * 9.0
 	for j: String in _pose_cur:
 		out[j] = float(out.get(j, 0.0)) + float(_pose_cur[j])
 	if pose == &"sniff" or pose == &"sniff_walk":

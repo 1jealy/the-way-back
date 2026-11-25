@@ -37,6 +37,10 @@ var _slots: Array[Sprite2D] = []
 var _rings: Array[Line2D] = []
 var _flute: Sprite2D
 var _gen: int = 0
+var _t: float = 0.0
+## 음을 불 때 몸이 살짝 앞으로 밀리는 것(1 → 0), 틀렸을 때 어깨가 처지는 것.
+var _kick: float = 0.0
+var _slump: float = 0.0
 
 
 func _process(delta: float) -> void:
@@ -168,7 +172,11 @@ func _echo(note: int) -> void:
 	_echo_player.play()
 
 
-func _tick(_delta: float) -> void:
+func _tick(delta: float) -> void:
+	_t += delta
+	_kick = move_toward(_kick, 0.0, delta * 3.5)
+	_slump = move_toward(_slump, 0.0, delta * 1.2)
+	_pose_player()
 	_place_flute()
 	_place_hint()
 	if phase != &"play":
@@ -194,6 +202,7 @@ func _blow(note: int) -> void:
 	add_child(mote)
 	mote.global_position = _flute.global_position
 	mote.modulate.a = 1.0
+	_kick = 1.0
 	if note == melody[i]:
 		_note_player.stream = _tones[note]
 		_note_player.play()
@@ -209,6 +218,7 @@ func _blow(note: int) -> void:
 	else:
 		_note_player.stream = _breath
 		_note_player.play()
+		_slump = 1.0
 		phase = &"listen"
 		var t := create_tween().set_parallel()
 		t.tween_property(mote, "global_position", _flute.global_position + Vector2(randf_range(40, 120), randf_range(-140, -60)), 0.6)
@@ -238,6 +248,7 @@ func _finish() -> void:
 		t.tween_property(_rings[k], "default_color:a", 0.0, 0.6)
 	await t.finished
 	if _player:
+		_player.set_motion({})
 		_player.set_pose(&"stand")
 	_flute.queue_free()
 	_flute = null
@@ -250,6 +261,28 @@ func _finish() -> void:
 	await _wait(2.5)
 	if dog and is_instance_valid(dog):
 		dog.release_script()
+
+
+## 피리 부는 몸(#114): 숨 쉬듯 천천히 오르내리고, 들을 때는 입구 쪽으로 고개를 기울인다.
+## 음을 불 때마다 몸이 살짝 앞으로 밀리고(높은 음일수록 고개를 든다), 틀리면 어깨가 처진다.
+func _pose_player() -> void:
+	if _player == null:
+		return
+	var breath := sin(_t * TAU * 0.45)
+	var m := {
+		"torso": breath * 1.6 - _kick * 3.0 + _slump * 6.0,
+		"head": -breath * 1.2 + _slump * 9.0,
+		"shoulder": breath * 2.0 - _kick * 5.0 + _slump * 6.0,
+		"far_shoulder": breath * 2.0 - _kick * 5.0 + _slump * 6.0,
+		"elbow": -_kick * 5.0,
+		"far_elbow": -_kick * 5.0,
+	}
+	if phase == &"listen":
+		m["head"] = float(m["head"]) - 7.0  # 메아리 쪽으로 귀를 기울인다
+		m["torso"] = float(m["torso"]) - 2.0
+	elif phase == &"play" and played < melody.size() and _kick > 0.0:
+		m["head"] = float(m["head"]) - (melody[maxi(0, played - 1)] - 1) * 4.0 * _kick
+	_player.set_motion(m)
 
 
 func _place_flute() -> void:
