@@ -126,6 +126,31 @@ func _add_spot(action: int, offset_x: float, flag: StringName) -> Area2D:
 	return spot
 
 
+## 손목 만지기 대기 동작(장면표 "손목 만지기"): 5초 넘게 서 있으면 나오고, 걸으면 내린다.
+func _check_wrist_touch() -> void:
+	var rig: Node = _player.get_node_or_null("Visual/Rig")
+	if rig == null:
+		_check(false, "손목 만지기: 하윤 컷아웃이 있다")
+		return
+	var touched := [false]
+	var cb := func(): touched[0] = true
+	await _hold(&"move_right", 0.2)  # 앞 검사 동안 서 있던 시간을 비운다
+	_player.wrist_touched.connect(cb)
+	await _wait(3.0)
+	_check(not touched[0], "손목 만지기: 3초 서 있을 때는 아직 안 한다")
+	var ok := await _wait_until(func(): return touched[0], 4.0)
+	_check(ok and rig.is_gesturing(), "손목 만지기: 5초 넘게 서 있으면 손목을 만진다")
+	await _hold(&"move_right", 0.6)
+	var dropped := await _wait_until(func(): return not rig.is_gesturing(), 1.5)
+	_check(dropped, "손목 만지기: 걷기 시작하면 팔을 내린다")
+	touched[0] = false
+	_player.lock(&"test_locked")
+	await _wait(6.0)
+	_check(not touched[0], "손목 만지기: 대사·연출로 막혀 있으면 안 한다")
+	_player.unlock(&"test_locked")
+	_player.wrist_touched.disconnect(cb)
+
+
 func _run() -> void:
 	print("게임플레이 검사 시작")
 	_main = load("res://scenes/main.tscn").instantiate()
@@ -140,6 +165,7 @@ func _run() -> void:
 	_dog = _main.dog()
 
 	await _check_place_card()
+	await _check_wrist_touch()
 
 	# 합류 전
 	_check(not _dog.visible and not _dog.is_joined(), "합류 전에는 하늘이가 보이지 않는다")

@@ -117,11 +117,30 @@ const THROW_KEYS := [
 ]
 ## 손을 놓는 때(초) = 휘두르기 키.
 const THROW_RELEASE_AT := 0.74
+## 손목 만지기(대기 동작, 장면표 "손목 만지기" — 팔찌 복선). 화면 쪽 손목을 몸 앞에 들고
+## 먼 손이 와서 문지른다. 고개를 숙여 내려다본다. 서 있을 때 / 앉아 있을 때 키가 다르다(앉으면 손이 이미 무릎 위).
+const WRIST_KEYS := [
+	[0.0, {}],
+	[0.55, {"shoulder": -22.0, "elbow": -62.0, "far_shoulder": -40.0, "far_elbow": -48.0, "head": 12.0, "torso": 3.0}],
+	[2.15, {"shoulder": -22.0, "elbow": -62.0, "far_shoulder": -40.0, "far_elbow": -48.0, "head": 13.0, "torso": 3.0}],
+	[2.8, {}],
+]
+const WRIST_SIT_KEYS := [
+	[0.0, {}],
+	[0.55, {"shoulder": -6.0, "elbow": -12.0, "far_shoulder": -18.0, "far_elbow": -6.0, "head": 10.0, "torso": 4.0}],
+	[2.15, {"shoulder": -6.0, "elbow": -12.0, "far_shoulder": -18.0, "far_elbow": -6.0, "head": 11.0, "torso": 4.0}],
+	[2.8, {}],
+]
+## 문지르기: 손목을 잡은 동안 먼 팔꿈치를 잘게 오간다(도, 초당 번).
+const WRIST_RUB := 5.0
+const WRIST_RUB_HZ := 2.2
 
 ## 지금 자세.
 var pose: StringName = &"stand"
 var _pose_cur: Dictionary = {}
 var _throw_t: float = -1.0
+var _gesture_keys: Array = []
+var _gesture_t: float = -1.0
 
 var cutout: Cutout
 ## 조각 이름 → [Sprite2D, 관절, 처음 변환]
@@ -205,6 +224,7 @@ func _process(delta: float) -> void:
 	elif _walk <= 0.0:
 		_phase = 0.0
 	_tick_pose(delta)
+	_tick_gesture(delta)
 	_tick_blink(delta)
 	_apply(delta)
 
@@ -224,6 +244,36 @@ func play_throw() -> void:
 	t.tween_method(func(v: float): _throw_t = v, 0.0, total, total)
 	t.tween_callback(func(): _throw_t = -1.0)
 	await get_tree().create_timer(THROW_RELEASE_AT, false).timeout
+
+
+## 손목 만지기 한 번. 끝나면 돌아온다. 걷기 시작하면 서둘러 내린다(걸음이 섞이면 팔이 꼬인다).
+func play_wrist_touch() -> void:
+	_gesture_keys = WRIST_SIT_KEYS if pose == &"sit" else WRIST_KEYS
+	_gesture_t = 0.0
+	while _gesture_t >= 0.0:
+		await get_tree().process_frame
+
+
+func is_gesturing() -> bool:
+	return _gesture_t >= 0.0
+
+
+func _tick_gesture(delta: float) -> void:
+	if _gesture_t < 0.0:
+		return
+	var hold_end: float = _gesture_keys[-2][0]
+	if _walk > 0.0:
+		# 걷기 시작하면 내리는 구간으로 건너뛰어 빨리 내린다(지금 들린 만큼에서 이어지게).
+		var rise: float = _gesture_keys[1][0]
+		var fall: float = _gesture_keys[-1][0] - hold_end
+		if _gesture_t < rise:
+			_gesture_t = _gesture_keys[-1][0] - _gesture_t / rise * fall
+		elif _gesture_t < hold_end:
+			_gesture_t = hold_end
+		delta *= 2.0
+	_gesture_t += delta
+	if _gesture_t >= _gesture_keys[-1][0]:
+		_gesture_t = -1.0
 
 
 ## 화면 쪽 손의 자리(전역 좌표). 던진 돌이 여기서 출발한다.
@@ -251,10 +301,15 @@ func _tick_pose(delta: float) -> void:
 
 
 func _throw_angles(t: float) -> Dictionary:
-	for i in range(1, THROW_KEYS.size()):
-		var b: Array = THROW_KEYS[i]
+	return _key_angles(THROW_KEYS, t)
+
+
+## 키 [초, {관절: 도}] 사이를 부드럽게 이은 각도.
+func _key_angles(keys: Array, t: float) -> Dictionary:
+	for i in range(1, keys.size()):
+		var b: Array = keys[i]
 		if t <= b[0]:
-			var a: Array = THROW_KEYS[i - 1]
+			var a: Array = keys[i - 1]
 			var u := smoothstep(0.0, 1.0, (t - a[0]) / (b[0] - a[0]))
 			var ka: Dictionary = a[1]
 			var kb: Dictionary = b[1]
@@ -321,6 +376,13 @@ func _angles() -> Dictionary:
 		var t := _throw_angles(_throw_t)
 		for joint: String in t:
 			out[joint] = float(out.get(joint, 0.0)) + float(t[joint])
+	if _gesture_t >= 0.0:
+		var g := _key_angles(_gesture_keys, _gesture_t)
+		# 잡고 있는 동안만 문지른다(들고 내릴 때는 안 한다)
+		var hold := smoothstep(0.45, 0.7, _gesture_t) * (1.0 - smoothstep(2.0, 2.3, _gesture_t))
+		g["far_elbow"] = float(g.get("far_elbow", 0.0)) + sin(_gesture_t * TAU * WRIST_RUB_HZ) * WRIST_RUB * hold
+		for joint: String in g:
+			out[joint] = float(out.get(joint, 0.0)) + float(g[joint])
 	return out
 
 
