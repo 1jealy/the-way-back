@@ -14,6 +14,7 @@ var _holder: Control
 
 
 ## 그림 이름(확장자 뺀 것, 예: "cut_bracelet")으로 assets/art 아래에서 찾는다. 진짜 그림이 placeholder보다 먼저.
+## 소품은 SVG도 읽는다(assets/art/prop/*.svg, 2배로 그리고 가져오기 배율 0.5).
 static func find_art(stem: String) -> String:
 	var found := ""
 	var stack: Array[String] = [ART_DIR]
@@ -21,7 +22,7 @@ static func find_art(stem: String) -> String:
 		var dir: String = stack.pop_back()
 		for file in DirAccess.get_files_at(dir):
 			var name := file.trim_suffix(".import").trim_suffix(".remap")
-			if name.get_basename() == stem and name.get_extension() in ["png", "jpg", "webp"]:
+			if name.get_basename() == stem and name.get_extension() in ["png", "jpg", "webp", "svg"]:
 				var path := dir.path_join(name)
 				if not path.contains("/placeholder/"):
 					return path

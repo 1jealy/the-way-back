@@ -217,6 +217,7 @@ const BENCH := "res://scripts/game/bench_sit.gd"
 const MEMORY := "res://scripts/game/memory_scene.gd"
 const MAP_CHASE := "res://scripts/game/map_chase.gd"
 const SHAKE := "res://scripts/game/shake_drop.gd"
+const KEEPSAKE := "res://scripts/game/keepsake.gd"
 
 
 func _script_path(node: Node) -> String:
@@ -248,11 +249,8 @@ func _check_parts() -> void:
 				memories[node.get("circle")] = [place_id, String(node.name).get_slice("_", 1),
 						not find_art.call(node.get("art")).is_empty(), pick.call(node.get("phrase")) != null]
 				continue
-			if path == MAP_CHASE:  # 2-3 날아간 지도: 마지막 덤불에서 줍고 grants_flag를 세운다
-				var stops: PackedFloat32Array = node.get("stops")
-				var xs := []
-				for sx in stops:
-					xs.append(node.position.x + sx)
+			if path == MAP_CHASE:  # 2-3 날아간 지도: 사라진 억새 덤불에서 줍고 grants_flag를 세운다
+				var xs := [node.position.x + float(node.get("lost_at"))]
 				chases.append([place_id, xs, not load("res://scripts/ui/cutscene_player.gd").find_art.call(node.get("art")).is_empty()])
 				var chase_flag: StringName = node.get("grants_flag")
 				if not xs.is_empty() and not chase_flag.is_empty() and not granted.has(chase_flag):
@@ -261,7 +259,7 @@ func _check_parts() -> void:
 				if not chase_req.is_empty():
 					required.append([i, node.position.x, chase_req, "%s/%s" % [place_id, node.name]])
 				continue
-			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE, BENCH, SHAKE]:
+			if path not in [INTERACTABLE, ASK_SPOT, DOG_MEETING, GATE, PASSAGE, BENCH, SHAKE, KEEPSAKE]:
 				continue
 			var x: float = node.position.x
 			var on_ground: bool = is_equal_approx(node.position.y, 810.0) and x > 0.0 and x < place.width
@@ -312,10 +310,8 @@ func _check_parts() -> void:
 	_check(mem_ok, "부품: 기억 장면 1~4가 동그라미 1~4와 같은 장소·장면에 하나씩, 그림·휘파람 소절이 있다 %s" % [memories])
 	_check(granted.has(&"has_map") and granted[&"has_map"][0] == 0, "부품: 집에서 지도(has_map)를 얻는다")
 	var snags := _placeholder_list("FIELD_SNAGS")
-	var chase_ok: bool = chases.size() == 1 and chases[0][0] == "field" and chases[0][2] and chases[0][1].size() == 3
-	if chase_ok:
-		for k in 3:
-			chase_ok = chase_ok and k < snags.size() and is_equal_approx(chases[0][1][k], snags[k])
+	var chase_ok: bool = chases.size() == 1 and chases[0][0] == "field" and chases[0][2] and snags.size() == 1 \
+			and is_equal_approx(chases[0][1][0], snags[0])
 	var tractor := _find_by_script("field", "res://scripts/game/tractor_pass.gd")
 	_check(tractor.size() == 1 and String(tractor[0][0]) == "Tractor_2-4" and chases.size() == 1 and tractor[0][1] > 7000.0,
 			"부품: 들판 2-4에 경운기(Tractor_2-4) 하나, 2-3 벽(Gate_2-3) 오른쪽 %s" % [tractor])
@@ -330,7 +326,33 @@ func _check_parts() -> void:
 	var shakes := _find_by_script("house", SHAKE)
 	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
 			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
-	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 덤불 셋이 임시 배경 FIELD_SNAGS와 같은 자리, 지도 그림이 있다 %s / %s" % [chases, snags])
+	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 사라지는 덤불이 임시 배경 FIELD_SNAGS와 같은 자리, 지도 그림이 있다 %s / %s" % [chases, snags])
+	# 2-3 연 날리기: 방패연(할아버지 물건)이 지도가 날아가는 곳과 사라지는 덤불 사이에 있고,
+	# 연 날리기가 그 물건을 듣는다. 연을 날리는 자리에서 사라진 덤불이 화면 안(약 900px 이내)에 보여야 한다.
+	var keeps := _find_by_script("field", KEEPSAKE)
+	var kites := _find_by_script("field", "res://scripts/game/kite_flight.gd")
+	var kite_ok := keeps.size() == 1 and String(keeps[0][0]) == "Keepsake_2-3_Kite" and kites.size() == 1 \
+			and chases.size() == 1 and snags.size() == 1
+	if kite_ok:
+		var field_scene: Node = load("res://scenes/places/field.tscn").instantiate()
+		var kite_node: Node = field_scene.get_node(String(kites[0][0]))
+		var keep_node: Node = field_scene.get_node(String(keeps[0][0]))
+		kite_ok = kite_node.get_node_or_null(kite_node.get("keepsake")) == keep_node \
+				and keep_node.get("item") == &"kite" and not find_art.call(keep_node.art_name()).is_empty()
+		var chase_x: float = field_scene.get_node("MapChase_2-3").position.x
+		kite_ok = kite_ok and keeps[0][1] > chase_x and keeps[0][1] < snags[0] and snags[0] - kites[0][1] < 950.0
+		field_scene.free()
+	_check(kite_ok, "부품: 들판 2-3에 방패연(Keepsake)과 연 날리기 하나씩, 지도가 날아가는 곳과 사라지는 덤불 사이 %s %s" % [keeps, kites])
+	# 소품 SVG 아홉(assets/art/prop): 그림 찾기가 svg를 읽고, placeholder png보다 먼저 찾는다.
+	var svg_ok := true
+	for prop in ["prop_kite", "prop_kite_reel", "prop_flute", "prop_stone_pouch", "prop_flashlight",
+			"prop_pocket_watch", "prop_stone_flat", "prop_map_folded", "prop_key"]:
+		var found: String = find_art.call(prop)
+		var ok := found.ends_with(".svg") and not found.contains("/placeholder/") and load(found) is Texture2D
+		if not ok:
+			print("        %s → %s" % [prop, found])
+		svg_ok = svg_ok and ok
+	_check(svg_ok, "부품: 소품 SVG 아홉을 그림 찾기가 찾고, 진짜 그림이 placeholder보다 먼저다")
 	var chain_ok := true
 	for r in required:
 		var g: Array = granted.get(r[2], [])

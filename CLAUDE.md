@@ -133,13 +133,37 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 ## 날아간 지도 (MapChase, 장면표 2-3 퍼즐 2)
 
-`Node2D` + `scripts/game/map_chase.gd`. 들판에 `MapChase_2-3`(땅 위 x 4300)과 그 오른쪽 `Gate_2-3`(`map_caught`, x 7000).
+`Node2D` + `scripts/game/map_chase.gd`. 들판에 `MapChase_2-3`(땅 위 x 4300), 방패연 `Keepsake_2-3_Kite`·연 날리기 `KiteFlight_2-3`(x 5600), 그 오른쪽 `Gate_2-3`(`map_caught`, x 7000).
 
-- 지도를 가진(`requires_flag` = `has_map`) 하윤이 원점을 지나면 센 바람(`sfx_wind_gust_`)에 지도가 날아가고 "하윤: 어? 기다려!"(그동안 잠금 `map_chase`).
-- 지도는 `stops`(원점 기준 x, 억새 덤불 셋)에 차례로 걸린다. 하윤이 덤불에 `catch_distance`(260px) 안으로 오면 다음 덤불로 또 날아간다. 마지막 덤불에서는 `[E] 지도 줍기`(조사 대상을 그 자리에 만든다) → `grants_flag`(`map_caught`) → 벽이 열린다.
-- 날아가 있는 동안 `MapScreen.away = true`: M이 먹지 않고 `map_circle` 조사 대상도 안 뜬다.
-- 덤불 자리는 임시 배경 `tools/placeholder_art.py` `FIELD_SNAGS`와 같아야 한다(스모크 검사). 그림은 `prop_map_folded`.
-- 이어하기는 장소 처음부터라, 줍기 전에 끄면 다시 쫓는다.
+- 지도를 가진(`requires_flag` = `has_map`) 하윤이 원점을 지나면 센 바람(`sfx_wind_gust_`)에 지도가 날아가고 "하윤: 어? 기다려!"(그동안 잠금 `map_chase`). 지도는 멀리 날아가 `lost_at`(원점 기준 x, 억새 덤불) 억새 속으로 사라진다(`state` LOST).
+- 사라진 동안 `MapScreen.away = true`: M이 먹지 않고 `map_circle` 조사 대상도 안 뜬다. 덤불에 가도 주울 것이 없다.
+- `reveal_flag`(`kite_flown`, 연 날리기가 세운다)가 서면 덤불 위로 빛기둥이 내리고 종이 끝이 보인다 → `[E] 지도 줍기` → `grants_flag`(`map_caught`) → 벽이 열린다.
+- 덤불 자리는 임시 배경 `tools/placeholder_art.py` `FIELD_SNAGS`와 같아야 하고, 연을 날리는 자리에서 화면 안(약 900px 이내)이어야 한다(스모크 검사). 그림은 `prop_map_folded`.
+- 이어하기는 장소 처음부터라, 줍기 전에 끄면 다시 날아간다.
+
+## 할아버지 물건 (Keepsake)
+
+`Area2D` + `scripts/game/keepsake.gd`(조사 대상을 이은 것). 장소마다 할아버지 물건 하나(기획서 "할아버지 물건과 미니게임"). 이름 `Keepsake_<장면>_<물건>`, 땅 위.
+
+- `item`(예: `kite`)을 주면 그림은 `prop_<item>`, 플래그는 `item_<item>`(`Keepsake.flag_for`). 늘 `one_shot`. 안내 `prompt`(예: "방패연 줍기").
+- 땅에 놓인 동안 은은하게 반짝인다(`lying_degrees`, `lying_scale`). E → 빛에 싸여 하윤 머리 위로 떠올랐다가 손으로 들어간다(잠금 `keepsake`) → 신호 `taken`. 다음 연출은 `taken`을 기다린다.
+- 이미 가진 채로 들어오면 그림이 없다. 진행에 필요한 `one_shot` 조사 대상이라 하늘이 힌트가 가리킨다.
+
+## 미니게임 (MiniGame, KiteFlight)
+
+`scripts/game/mini_game.gd`(`MiniGame`, Node2D) 공통 부품. 놀이는 이것을 이어 만든다(지금은 들판 연 날리기, 다음: 숲 피리·강가 물수제비·철교 손전등).
+
+- `begin()` → 하윤 조작을 막는다(잠금 `minigame`). 하윤은 걷지 않고 `action` 키 하나만 쓴다. `pressing()`이 그 키를 읽는다.
+- **UI는 화면 안에 녹인다**: 띠·게이지·숫자를 띄우지 않는다. 키 안내(`key_hint`)만 하윤 손 옆(`player.hand_point()`)에 작게.
+- 틀리면 `miss()`(신호 `mistake`). `help_after`(2)번 틀리면 한 번 `_on_help()`로 쉬워진다(신호 `helped`). 실패로 끝나는 일은 없다.
+- 끝나면 `end()` → `done_flag`를 세우고 잠금을 푼다(신호 `finished`). `done_flag`가 서 있으면 시작하지 않는다.
+- `autoplay`면 `_auto_pressing()`이 사람 대신 누른다(검사용. 게임플레이·흐름 검사가 켠다).
+- **연 날리기** `scripts/game/kite_flight.gd`(`KiteFlight`): `keepsake`(방패연)의 `taken`을 듣고 시작. 연은 하윤 앞 `kite_offset_x`(320)에 뜨고, 손에는 얼레(`prop_kite_reel`). E를 누르면 `rise_speed`로 오르고 놓으면 `fall_speed`로 내려온다. 하늘에 노을빛 띠(`band_heights[i]`, 두께 `band_half`)가 걸리고 돌풍(`gust_push[i]`, `gust_seconds`) 동안 `need_ratio` 이상 띠 안에 있으면 꼬리 리본 i가 붉어진다(신호 `ribbon_done`, 붙잡은 만큼 서서히 붉어지는 게 게이지 대신). 놓치면 리본이 바래고 같은 돌풍. 도움: 띠가 `help_band_half`로 넓어지고 바람이 `help_push_scale`배. 셋 다 붉으면 연이 높이 올라 `done_flag`(`kite_flown`) → 지도 자리가 빛난다 → 얼레를 감아 끝.
+
+## 소품 그림 (SVG)
+
+- 할아버지 물건·놀이 소품은 `assets/art/prop/*.svg`(9개: 방패연·얼레·피리·돌 주머니·손전등·회중시계·납작한 돌·접힌 지도·열쇠). 하윤 그림체(평면 색 + 그늘 한 톤 + 얇은 따뜻한 갈색 윤곽선 `#8c5639`), **2배로 그리고** `.import`의 `svg/scale=0.5`.
+- 그림 찾기(`CutscenePlayer.find_art`)가 svg도 읽고, placeholder png보다 먼저 찾는다. 새 svg를 넣으면 `--import` 뒤 `.import`의 `svg/scale`을 0.5로 고치고 다시 `--import`.
 
 ## 경운기 (TractorPass, 장면표 2-4)
 
@@ -264,7 +288,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 ## 하윤 조작 잠금
 
 - `player.lock(이유)` / `player.unlock(이유)`. 이유가 하나라도 남아 있으면 걷지도 조사하지도 않는다.
-- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1), `moment`(작은 순간), `stone_skip`(물수제비 5-4). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
+- 쓰는 이유: `place_change`(장소 전환), `dog_task`(하늘이 가져와·냄새), `dialogue`(대사 상자), `meeting`(하늘이 만남), `map`(지도), `map_chase`(날아간 지도 2-3), `keepsake`(할아버지 물건 줍기), `minigame`(미니게임), `tractor`(경운기 2-4), `memory`(기억 장면), `sit`(벤치), `ending`(엔딩), `opening`(오프닝 0-1), `moment`(작은 순간), `stone_skip`(물수제비 5-4). 새로 막을 일이 생기면 새 이유 이름을 쓴다 — 남의 이유를 풀지 않는다.
 
 ## 인물 컷아웃 (Cutout)
 

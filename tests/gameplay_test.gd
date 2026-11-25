@@ -668,50 +668,91 @@ func _check_bench() -> void:
 	await _wait(0.2)
 
 
-## 2-3 날아간 지도(MapChase): 지나가면 바람 → 덤불 셋에 걸렸다 날아간다 → 마지막 덤불에서 줍는다.
-## 들판에 B가 놓은 진짜 MapChase_2-3으로 본다(날아가는 시간만 줄인다).
+## 2-3 날아간 지도(MapChase) + 방패연(Keepsake) + 연 날리기(KiteFlight, MiniGame):
+## 지나가면 바람에 지도가 억새 속으로 사라진다 → 방패연을 주우면 빛에 싸여 떠오르고 손에 든다 →
+## 연을 띄워 돌풍 세 번 동안 노을빛 띠 안에 붙잡으면 리본이 하나씩 붉어진다(많이 놓치면 띠가 넓어진다) →
+## 지도 자리에 빛이 내리고 E로 줍는다. 들판에 B가 놓은 진짜 부품으로 본다(시간만 줄인다).
 func _check_map_chase() -> void:
 	var place: Node2D = _main.current_place()
 	var chase: Node2D = place.get_node_or_null("MapChase_2-3")
-	_check(chase != null, "지도 쫓기: 들판에 MapChase_2-3이 있다")
-	if chase == null:
+	var keep: Area2D = place.get_node_or_null("Keepsake_2-3_Kite")
+	var kite: Node2D = place.get_node_or_null("KiteFlight_2-3")
+	_check(chase != null and keep != null and kite != null, "지도·연: 들판에 MapChase_2-3, Keepsake_2-3_Kite, KiteFlight_2-3이 있다")
+	if chase == null or keep == null or kite == null:
 		return
 	var map: Control = _main.map_screen()
 	var box: Control = _main.dialogue_box()
 	var gate: Node = place.get_node("Gate_2-3")
 	var hill: Node = place.get_node("Look_2-2_Hill")
 	chase.flight_seconds = 0.4
-	_check(chase.state == 0 and not gate.is_open(), "지도 쫓기: 줍기 전에는 Gate_2-3이 막는다")
+	kite.launch_seconds = 0.3
+	kite.calm_seconds = 0.3
+	kite.gust_seconds = 0.8
+	_check(chase.state == 0 and not gate.is_open() and not keep.is_taken(), "지도·연: 처음에는 Gate_2-3이 막고 방패연은 땅에 있다")
+
 	_player.global_position.x = chase.global_position.x + 20.0
 	var started := await _wait_until(func(): return chase.state == 1 and box.is_open(), 1.5)
 	_check(started and map.away and box.current_text() == "어? 기다려!" and _player.is_locked_by(&"map_chase"),
-			"지도 쫓기: 지나가면 지도가 날아가고 \"하윤: 어? 기다려!\", 그동안 하윤이 멈춘다")
+			"지도·연: 지나가면 지도가 날아가고 \"하윤: 어? 기다려!\", 그동안 하윤이 멈춘다")
 	await _speak_through(box)
-	await _wait_until(func(): return not chase.flying, 2.0)
-	_check(_player.controls_enabled and chase.stop_index == 0, "지도 쫓기: 대사가 끝나면 걸을 수 있고, 지도는 첫 덤불에 걸려 있다")
+	var gone := await _wait_until(func(): return chase.state == 2, 2.0)
+	_check(gone and _player.controls_enabled, "지도·연: 지도는 억새 속으로 사라지고 하윤은 다시 걷는다")
 	await _press(&"open_map")
 	await _wait(0.5)
-	_check(not map.is_open(), "지도 쫓기: 지도가 날아가 있는 동안 M이 먹지 않는다")
+	_check(not map.is_open(), "지도·연: 지도가 없는 동안 M이 먹지 않는다")
 	_player.global_position.x = hill.global_position.x
 	await _wait(0.3)
-	_check(not hill.is_offered(), "지도 쫓기: 날아가 있는 동안 동그라미 조사(지도 펼치기)도 안 뜬다")
-	for k in 2:
-		_player.global_position.x = chase.stop_position(k).x - 100.0
-		var moved := await _wait_until(func(): return chase.stop_index == k + 1 and not chase.flying, 2.0)
-		_check(moved, "지도 쫓기: 덤불 %d에 다가가면 다시 날아간다" % (k + 1))
-	_check(not _state.has_flag(&"map_caught") and not gate.is_open(), "지도 쫓기: 줍기 전에는 아직 막혀 있다")
-	_player.global_position.x = chase.stop_position(2).x - 60.0
-	await _wait(1.0)
-	_check(chase.stop_index == 2, "지도 쫓기: 마지막 덤불에서는 더 날아가지 않는다")
+	_check(not hill.is_offered(), "지도·연: 지도가 없는 동안 동그라미 조사(지도 펼치기)도 안 뜬다")
+	_player.global_position.x = chase.lost_position().x
+	await _wait(0.3)
+	_check(_interactable_near() == null, "지도·연: 연을 날리기 전에는 지도 자리에 가도 주울 것이 없다")
+
+	_player.global_position.x = keep.global_position.x
+	await _wait(0.3)
+	_check(keep.is_offered(), "지도·연: 방패연 앞에서 [E] 방패연 줍기가 뜬다")
+	await _press(&"interact")
+	await _wait(0.2)
+	_check(_state.has_flag(&"item_kite") and _player.is_locked_by(&"keepsake"), "지도·연: 주우면 item_kite, 떠오르는 동안 하윤이 멈춘다")
+	var flying := await _wait_until(func(): return kite.running, 4.0)
+	await _wait(0.1)
+	var hint: Label = kite.get_node_or_null("KeyHint")
+	_check(flying and _player.is_locked_by(&"minigame") and not _player.is_locked_by(&"keepsake"),
+			"지도·연: 물건이 손에 들어오면 연 날리기가 시작된다(잠금 minigame)")
+	_check(hint != null and hint.text == "[E] 당기기" and hint.global_position.distance_to(_player.hand_point()) < 140.0,
+			"지도·연: 키 안내는 손 옆에 작게 \"[E] 당기기\"만 뜬다 (%s)" % [hint.global_position - _player.hand_point() if hint else null])
+	await _wait_until(func(): return kite.phase == 2, 2.0)  # CALM
+	var y0: float = kite.kite_y
+	Input.action_press(&"interact")
+	await _wait(0.25)
+	Input.action_release(&"interact")
+	_check(kite.kite_y < y0 - 10.0, "지도·연: E를 누르고 있으면 실을 당겨 연이 오른다 (%.0f → %.0f)" % [y0, kite.kite_y])
+	var missed := await _wait_until(func(): return kite.mistakes >= 2, 8.0)
+	await _wait(0.9)
+	_check(missed and kite.helping and kite.ribbons == 0 and kite.band_half_now() > kite.band_half + 20.0,
+			"지도·연: 손을 놓고 있으면 돌풍을 놓치고, 두 번 놓치면 띠가 넓어진다(실패로 끝나지 않는다)")
+	kite.autoplay = true
+	var flown := await _wait_until(func(): return _state.has_flag(&"kite_flown"), 15.0)
+	_check(flown and kite.ribbons == 3, "지도·연: 돌풍 세 번을 띠 안에서 버티면 리본 셋이 붉어지고 kite_flown")
+	_check(chase.state == 3 and _interactable_near() == null, "지도·연: 연이 높이 오르면 지도 자리에 빛이 내린다")
+	var done := await _wait_until(func(): return not kite.running, 6.0)
+	_check(done and _player.controls_enabled and kite.get_node_or_null("KeyHint") == null, "지도·연: 연을 감아 들이면 다시 걷고 키 안내가 사라진다")
+	_check(not gate.is_open(), "지도·연: 지도를 줍기 전에는 아직 막혀 있다")
+	_player.global_position.x = chase.lost_position().x - 60.0
+	await _wait(0.3)
 	await _press(&"interact")
 	var got := await _wait_until(func(): return _state.has_flag(&"map_caught"), 2.0)
-	_check(got and not map.away and gate.is_open(), "지도 쫓기: E로 주우면 map_caught, 지도가 돌아오고 벽이 열린다")
+	_check(got and not map.away and gate.is_open(), "지도·연: 빛 아래에서 E로 지도를 주우면 map_caught, 지도가 돌아오고 벽이 열린다")
 	await _wait(0.5)
 	await _press(&"open_map")
 	await _wait(0.6)
-	_check(map.is_open(), "지도 쫓기: 주운 뒤에는 M이 다시 먹는다")
+	_check(map.is_open(), "지도·연: 주운 뒤에는 M이 다시 먹는다")
 	await _press(&"open_map")
 	await _wait(0.6)
+
+
+func _interactable_near() -> Node:
+	var script: GDScript = load("res://scripts/game/interactable.gd")
+	return script.nearest_available(_main.get_tree(), _player.global_position)
 
 
 ## 2-4 경운기(TractorPass): 다가오면 하윤이 멈춰 비켜서고, 가까이 오면 "안녕하세요",

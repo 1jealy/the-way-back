@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210" height="44" viewBox="0 0 210 44">
+  <!-- 대나무 피리: 마디 둘, 지공 다섯 -->
+  <rect x="6" y="10" width="198" height="24" rx="11" fill="#dcb46a" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="8" y="24" width="194" height="8" rx="4" fill="#c49650"/>
+  <path d="M62 11 V33 M146 11 V33" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+  <g fill="#6e4328"><circle cx="34" cy="20" r="4"/><circle cx="84" cy="20" r="4"/><circle cx="104" cy="20" r="4"/><circle cx="124" cy="20" r="4"/><circle cx="170" cy="20" r="4"/></g>
+  <rect x="190" y="12" width="12" height="20" rx="5" fill="#b8874a" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

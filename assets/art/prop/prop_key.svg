@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="44" viewBox="0 0 96 44">
+  <!-- 작은 놋쇠 열쇠(1-4 액자 뒤, 3-5 대합실 열쇠도 같은 그림) -->
+  <circle cx="20" cy="22" r="15" fill="#d8b35a" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="20" cy="22" r="6" fill="#fbf1dc" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="34" y="17" width="52" height="10" rx="3" fill="#d8b35a" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M70 27 V36 H76 V27 M80 27 V33 H86 V27" fill="#d8b35a" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M36 24 H84" stroke="#bf9643" stroke-width="3"/>
+</svg>

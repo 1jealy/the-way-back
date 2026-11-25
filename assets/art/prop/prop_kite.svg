@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="184" height="236" viewBox="0 0 184 236">
+  <!-- 방패연: 한지 몸, 가운데 방구멍, 위 꼭지(붉은 동그라미), 아래 치마(쪽빛). 2배로 그림 -->
+  <path d="M14 12 H170 V224 H14 Z M92 86 a26 26 0 1 0 0.01 0 Z" fill="#fbf1dc" fill-rule="evenodd" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M150 14 H168 V222 H150 Z" fill="#efdcb8"/>
+  <circle cx="92" cy="50" r="22" fill="#d65a3f" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M16 182 H168 V222 H16 Z" fill="#4f78a3"/>
+  <path d="M150 182 H168 V222 H150 Z" fill="#41658b"/>
+  <defs><clipPath id="paper"><path d="M14 12 H170 V224 H14 Z M92 86 a26 26 0 1 0 0.01 0 Z" clip-rule="evenodd"/></clipPath></defs>
+  <g fill="none" stroke="#b98b55" stroke-width="3" clip-path="url(#paper)">
+    <path d="M92 14 V222"/><path d="M16 26 H168"/><path d="M18 16 L166 220"/><path d="M166 16 L18 220"/>
+  </g>
+  <path d="M14 12 H170 V224 H14 Z" fill="none" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="92" cy="112" r="26" fill="none" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

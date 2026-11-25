@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="104" height="116" viewBox="0 0 104 116">
+  <!-- 돌 주머니: 무명 주머니, 졸라맨 끈, 아래로 돌 모양이 비친다 -->
+  <path d="M34 30 C10 52 8 98 28 108 C44 114 62 114 78 108 C98 98 94 52 70 30 Z" fill="#c7a77d" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M70 32 C90 52 94 96 78 106 C70 110 64 111 58 112 C76 96 78 58 64 34 Z" fill="#ad8b62"/>
+  <path d="M36 70 q8 -8 16 0 M56 86 q8 -8 16 0 M30 92 q8 -7 14 0" fill="none" stroke="#9c7a52" stroke-width="3" stroke-linecap="round"/>
+  <path d="M34 30 C40 18 64 18 70 30" fill="#d8bb92" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M32 32 C46 38 58 38 72 32" fill="none" stroke="#7d4b2f" stroke-width="5" stroke-linecap="round"/>
+  <path d="M60 36 C66 48 72 50 80 46 M62 36 C60 50 56 56 50 58" fill="none" stroke="#7d4b2f" stroke-width="4" stroke-linecap="round"/>
+  <path d="M34 30 C10 52 8 98 28 108 C44 114 62 114 78 108 C98 98 94 52 70 30" fill="none" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

@@ -203,8 +203,8 @@ def lerp_color(a: Color, b: Color, t: float) -> Color:
 # ---------------------------------------------------------------- 억새 들판
 # 해 기우는 오후. 은빛·금빛 억새, 옅은 하늘색. 해는 오른쪽 낮게, 그림자는 왼쪽으로 길다.
 
-# 2-3 지도가 걸리는 억새 덤불(땅 x). field.tscn MapChase_2-3의 position.x + stops와 같아야 한다(스모크 검사가 본다).
-FIELD_SNAGS = [5000, 5900, 6800]
+# 2-3 날아간 지도가 사라지는 억새 덤불(땅 x). field.tscn MapChase_2-3의 position.x + lost_at과 같아야 한다(스모크 검사가 본다).
+FIELD_SNAGS = [6300]
 
 
 def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
@@ -308,7 +308,7 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
             L.line(sag(xa + dx, ya, xb + dx, yb, 46), rgba(70, 60, 50, 200), 2)
     L.blur_groups.append((shadows, 3))
     bus_stop(L, stop_x, 792, shadows)
-    # 2-3 날아간 지도가 걸리는 억새 덤불 셋(하윤 뒤). 자리는 MapChase_2-3의 stops와 같다.
+    # 2-3 날아간 지도가 사라지는 억새 덤불(하윤 뒤). 자리는 MapChase_2-3의 lost_at과 같다.
     snag_rng = random.Random("field_snags")
     for x in FIELD_SNAGS:
         reed_clump(L, snag_rng, x, 0.62, base=800)

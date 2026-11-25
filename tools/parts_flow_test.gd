@@ -108,23 +108,35 @@ func _run() -> void:
 	await _walk_to(gate.global_position.x + 200.0)
 	_check(_player.global_position.x > gate.global_position.x, "집: 지도를 얻으면 대문을 지나간다")
 
-	# 들판: 2-3 날아간 지도. 지나가면 바람 → 덤불 셋을 따라 걷는다 → 마지막 덤불에서 줍는다. 그 전에는 Gate_2-3.
+	# 들판: 2-3 날아간 지도. 지나가면 바람에 지도가 억새 속으로 사라진다 → 방패연을 줍고 연을 날린다
+	# (사람 대신 autoplay가 E를 누른다) → 지도 자리에 빛이 내리면 줍는다. 그 전에는 Gate_2-3.
 	var field: Node = await _go("field")
 	var chase: Node2D = field.get_node("MapChase_2-3")
+	var keep: Node2D = field.get_node("Keepsake_2-3_Kite")
+	var kite: Node2D = field.get_node("KiteFlight_2-3")
 	var field_gate: Node2D = field.get_node("Gate_2-3")
 	await _walk_to(chase.global_position.x + 60.0)
 	await _wait(0.5)
-	_check(chase.state == 1 and _main.dialogue_box().visible, "들판: 지나가면 바람에 지도가 날아가고 대사가 뜬다")
+	_check(chase.state in [1, 2] and _main.dialogue_box().visible, "들판: 지나가면 바람에 지도가 날아가고 대사가 뜬다")
 	await _close_dialogue()
-	for k in 3:
-		await _walk_to(chase.stop_position(k).x - 40.0)
-		await _wait(2.2)
-	_check(chase.stop_index == 2 and not _state.has_flag(&"map_caught"), "들판: 걸어서 따라가면 지도가 마지막 덤불까지 간다")
 	await _walk_to(field_gate.global_position.x + 200.0)
-	_check(_player.global_position.x < field_gate.global_position.x, "들판: 줍기 전에는 Gate_2-3에서 막힌다")
-	await _walk_to(chase.stop_position(2).x)
+	_check(_player.global_position.x < field_gate.global_position.x and chase.state == 2,
+			"들판: 지도가 억새 속으로 사라지고, 줍기 전에는 Gate_2-3에서 막힌다")
+	await _walk_to(keep.global_position.x)
+	kite.autoplay = true
 	await _press(&"interact")
-	_check(await _wait_flag(&"map_caught", 2.0), "들판: 마지막 덤불에서 E로 지도를 줍는다(map_caught)")
+	_check(await _wait_flag(&"item_kite", 2.0), "들판: 방패연을 줍는다(item_kite)")
+	_check(await _wait_flag(&"kite_flown", 30.0), "들판: 연을 날려 돌풍 세 번을 버틴다(kite_flown)")
+	var reeled := false
+	for i in 80:
+		if not kite.running:
+			reeled = true
+			break
+		await _wait(0.1)
+	_check(reeled and _player.controls_enabled, "들판: 연을 감아 들이면 다시 걷는다")
+	await _walk_to(chase.lost_position().x)
+	await _press(&"interact")
+	_check(await _wait_flag(&"map_caught", 2.0), "들판: 빛이 내린 억새에서 E로 지도를 줍는다(map_caught)")
 	await _walk_to(field_gate.global_position.x + 200.0)
 	_check(_player.global_position.x > field_gate.global_position.x, "들판: 지도를 주우면 지나간다")
 	# 들판: 2-4 경운기. 다가오면 비켜서서 인사하고, 지나간 뒤에 다시 걷는다.

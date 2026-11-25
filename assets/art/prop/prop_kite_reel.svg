@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="150" viewBox="0 0 120 150">
+  <!-- 얼레: 나무틀 넷에 연실을 감았다. 아래 손잡이 -->
+  <rect x="54" y="104" width="12" height="42" rx="5" fill="#b07a4a" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="14" y="10" width="92" height="98" rx="10" fill="#f3e6cc" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M18 34 H102 M18 50 H102 M18 66 H102 M18 82 H102" stroke="#e2cfa8" stroke-width="6"/>
+  <rect x="10" y="6" width="14" height="106" rx="6" fill="#c88f58" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="96" y="6" width="14" height="106" rx="6" fill="#c88f58" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="100" y="8" width="8" height="102" rx="4" fill="#a8743f"/>
+  <path d="M24 18 H96 M24 100 H96" stroke="#8c5639" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+</svg>

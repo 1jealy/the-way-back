@@ -1,79 +1,69 @@
 class_name MapChase
 extends Node2D
-## 장면표 2-3 "날아간 지도"(퍼즐 2): 바람이 세게 불어 지도가 하윤 손에서 날아간다.
-## 억새 덤불 세 곳에 걸렸다 다시 날아가는 지도를 쫓고, 마지막 덤불에서 E로 줍는다.
+## 장면표 2-3 "날아간 지도"(퍼즐 2). 바람이 세게 불어 지도가 하윤 손에서 날아가 멀리 억새 속으로 사라진다.
+## 어디 떨어졌는지 보이지 않는다. 할아버지 방패연을 주워 날리면(KiteFlight, reveal_flag kite_flown)
+## 지도가 떨어진 억새 위로 빛이 내리고, 거기서 E로 지도를 줍는다.
 ## 장소 씬에 B가 놓는다(MapChase_2-3). 원점은 땅 위, 하윤이 여기를 지나면 바람이 분다.
-## stops는 덤불 자리(이 노드 기준 x). 임시 배경의 덤불과 같다(tools/placeholder_art.py FIELD_SNAGS).
-## 지도가 날아가 있는 동안에는 M이 먹지 않고(MapScreen.away), 마지막 덤불 오른쪽의 Gate_2-3이 막는다.
-## 줍으면 grants_flag(map_caught)를 세운다. 이어하기는 장소 처음부터라 줍기 전이면 처음부터 다시 쫓는다.
-## 담당: A(퍼즐 로직). (A 세션이 쉬는 동안 B 세션이 만듦)
+## lost_at은 지도가 떨어지는 억새 덤불 자리(이 노드 기준 x). 임시 배경의 덤불과 같다(tools/placeholder_art.py FIELD_SNAGS).
+## 지도가 없는 동안에는 M이 먹지 않고(MapScreen.away), 덤불 오른쪽의 Gate_2-3이 막는다.
+## 주우면 grants_flag(map_caught). 이어하기는 장소 처음부터라 줍기 전이면 처음부터 다시 날아간다.
+## 담당: A(퍼즐 로직). (A 대신 B 세션이 만듦)
 
 ## 바람이 불어 지도가 날아갔다.
 signal blown_away
-## 지도가 덤불 i(0부터)에 걸렸다.
-signal snagged(i: int)
+## 지도가 억새 속으로 사라졌다.
+signal lost
+## 연을 날려 지도 자리가 보인다.
+signal revealed
 ## 하윤이 지도를 주웠다.
 signal caught
 
 const LOCK := &"map_chase"
 
-## 덤불 자리(이 노드 기준 x, 오른쪽으로). 마지막 덤불에서 줍는다.
-@export var stops: PackedFloat32Array = PackedFloat32Array([700.0, 1600.0, 2500.0])
-## 지도가 걸리는 높이(땅에서 위로, px). 억새 덤불 중간쯤.
-@export var snag_height: float = 120.0
-## 하윤이 덤불에 이만큼 다가가면 다시 날아간다(마지막 덤불 빼고).
-@export var catch_distance: float = 260.0
+## 지도가 떨어지는 억새 덤불 자리(이 노드 기준 x). 하윤이 연을 날리는 자리에서 화면 안에 보여야 한다.
+@export var lost_at: float = 2000.0
 ## 한 번 날아가는 시간(초).
-@export var flight_seconds: float = 1.8
-## 지도 그림(assets/art 아래 이름). 접힌 지도 소품, 날아가는 지도도 이 그림이다(장면표 그림 목록).
+@export var flight_seconds: float = 2.4
+## 지도 그림(assets/art 아래 이름). 접힌 지도 소품.
 @export var art: String = "prop_map_folded"
 ## 처음 날아갈 때 대사(장면표 2-3 "대사 3").
 @export var lines: PackedStringArray = PackedStringArray(["하윤: 어? 기다려!"])
 @export var grants_flag: StringName = &"map_caught"
 ## 지도를 가진 뒤에만 분다.
 @export var requires_flag: StringName = &"has_map"
+## 이 플래그가 서면 지도 자리가 빛으로 보인다(연 날리기 KiteFlight가 세운다).
+@export var reveal_flag: StringName = &"kite_flown"
 @export var gust_sound: String = "sfx_wind_gust_"
 @export var pickup_sound: String = "sfx_paper_"
 
-## 0 = 아직, 1 = 날아다니는 중, 2 = 주웠다(또는 이미 주운 채로 들어왔다).
-enum State { WAITING, CHASING, DONE }
+enum State { WAITING, FLYING, LOST, REVEALED, DONE }
 var state: State = State.WAITING
-## 지금 지도가 걸려 있는(또는 날아가는) 덤불 번호. -1 = 하윤 손.
-var stop_index: int = -1
-var flying: bool = false
 
 var _map: Sprite2D
+var _beam: Sprite2D
 var _pickup: Interactable
-var _time: float = 0.0
 
 
 func _ready() -> void:
 	add_to_group("map_chase")
 	if GameState.has_flag(grants_flag):
 		state = State.DONE
+	GameState.flag_changed.connect(_on_flag_changed)
 
 
-## 지도가 걸릴 덤불의 전역 자리(땅 높이).
-func stop_position(i: int) -> Vector2:
-	return global_position + Vector2(stops[i], 0.0)
+## 지도가 떨어진 자리(전역, 땅 높이).
+func lost_position() -> Vector2:
+	return global_position + Vector2(lost_at, 0.0)
 
 
-func _process(delta: float) -> void:
-	var player := get_tree().get_first_node_in_group("player") as Player
-	if player == null:
+func _process(_delta: float) -> void:
+	if state != State.WAITING:
+		if _beam:
+			_beam.modulate.a = 0.75 + 0.2 * sin(Time.get_ticks_msec() / 1000.0 * 1.8)
 		return
-	match state:
-		State.WAITING:
-			if player.global_position.x >= global_position.x and _can_start():
-				_start(player)
-		State.CHASING:
-			_time += delta
-			if _map and not flying:  # 걸린 지도가 바람에 파르르 떤다
-				_map.rotation = sin(_time * 7.0) * 0.12 + sin(_time * 2.3) * 0.08
-			var last := stops.size() - 1
-			if not flying and stop_index >= 0 and stop_index < last \
-					and absf(player.global_position.x - stop_position(stop_index).x) < catch_distance:
-				_fly_to(stop_index + 1)
+	var player := get_tree().get_first_node_in_group("player") as Player
+	if player and player.global_position.x >= global_position.x and _can_start():
+		_start(player)
 
 
 func _can_start() -> bool:
@@ -85,7 +75,7 @@ func _map_screen() -> MapScreen:
 
 
 func _start(player: Player) -> void:
-	state = State.CHASING
+	state = State.FLYING
 	var map := _map_screen()
 	if map:
 		map.away = true
@@ -95,12 +85,13 @@ func _start(player: Player) -> void:
 	var path := CutscenePlayer.find_art(art)
 	if not path.is_empty():
 		_map.texture = load(path)
-	_map.z_index = 5  # 하윤 앞(날아오를 때 손에서 떠나는 게 보이게), 앞 층(억새) 뒤
+	_map.z_index = 5  # 하윤 앞(손에서 떠나는 게 보이게), 앞 층(억새) 뒤
 	_map.z_as_relative = false
 	add_child(_map)
 	_map.global_position = player.global_position + Vector2(40.0 * player.facing, -150.0)
 	blown_away.emit()
-	_fly_to(0)
+	_play_sound(gust_sound)
+	_fly_away()
 	var box := get_tree().get_first_node_in_group("dialogue_box") as DialogueBox
 	if box and not lines.is_empty():
 		box.play(lines)
@@ -108,30 +99,64 @@ func _start(player: Player) -> void:
 	player.unlock(LOCK)
 
 
-func _fly_to(i: int) -> void:
-	flying = true
-	stop_index = i
-	_play_sound(gust_sound)
+## 높이 떠올라 오른쪽으로 멀리 날아가다 억새 속으로 내려앉으며 사라진다.
+func _fly_away() -> void:
 	var from := _map.global_position
-	var to := stop_position(i) + Vector2(0.0, -snag_height)
-	# 바람에 높이 떴다가 덤불로 내려앉는다. 가는 동안 빙글빙글.
-	var peak := minf(from.y, to.y) - 260.0
+	var to := lost_position() + Vector2(0.0, -40.0)
+	var peak := minf(from.y, to.y) - 380.0
 	var tween := create_tween()
 	tween.tween_method(func(t: float):
 		var u := 1.0 - t
 		var ctrl := Vector2((from.x + to.x) * 0.5, peak)
 		_map.global_position = from * u * u + ctrl * 2.0 * u * t + to * t * t \
-				+ Vector2(0.0, sin(t * TAU * 2.0) * 18.0 * u)
-		_map.rotation = t * TAU * 1.5 + sin(t * TAU * 3.0) * 0.4,
+				+ Vector2(0.0, sin(t * TAU * 2.0) * 22.0 * u)
+		_map.rotation = t * TAU * 2.0 + sin(t * TAU * 3.0) * 0.4,
 		0.0, 1.0, flight_seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tween.parallel().tween_property(_map, "scale", Vector2(0.7, 0.7), flight_seconds)
+	tween.tween_property(_map, "modulate:a", 0.0, 0.5)
 	await tween.finished
-	flying = false
-	snagged.emit(i)
-	if i == stops.size() - 1:
-		_offer_pickup()
+	_map.visible = false
+	if state == State.FLYING:
+		state = State.LOST
+	lost.emit()
+	if GameState.has_flag(reveal_flag):
+		_reveal()
 
 
-## 마지막 덤불: "[E] 지도 줍기". 조사 대상(Interactable)을 그 자리에 둔다.
+func _on_flag_changed(flag: StringName) -> void:
+	if flag == reveal_flag and state == State.LOST:
+		_reveal()
+
+
+## 연을 날렸다: 지도가 떨어진 억새 위로 빛이 내리고 종이 끝이 보인다. "[E] 지도 줍기".
+func _reveal() -> void:
+	if state != State.LOST:
+		return
+	state = State.REVEALED
+	_beam = Sprite2D.new()
+	_beam.name = "Beam"
+	_beam.texture = _beam_texture()
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	_beam.material = mat
+	_beam.z_index = 6
+	_beam.z_as_relative = false
+	_beam.scale = Vector2(240.0 / 64.0, 1000.0 / 64.0)  # 화면 위 바깥에서 억새까지
+	add_child(_beam)
+	_beam.global_position = lost_position() + Vector2(0.0, -490.0)
+	_beam.modulate = Color(1.0, 0.9, 0.7, 0.0)
+	create_tween().tween_property(_beam, "modulate:a", 0.85, 1.2)
+	# 억새 사이로 종이 끝이 살짝 보인다
+	_map.visible = true
+	_map.global_position = lost_position() + Vector2(0.0, -30.0)
+	_map.rotation = -0.5
+	_map.scale = Vector2(0.75, 0.75)
+	_map.z_index = 6
+	create_tween().tween_property(_map, "modulate:a", 1.0, 1.2)
+	revealed.emit()
+	_offer_pickup()
+
+
 func _offer_pickup() -> void:
 	_pickup = Interactable.new()
 	_pickup.name = "Pickup"
@@ -140,7 +165,7 @@ func _offer_pickup() -> void:
 	_pickup.size = Vector2(320.0, 300.0)
 	_pickup.sound = pickup_sound
 	add_child(_pickup)
-	_pickup.global_position = stop_position(stops.size() - 1)
+	_pickup.global_position = lost_position()
 	_pickup.interacted.connect(_on_picked)
 
 
@@ -152,6 +177,11 @@ func _on_picked() -> void:
 	if map:
 		map.away = false
 	var player := get_tree().get_first_node_in_group("player") as Player
+	if _beam:
+		var fade := create_tween()
+		fade.tween_property(_beam, "modulate:a", 0.0, 0.8)
+		fade.tween_callback(_beam.queue_free)
+		_beam = null
 	if player and _map:
 		var tween := create_tween().set_parallel()
 		tween.tween_property(_map, "global_position", player.global_position + Vector2(0.0, -150.0), 0.35)
@@ -162,11 +192,26 @@ func _on_picked() -> void:
 
 
 func _exit_tree() -> void:
-	# 쫓는 중에 장소를 떠나면(타이틀로 등) 지도 화면을 돌려 둔다.
-	if state == State.CHASING:
+	# 지도가 없는 채로 장소를 떠나면(타이틀로 등) 지도 화면을 돌려 둔다.
+	if state in [State.FLYING, State.LOST, State.REVEALED]:
 		var map := _map_screen()
 		if map:
 			map.away = false
+
+
+## 위에서 내리는 빛기둥(가운데가 밝고 양옆·위로 사라진다).
+static func _beam_texture() -> Texture2D:
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 0))
+	g.set_color(1, Color(1, 1, 1, 0))
+	g.add_point(0.5, Color(1, 1, 1, 0.55))
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.fill_from = Vector2(0.0, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	tex.width = 64
+	tex.height = 64
+	return tex
 
 
 func _play_sound(prefix: String) -> void:
