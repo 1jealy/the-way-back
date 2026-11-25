@@ -17,6 +17,8 @@ signal hinted(target_x: float)
 enum State { HIDDEN, MEETING, FOLLOW, SIT, HINT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN, SCRIPTED }
 
 const JOIN_FLAG := &"dog_joined"
+## 부탁 자리에서 머리 위 표시에 띄우는 말(행동마다). 0 가져와 / 1 냄새 / 2 기다려 = AskSpot.Action 순서.
+const ASK_HINTS := {0: "가져와", 1: "냄새 맡아 줘", 2: "기다려"}
 ## 하윤 뒤 이 거리에 서려고 한다. 설 자리에서 DEADBAND 안이면 멈춘다 → 120~180px(#92에서 인물 1.5배).
 const FOLLOW_GAP := 150.0
 const DEADBAND := 30.0
@@ -56,7 +58,7 @@ var _hint_left: float = 0.0
 @onready var _visual: Node2D = $Visual
 @onready var _stand: Node2D = $Visual/Stand
 @onready var _sit: Node2D = $Visual/Sit
-@onready var _paw: CanvasItem = $PawMark
+@onready var _paw: PawMark = $PawMark
 
 
 ## 발톱 소리가 들리는 장소. 장면표: 간이역·숲에서만, 강가부터는 없다(복선).
@@ -155,6 +157,10 @@ func place_behind(player: Player) -> void:
 func available_spot() -> AskSpot:
 	# 연출(작은 순간·엔딩) 중에는 부탁을 받지 않는다. 받으면 연출이 끊기고 script_arrived가 영영 안 온다(#85).
 	if not is_joined() or is_busy() or state == State.SCRIPTED:
+		return null
+	# 하윤이 대사·지도·벤치·연출로 막혀 있으면 부탁도 안 받는다. 받으면 돌아와서 띄우는 대사가
+	# 읽던 대사를 덮어썼다(#107).
+	if _player and not _player.controls_enabled:
 		return null
 	for node in get_tree().get_nodes_in_group("ask_spot"):
 		var spot := node as AskSpot
@@ -262,6 +268,15 @@ func _track_player_still(delta: float) -> void:
 ## 없으면 장소 끝 지점.
 func hint_target_x() -> float:
 	var px := _player.global_position.x
+	# 아직 안 쓴 부탁 자리를 지나쳐 왔으면 그쪽(뒤)을 가리킨다. 부탁은 진행에 필요한데, 지나친 뒤에는
+	# 앞쪽 목표(잠긴 문·장소 끝)만 가리켜 되돌아가라는 신호가 없었다(간이역 3-5, #107).
+	var behind := -INF
+	for node in get_tree().get_nodes_in_group("ask_spot"):
+		var spot := node as AskSpot
+		if spot and not (spot.one_shot and spot.used) and spot.global_position.x < px - spot.size.x * 0.5:
+			behind = maxf(behind, spot.global_position.x)
+	if behind != -INF:
+		return behind
 	var best := INF
 	for node in get_tree().get_nodes_in_group("ask_spot"):
 		var spot := node as AskSpot
@@ -350,7 +365,8 @@ func _refresh_visuals() -> void:
 	else:
 		_stand.visible = not sitting
 		_sit.visible = sitting
-	_paw.visible = available_spot() != null
+	var ask := available_spot()
+	_paw.show_hint(ask != null, ASK_HINTS.get(ask.action, "") if ask else "")
 
 
 func _update_claws(delta: float) -> void:

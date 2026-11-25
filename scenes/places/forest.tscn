@@ -123,21 +123,21 @@ lines = PackedStringArray()
 position = Vector2(3500, 810)
 script = ExtResource("15_5ibt5")
 to_x = 2921.0
-prompt = "이 입구로 들어가기"
+prompt = "왼쪽 입구로 들어가기"
 lines = PackedStringArray()
 
 [node name="Look_4-2_Light12" type="Area2D" parent="." index="9" unique_id=112065196]
 position = Vector2(3800, 810)
 script = ExtResource("15_5ibt5")
 to_x = 4450.0
-prompt = "이 입구로 들어가기"
+prompt = "가운데 입구로 들어가기"
 lines = PackedStringArray()
 
 [node name="Look_4-2_Light13" type="Area2D" parent="." index="10" unique_id=1978457597]
 position = Vector2(4100, 810)
 script = ExtResource("15_5ibt5")
 to_x = 2921.0
-prompt = "이 입구로 들어가기"
+prompt = "오른쪽 입구로 들어가기"
 lines = PackedStringArray()
 
 [node name="Gate_4-2_1" type="StaticBody2D" parent="." index="11" unique_id=954748513]
@@ -157,21 +157,21 @@ lines = PackedStringArray()
 position = Vector2(5000, 810)
 script = ExtResource("15_5ibt5")
 to_x = 4450.0
-prompt = "이 입구로 들어가기"
+prompt = "왼쪽 입구로 들어가기"
 lines = PackedStringArray()
 
 [node name="Look_4-2_Light22" type="Area2D" parent="." index="14" unique_id=1775285255]
 position = Vector2(5300, 810)
 script = ExtResource("15_5ibt5")
 to_x = 4450.0
-prompt = "이 입구로 들어가기"
+prompt = "가운데 입구로 들어가기"
 lines = PackedStringArray()
 
 [node name="Look_4-2_Light23" type="Area2D" parent="." index="15" unique_id=705840045]
 position = Vector2(5600, 810)
 script = ExtResource("15_5ibt5")
 to_x = 6000.0
-prompt = "이 입구로 들어가기"
+prompt = "오른쪽 입구로 들어가기"
 lines = PackedStringArray()
 
 [node name="Gate_4-2_2" type="StaticBody2D" parent="." index="16" unique_id=657761175]

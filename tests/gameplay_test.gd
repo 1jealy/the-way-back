@@ -126,6 +126,31 @@ func _add_spot(action: int, offset_x: float, flag: StringName) -> Area2D:
 	return spot
 
 
+## 손목 만지기 대기 동작(장면표 "손목 만지기"): 5초 넘게 서 있으면 나오고, 걸으면 내린다.
+func _check_wrist_touch() -> void:
+	var rig: Node = _player.get_node_or_null("Visual/Rig")
+	if rig == null:
+		_check(false, "손목 만지기: 하윤 컷아웃이 있다")
+		return
+	var touched := [false]
+	var cb := func(): touched[0] = true
+	await _hold(&"move_right", 0.2)  # 앞 검사 동안 서 있던 시간을 비운다
+	_player.wrist_touched.connect(cb)
+	await _wait(3.0)
+	_check(not touched[0], "손목 만지기: 3초 서 있을 때는 아직 안 한다")
+	var ok := await _wait_until(func(): return touched[0], 4.0)
+	_check(ok and rig.is_gesturing(), "손목 만지기: 5초 넘게 서 있으면 손목을 만진다")
+	await _hold(&"move_right", 0.6)
+	var dropped := await _wait_until(func(): return not rig.is_gesturing(), 1.5)
+	_check(dropped, "손목 만지기: 걷기 시작하면 팔을 내린다")
+	touched[0] = false
+	_player.lock(&"test_locked")
+	await _wait(6.0)
+	_check(not touched[0], "손목 만지기: 대사·연출로 막혀 있으면 안 한다")
+	_player.unlock(&"test_locked")
+	_player.wrist_touched.disconnect(cb)
+
+
 func _run() -> void:
 	print("게임플레이 검사 시작")
 	_main = load("res://scenes/main.tscn").instantiate()
@@ -140,6 +165,7 @@ func _run() -> void:
 	_dog = _main.dog()
 
 	await _check_place_card()
+	await _check_wrist_touch()
 
 	# 합류 전
 	_check(not _dog.visible and not _dog.is_joined(), "합류 전에는 하늘이가 보이지 않는다")
@@ -216,7 +242,7 @@ func _run() -> void:
 	await _wait(0.2)
 	await _press_ask()
 	_check(not _dog.is_busy(), "부탁 자리 밖에서 F는 아무 일도 하지 않는다")
-	_check(not _dog.get_node("PawMark").visible, "부탁 자리 밖에서는 발바닥 표시가 없다")
+	_check(not _dog.get_node("PawMark").is_shown(), "부탁 자리 밖에서는 발바닥 표시가 없다")
 	_check(not _state.has_flag(&"test_far"), "멀리 있는 부탁 자리는 쓰이지 않는다")
 	far.queue_free()
 	await _wait(0.2)
@@ -226,7 +252,14 @@ func _run() -> void:
 	var fetch_acted := [false]
 	fetch.acted.connect(func(): fetch_acted[0] = true)
 	await _wait(0.2)
-	_check(_dog.get_node("PawMark").visible, "부탁 자리 안에서는 발바닥 표시가 뜬다")
+	_check(_dog.get_node("PawMark").is_shown(), "부탁 자리 안에서는 발바닥 표시가 뜬다")
+	_check(_dog.get_node("PawMark").text() == "[F] 가져와", "발바닥 표시에 무슨 부탁인지 적혀 있다(%s)" % _dog.get_node("PawMark").text())
+	# 대사·지도 등으로 하윤이 막혀 있으면 F가 안 먹는다(#107)
+	_player.lock(&"test_locked")
+	await _press_ask()
+	_check(not _dog.is_busy() and _dog.available_spot() == null, "가져와: 하윤이 막혀 있으면(대사·지도) F가 안 먹는다")
+	_player.unlock(&"test_locked")
+	await _wait(0.1)
 	await _press_ask()
 	_check(_dog.is_busy(), "가져와: F를 누르면 출발한다")
 	_check(not _player.controls_enabled, "가져와: 그동안 하윤은 기다린다")
@@ -1102,6 +1135,13 @@ func _check_save() -> void:
 ## 일시정지 메뉴(Esc).
 func _check_pause() -> void:
 	var menu: Control = _main.pause_menu()
+	var menu_layer := menu.get_parent() as CanvasLayer
+	var top_other := 0
+	for layer in _main.find_children("*", "CanvasLayer", true, false):
+		if layer != menu_layer:
+			top_other = maxi(top_other, (layer as CanvasLayer).layer)
+	_check(menu_layer != null and menu_layer.layer > top_other and menu_layer.layer > 31,
+			"일시정지: 메뉴는 화면 전환 검은 막·엔딩 카드보다 위에 그린다(#107)")
 	var map: Control = _main.map_screen()
 	var player: CharacterBody2D = _main.player()
 	await _press(&"pause")
@@ -1158,6 +1198,13 @@ func _check_hint() -> void:
 	await _wait(0.3)
 	var got_exit := await _wait_until(func(): return hints.size() == 2, _dog_consts["HINT_DELAY"] + 2.0)
 	_check(got_exit and is_equal_approx(hints[1], place.width - 120.0), "힌트: 목표가 없으면 장소 끝 지점 쪽")
+	# 안 쓴 부탁 자리를 지나쳐 왔으면 뒤를 가리킨다(간이역 3-5에서 F를 놓친 경우, #107)
+	var missed := _add_spot(_actions["FETCH"], 200.0, &"test_missed")
+	missed.position.x = player.global_position.x - 900.0
+	await _hold(&"move_left", 0.2)
+	var got_back := await _wait_until(func(): return hints.size() == 3, _dog_consts["HINT_DELAY"] + 2.0)
+	_check(got_back and is_equal_approx(hints[2], missed.global_position.x), "힌트: 지나친 부탁 자리가 있으면 뒤쪽을 알려 준다")
+	missed.queue_free()
 	for node in real_targets:
 		node.used = false
 	await _hold(&"move_left", 0.3)

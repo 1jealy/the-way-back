@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/dog/dog.gd" id="1_dog"]
+[ext_resource type="Script" path="res://scripts/dog/paw_mark.gd" id="2_paw"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_dog"]
 size = Vector2(135, 90)
@@ -52,13 +53,7 @@ polygon = PackedVector2Array(13.5, -81, 61.5, -81, 61.5, -127.5, 13.5, -127.5)
 color = Color(0.62, 0.45, 0.3, 1)
 polygon = PackedVector2Array(19.5, -127.5, 33, -127.5, 25.5, -145.5)
 
-[node name="PawMark" type="Label" parent="."]
-visible = false
-offset_left = -16.0
-offset_top = -215.0
-offset_right = 16.0
-offset_bottom = -179.0
-theme_override_colors/font_color = Color(1, 0.93, 0.7, 1)
-theme_override_font_sizes/font_size = 28
-text = "F"
-horizontal_alignment = 1
+[node name="PawMark" type="Node2D" parent="."]
+position = Vector2(0, -215)
+z_index = 20
+script = ExtResource("2_paw")

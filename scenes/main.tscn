@@ -110,8 +110,6 @@ horizontal_alignment = 1
 
 [node name="MapScreen" parent="Overlay" instance=ExtResource("5_map")]
 
-[node name="PauseMenu" parent="Overlay" instance=ExtResource("6_pause")]
-
 [node name="Fade" type="ColorRect" parent="Overlay"]
 anchors_preset = 15
 anchor_right = 1.0
@@ -120,3 +118,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 1)
+
+[node name="MenuLayer" type="CanvasLayer" parent="."]
+layer = 50
+
+[node name="PauseMenu" parent="MenuLayer" instance=ExtResource("6_pause")]

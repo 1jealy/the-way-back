@@ -111,6 +111,9 @@ func _run() -> void:
 	await _title_card()
 	await _portraits_card()
 	GameState.set_flag(&"ending_seen")
+	# 끝까지 봤으면 이어하기를 지운다(남겨 두면 나루터부터 엔딩이 다시 나온다, #107).
+	if GameState.autosave:
+		GameState.delete_save()
 	ended.emit()
 	var main := get_tree().get_first_node_in_group("main")
 	if main and main.has_method("stop_music"):

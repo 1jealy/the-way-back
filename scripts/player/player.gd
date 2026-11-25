@@ -30,8 +30,19 @@ var _step_left: float = STEP_DISTANCE * 0.5
 var _auto_x: float = NAN
 var _auto_speed: float = 0.0
 
+## 손목 만지기(대기 동작, 장면표 "손목 만지기"): 이만큼 가만히 서 있으면 처음 나오고,
+## 그 뒤로는 WRIST_AGAIN 사이 어느 때에 또 나온다. 벤치에 앉아 있을 때도 나온다(2-5, 3-3).
+const WRIST_AFTER := 5.0
+const WRIST_AGAIN := Vector2(9.0, 15.0)
+## 손목 만지기를 막지 않는 잠금 이유(벤치에 앉아 있는 동안).
+const WRIST_OK_LOCKS := [&"sit"]
+var _still: float = 0.0
+var _wrist_next: float = WRIST_AFTER
+
 ## auto_move_to로 보낸 곳에 닿았을 때.
 signal auto_arrived
+## 손목 만지기 대기 동작을 시작했을 때.
+signal wrist_touched
 var _steps: AudioStreamPlayer
 
 @onready var _visual: Node2D = $Visual
@@ -140,6 +151,25 @@ func _physics_process(delta: float) -> void:
 		facing = 1 if direction > 0.0 else -1
 		_visual.scale.x = facing
 	_update_steps(delta)
+	_update_idle(delta)
+
+
+## 가만히 서(앉아) 있으면 가끔 손목을 만진다.
+func _update_idle(delta: float) -> void:
+	var rig := _rig()
+	var calm := absf(velocity.x) < 1.0 and is_nan(_auto_x) and (pose == &"stand" or pose == &"sit")
+	for reason in _locks:
+		if reason not in WRIST_OK_LOCKS:
+			calm = false
+	if not calm or rig == null or not rig.has_method("play_wrist_touch"):
+		_still = 0.0
+		_wrist_next = WRIST_AFTER
+		return
+	_still += delta
+	if _still >= _wrist_next and not rig.is_gesturing():
+		_wrist_next = _still + randf_range(WRIST_AGAIN.x, WRIST_AGAIN.y)
+		rig.play_wrist_touch()
+		wrist_touched.emit()
 
 
 func _update_steps(delta: float) -> void:
