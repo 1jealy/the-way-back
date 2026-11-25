@@ -216,7 +216,7 @@ func _run() -> void:
 	await _wait(0.2)
 	await _press_ask()
 	_check(not _dog.is_busy(), "부탁 자리 밖에서 F는 아무 일도 하지 않는다")
-	_check(not _dog.get_node("PawMark").visible, "부탁 자리 밖에서는 발바닥 표시가 없다")
+	_check(not _dog.get_node("PawMark").is_shown(), "부탁 자리 밖에서는 발바닥 표시가 없다")
 	_check(not _state.has_flag(&"test_far"), "멀리 있는 부탁 자리는 쓰이지 않는다")
 	far.queue_free()
 	await _wait(0.2)
@@ -226,7 +226,8 @@ func _run() -> void:
 	var fetch_acted := [false]
 	fetch.acted.connect(func(): fetch_acted[0] = true)
 	await _wait(0.2)
-	_check(_dog.get_node("PawMark").visible, "부탁 자리 안에서는 발바닥 표시가 뜬다")
+	_check(_dog.get_node("PawMark").is_shown(), "부탁 자리 안에서는 발바닥 표시가 뜬다")
+	_check(_dog.get_node("PawMark").text() == "[F] 가져와", "발바닥 표시에 무슨 부탁인지 적혀 있다(%s)" % _dog.get_node("PawMark").text())
 	# 대사·지도 등으로 하윤이 막혀 있으면 F가 안 먹는다(#107)
 	_player.lock(&"test_locked")
 	await _press_ask()

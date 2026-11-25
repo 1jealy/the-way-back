@@ -17,6 +17,8 @@ signal hinted(target_x: float)
 enum State { HIDDEN, MEETING, FOLLOW, SIT, HINT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN, SCRIPTED }
 
 const JOIN_FLAG := &"dog_joined"
+## 부탁 자리에서 머리 위 표시에 띄우는 말(행동마다). 0 가져와 / 1 냄새 / 2 기다려 = AskSpot.Action 순서.
+const ASK_HINTS := {0: "가져와", 1: "냄새 맡아 줘", 2: "기다려"}
 ## 하윤 뒤 이 거리에 서려고 한다. 설 자리에서 DEADBAND 안이면 멈춘다 → 120~180px(#92에서 인물 1.5배).
 const FOLLOW_GAP := 150.0
 const DEADBAND := 30.0
@@ -56,7 +58,7 @@ var _hint_left: float = 0.0
 @onready var _visual: Node2D = $Visual
 @onready var _stand: Node2D = $Visual/Stand
 @onready var _sit: Node2D = $Visual/Sit
-@onready var _paw: CanvasItem = $PawMark
+@onready var _paw: PawMark = $PawMark
 
 
 ## 발톱 소리가 들리는 장소. 장면표: 간이역·숲에서만, 강가부터는 없다(복선).
@@ -363,7 +365,8 @@ func _refresh_visuals() -> void:
 	else:
 		_stand.visible = not sitting
 		_sit.visible = sitting
-	_paw.visible = available_spot() != null
+	var ask := available_spot()
+	_paw.show_hint(ask != null, ASK_HINTS.get(ask.action, "") if ask else "")
 
 
 func _update_claws(delta: float) -> void:
