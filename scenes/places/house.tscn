@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/game/shake_drop.gd" id="shake_script"]
 [ext_resource type="Script" path="res://scripts/game/opening.gd" id="opening_script"]
 [ext_resource type="Script" path="res://scripts/game/funeral_portraits.gd" id="portraits_script"]
+[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
 
 [node name="House" unique_id=721323629 instance=ExtResource("1_tpl")]
 place_id = &"house"
@@ -135,3 +136,11 @@ script = ExtResource("opening_script")
 [node name="Portraits_1-2" type="Node2D" parent="."]
 position = Vector2(1340, 810)
 script = ExtResource("portraits_script")
+
+[node name="Keepsake_1-6_Flashlight" type="Area2D" parent="."]
+position = Vector2(4900, 810)
+script = ExtResource("keepsake_script")
+item = &"flashlight"
+prompt = "손전등 줍기"
+art_offset = Vector2(0, -22)
+art_rotation = -8.0

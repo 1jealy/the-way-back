@@ -142,6 +142,10 @@ func interact() -> void:
 		var skip := StoneSkip.find(get_tree(), map_circle)
 		if skip:
 			await skip.play()
+			if skip.best >= 5:
+				_busy = false  # 다섯 번을 튀겼으면 "…다섯 번은 어렵다."를 띄우지 않는다(#115)
+				finished.emit()
+				return
 	if not lines.is_empty():
 		var box := get_tree().get_first_node_in_group("dialogue_box") as DialogueBox
 		if box:

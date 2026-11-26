@@ -16,6 +16,8 @@
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/pos_forest_water.ogg" id="14_k6ejp"]
 [ext_resource type="Script" path="res://scripts/game/passage.gd" id="15_5ibt5"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="16_8c2du"]
+[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
+[ext_resource type="Script" path="res://scripts/game/flute_echo.gd" id="flute_script"]
 [ext_resource type="Script" uid="uid://bluqmseo20c52" path="res://scripts/game/memory_scene.gd" id="mem_script"]
 [ext_resource type="Script" path="res://scripts/game/light_motes.gd" id="motes_script"]
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
@@ -147,13 +149,19 @@ position = Vector2(4300, 810)
 script = ExtResource("16_8c2du")
 art = "prop_thicket"
 
-[node name="AskSpot_4-2_2" type="Area2D" parent="." index="12" unique_id=561017163]
-position = Vector2(4700, 810)
-script = ExtResource("11_1gp4a")
-action = 1
-target_offset = Vector2(900, 0)
-grants_flag = &"forest_path_2"
-lines = PackedStringArray()
+[node name="Keepsake_4-2_Flute" type="Area2D" parent="." index="12" unique_id=561017163]
+position = Vector2(4600, 810)
+script = ExtResource("keepsake_script")
+item = &"willow_flute"
+prompt = "피리 줍기"
+art_offset = Vector2(0, -14)
+art_rotation = -8.0
+
+[node name="FluteEcho_4-2" type="Node2D" parent="."]
+position = Vector2(4760, 810)
+script = ExtResource("flute_script")
+grants_flag = &"flute_echo_done"
+entrance_x = 5600.0
 
 [node name="Look_4-2_Light21" type="Area2D" parent="." index="13" unique_id=198308308]
 position = Vector2(5000, 810)
@@ -174,6 +182,8 @@ position = Vector2(5600, 810)
 script = ExtResource("15_5ibt5")
 to_x = 6000.0
 prompt = "오른쪽 입구로 들어가기"
+fallback_until_flag = &"flute_echo_done"
+fallback_to_x = 4450.0
 lines = PackedStringArray()
 
 [node name="Gate_4-2_2" type="StaticBody2D" parent="." index="16" unique_id=657761175]

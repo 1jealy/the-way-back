@@ -13,22 +13,29 @@ const ART_DIR := "res://assets/art"
 var _holder: Control
 
 
-## 그림 이름(확장자 뺀 것, 예: "cut_bracelet")으로 assets/art 아래에서 찾는다. 진짜 그림이 placeholder보다 먼저.
+## 그림 이름(확장자 뺀 것, 예: "cut_bracelet")으로 assets/art 아래에서 찾는다. 진짜 그림 → SVG 소품 → placeholder.
 static func find_art(stem: String) -> String:
+	# 진짜 그림(png·jpg·webp) → SVG 소품(#111, assets/art/prop) → placeholder 순
 	var found := ""
+	var vector := ""
 	var stack: Array[String] = [ART_DIR]
 	while not stack.is_empty():
 		var dir: String = stack.pop_back()
 		for file in DirAccess.get_files_at(dir):
 			var name := file.trim_suffix(".import").trim_suffix(".remap")
-			if name.get_basename() == stem and name.get_extension() in ["png", "jpg", "webp"]:
-				var path := dir.path_join(name)
+			if name.get_basename() != stem:
+				continue
+			var ext := name.get_extension()
+			var path := dir.path_join(name)
+			if ext == "svg":
+				vector = path
+			elif ext in ["png", "jpg", "webp"]:
 				if not path.contains("/placeholder/"):
 					return path
 				found = path
 		for sub in DirAccess.get_directories_at(dir):
 			stack.append(dir.path_join(sub))
-	return found
+	return vector if not vector.is_empty() else found
 
 
 ## spec: art(그림 이름), seconds(카메라가 움직이는 시간), zoom(Vector2 시작·끝 배율),

@@ -18,6 +18,8 @@
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="gate_script"]
 [ext_resource type="Script" path="res://scripts/game/tractor_pass.gd" id="tractor_script"]
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
+[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
+[ext_resource type="Script" path="res://scripts/game/kite_fly.gd" id="kite_script"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
@@ -131,7 +133,23 @@ phrase = "mus_phrase_1"
 [node name="MapChase_2-3" type="Node2D" parent="."]
 position = Vector2(4300, 810)
 script = ExtResource("chase_script")
-stops = PackedFloat32Array(700, 1600, 2500)
+stops = PackedFloat32Array(1600)
+snag_height = 140.0
+flight_seconds = 2.6
+reveal_flag = &"kite_flown"
+
+[node name="Keepsake_2-3_Kite" type="Area2D" parent="."]
+position = Vector2(5300, 810)
+script = ExtResource("keepsake_script")
+item = &"kite"
+prompt = "연 꺼내기"
+art_offset = Vector2(40, -78)
+art_rotation = -18.0
+
+[node name="KiteFly_2-3" type="Node2D" parent="."]
+position = Vector2(5300, 810)
+script = ExtResource("kite_script")
+grants_flag = &"kite_flown"
 
 [node name="Gate_2-3" type="StaticBody2D" parent="."]
 position = Vector2(7000, 810)
