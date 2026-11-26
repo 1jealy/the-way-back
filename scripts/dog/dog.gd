@@ -404,6 +404,16 @@ func look(dir: int) -> void:
 	_refresh_visuals()
 
 
+## 연출용: 꼬리를 신나게 흔든다 / 그친다(4-3 빈터). 컷아웃이 없으면 아무 일도 없다.
+var wagging: bool = false
+
+
+func wag(on: bool) -> void:
+	wagging = on
+	if _rig and _rig.has_method("set_excited"):
+		_rig.set_excited(on)
+
+
 func release_script() -> void:
 	if state == State.SCRIPTED:
 		state = State.FOLLOW
