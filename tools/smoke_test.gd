@@ -329,6 +329,10 @@ func _check_parts() -> void:
 			and forest_scene.get_node_or_null("AskSpot_4-2_2") == null
 	forest_scene.free()
 	_check(flute_ok, "부품: 숲 둘째 갈림길에 버들피리 → 선율 따라 불기, 메아리 입구 = 맞는 입구(따라 불기 전에는 되돌아옴) %s %s" % [flute_items, flutes])
+	var pouches := _find_by_script("riverside", "res://scripts/game/keepsake.gd")
+	var skips := _find_by_script("riverside", "res://scripts/game/stone_skip.gd")
+	_check(pouches.size() == 1 and skips.size() == 1 and pouches[0][1] < skips[0][1],
+			"부품: 강가 5-4에 돌 주머니 하나, 물수제비 자리보다 왼쪽 %s %s" % [pouches, skips])
 	var kites := _find_by_script("field", "res://scripts/game/kite_fly.gd")
 	var keeps := _find_by_script("field", "res://scripts/game/keepsake.gd")
 	_check(kites.size() == 1 and keeps.size() == 1 and kites[0][1] < chases[0][1][0] and kites[0][1] > 4300.0,

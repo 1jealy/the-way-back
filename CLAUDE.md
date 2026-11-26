@@ -145,8 +145,8 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 기획서 "할아버지의 물건과 미니게임"이 목록이다. 물건 다섯(손전등·방패연·회중시계·버들피리·돌 주머니), 미니게임 넷(들판 연·숲 피리·강가 물수제비(선택)·철교 손전등). 장소마다 형태가 다르다.
 
-- **Keepsake**: `Area2D` + `scripts/game/keepsake.gd`(조사 대상을 이은 것). 이름 `Keepsake_<장면>_<물건>`. `item`(`Keepsake.ITEMS`의 열쇠)의 그림이 땅에 놓여 보이고(`art_offset`, `art_rotation`), E로 주우면 하윤이 무릎을 굽혀 숙여 집고(`player.play_pickup()`, `HayunRig.PICKUP_KEYS`, 잠깐 잠금 `pickup`, #114) 그림이 손에 들려 올라온 뒤 빛에 싸여 머리 위로 떠올랐다 사라진다. 플래그 `item_<item>`(`Keepsake.flag_for`). 지금 놓인 것: 들판 `Keepsake_2-3_Kite`, 숲 `Keepsake_4-2_Flute`(첫 갈림길 뒤 x 4600).
-- **MiniGame**: `scripts/game/minigame.gd`. UI를 화면 안에 녹이는 공통 부품 — 하윤 잠금(이유 `minigame`), 손 옆 작은 키 안내(`show_key_hint(["E"], "꾹 누르면 감기")`, 처음 누르면 사라진다), 어긋남(`miss()`) → `help_after`(3)번이면 `help`(빛이 넓어지거나 하늘이가 먼저 움직인다, `_on_help`), 끝나면 `grants_flag`·`cleared`. 띠·게이지·숫자·실패 화면은 만들지 않는다. 하위 부품은 `_begin`·`_tick`·`_on_help`만 쓴다. 검사는 `MiniGame.autoplay = true`(하위 부품이 스스로 잘 해낸다).
+- **Keepsake**: `Area2D` + `scripts/game/keepsake.gd`(조사 대상을 이은 것). 이름 `Keepsake_<장면>_<물건>`. `item`(`Keepsake.ITEMS`의 열쇠)의 그림이 땅에 놓여 보이고(`art_offset`, `art_rotation`), E로 주우면 하윤이 무릎을 굽혀 숙여 집고(`player.play_pickup()`, `HayunRig.PICKUP_KEYS`, 잠깐 잠금 `pickup`, #114) 그림이 손에 들려 올라온 뒤 빛에 싸여 머리 위로 떠올랐다 사라진다. 플래그 `item_<item>`(`Keepsake.flag_for`). 지금 놓인 것: 들판 `Keepsake_2-3_Kite`, 숲 `Keepsake_4-2_Flute`(첫 갈림길 뒤 x 4600), 강가 `Keepsake_5-4_Pouch`(x 6050).
+- **MiniGame**: `scripts/game/minigame.gd`. UI를 화면 안에 녹이는 공통 부품 — 하윤 잠금(이유 `minigame`), 손 옆 작은 키 안내(`show_key_hint(["E"], "꾹 누르면 감기")`, 처음 누르면 사라진다. 손이 몸 뒤로 가도 몸에 겹치지 않게 늘 하윤 앞쪽), 어긋남(`miss()`) → `help_after`(3)번이면 `help`(빛이 넓어지거나 하늘이가 먼저 움직인다, `_on_help`), 끝나면 `grants_flag`·`cleared`. 띠·게이지·숫자·실패 화면은 만들지 않는다. 하위 부품은 `_begin`·`_tick`·`_on_help`만 쓴다. 검사는 `MiniGame.autoplay = true`(하위 부품이 스스로 잘 해낸다).
 - **KiteFly**(들판 2-3): `Node2D` + `scripts/game/kite_fly.gd`, `KiteFly_2-3`(방패연과 같은 자리, x 5300). `trigger_flag`(`item_kite`)가 서면 하윤이 가까이 있을 때 1.2초 뒤 시작한다. E를 누르고 있으면 연이 오르고 떼면 내려온다. 하늘의 노을빛 띠(`zone_center` ± `zone_half`, 도움이면 두 배) 안이면 연이 환해진다. 돌풍(`calm`·`warn`·`gust` 초)을 `hold_ratio`(60%) 넘게 띠 안에서 버티면 꼬리 리본 하나가 붉게 물든다(셋). 연이 땅까지 오면 한 번 어긋남. 다 버티면 연이 높이 오르고 `grants_flag`(`kite_flown`) → 지도가 보인다. 하윤 자세 `kite`(두 손으로 줄을 잡고 올려다본다). 매 프레임 `player.set_motion()`으로 감을 때 두 손을 번갈아 당기고 몸을 조금 뒤로, 돌풍에는 다리를 벌려 버티고 꽁지머리가 날리며, 고개는 연 높이를 따라간다(#114). 연줄은 하윤 뒤(z -1)에 그려 주먹이 줄을 덮고, 주먹 아래로 남은 줄(`StringTail`)이 조금 늘어진다 — 줄이 손가락 끝에 붙어 보이지 않게.
 - **FluteEcho**(숲 4-2 둘째 갈림길, #113): `Node2D` + `scripts/game/flute_echo.gd`, `FluteEcho_4-2`(x 4760). `trigger_flag`(`item_willow_flute`)를 가진 하윤이 원점을 지나면 시작한다. 맞는 입구(`entrance_x` 5600)가 빛나고(`EntranceGlow`) 휘파람 네 음(`melody`, 0 낮음·1 가운데·2 높음)이 입구 자리의 `AudioStreamPlayer2D`로 메아리처럼 들리며, 빛 알갱이가 음 높이(`NOTE_Y`)대로 하윤과 입구 사이에 줄지어 선다. 하윤 차례에는 ← / E / → 로 분다. 맞으면 하윤의 알갱이가 그 자리에 겹쳐 흰 테, 틀리면 헛바람 소리·알갱이가 흩어지고 한 번 어긋남, 메아리가 다시. 다 맞으면 입구가 환해지고(빛은 남는다) 하늘이가 그 입구 앞에 가 앉았다가(2.5초) 다시 따라온다. `grants_flag`(`flute_echo_done`). 도움: 메아리가 크고 1.5배 느려지고 알갱이가 흐려지지 않는다. 피리 소리·헛바람은 코드로 만든다(사인파 + 약한 배음 / 거른 잡음, 진짜 소리가 오면 바꾼다). 하윤 자세 `flute`(두 손을 입 앞으로), 피리 그림을 손에 든다. `set_motion`으로 숨 쉬듯 오르내리고, 들을 때는 입구 쪽으로 고개를 기울이고, 음마다 몸이 살짝 밀리고, 틀리면 어깨가 처진다(#114).
 - **소품 그림은 SVG**(`assets/art/prop/*.svg`, 하윤 그림체: 평면 색 + 그늘 한 톤 + 얇은 따뜻한 갈색 윤곽선). 게임 크기의 2배로 그리고 `.import`의 `svg/scale=0.5`로 들인다(새 SVG를 넣으면 `--import` 뒤 `.import`의 `svg/scale`을 0.5로 고치고 한 번 더 임포트). `find_art`는 진짜 그림(png·jpg·webp) → SVG → placeholder 순으로 찾는다. 빛 알갱이 `fx_light_mote`(물건이 떠오를 때·연 둘레·지도 반짝임). 빛줄기·손전등 빛처럼 번지는 것은 SVG가 아니라 게임에서 그라데이션으로 만든다(Godot SVG는 흐림 효과를 못 그린다).
@@ -176,11 +176,12 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 ## 물수제비 (StoneSkip, 장면표 5-4)
 
-`Node2D` + `scripts/game/stone_skip.gd`. 강가 `Skip_5-4`(동그라미 4 조사 대상 `Look_5-4_Shallows`와 같은 자리, x 6390).
+`Node2D` + `scripts/game/stone_skip.gd`(`MiniGame`을 이은 것, #115). 강가 `Skip_5-4`(동그라미 4 조사 대상 `Look_5-4_Shallows`와 같은 자리, x 6390). 돌 주머니는 그 앞 `Keepsake_5-4_Pouch`(x 6050).
 
-- 같은 동그라미(`circle` 4)의 조사 대상이 지도 → 기억 장면(할아버지의 돌 다섯 번) **다음에** `play()`를 기다리고, 끝나면 글 "하윤: …다섯 번은 어렵다."가 나온다.
-- 하윤이 쪼그려 납작한 돌을 줍고(잠금 이유 `stone_skip`) 오른쪽 앞 물(`water_y` 930)로 던진다. `skips`(2)번 물을 스치며 튀고(물결 + `sfx_stone_skip_`) 그다음 닿을 때 가라앉는다(`sfx_stone_sink_`).
-- 돌 그림은 `art`(`prop_stone_flat`)가 있으면 그것, 없으면 회색 납작한 타원. 하윤이 쪼그려 돌을 줍고(`set_pose(&"crouch")`) 옆으로 낮게 던진다(`player.play_throw()`, 손을 놓는 순간에 돌아온다): 무릎을 굽혀 몸을 낮추고 먼 발을 내딛으며 팔을 허리 높이로 뒤에서 앞으로 휘둘러 손이 몸 앞에 왔을 때 놓는다. 돌은 손 자리(`player.hand_point()`)에서 낮고 평평하게(높이 18px) 날아간다 — 물수제비는 물과 약 20도로 낮게 닿아야 잘 튄다(Clanet 외, Nature 2004). 키는 `HayunRig.THROW_KEYS`(#98).
+- 같은 동그라미(`circle` 4)의 조사 대상이 지도 → 기억 장면(할아버지의 돌 다섯 번) **다음에** `play()`를 기다린다.
+- **돌 주머니가 없으면**(`pouch_flag` = `item_stone_pouch`): 예전 연출 — 하윤이 쪼그려 납작한 돌을 줍고(잠금 `stone_skip`, `StoneSkip.DEMO_LOCK`) 옆으로 낮게 던진다(`player.play_throw()`, 키 `HayunRig.THROW_KEYS`). `skips`(2)번 튀고 가라앉는다. 끝나면 글 "하윤: …다섯 번은 어렵다.".
+- **있으면 선택 미니게임**(잠금 `minigame`): 물 위에 할아버지 물결 다섯 자리(`Ghost0~4`, 희미한 타원)가 남는다. E를 누르고 있으면 하윤이 몸을 낮춰 팔을 젖히고(`set_motion`), 손에서 나간 점선 궤적(`Aim`, 점 무늬를 되풀이한 Line2D)이 각도 -2~46도로 오르내린다(20도 ±6이면 금빛). 떼면 던진다: `skips_for(각도)` — 20도 ±4 → 다섯, ±8 → 넷, ±13 → 셋, ±19 → 둘, ±26 → 하나, 그 밖은 바로 가라앉는다. 튄 자리마다 물결 자리가 채워진다(물은 `hop_lengths` 다섯 칸). 발밑 돌무더기(`stones` 다섯)가 남은 돌이고, 다 쓰면 하늘이가 물가에 갔다 와서 다시 채운다. 셋 미만이면 한 번 어긋남 → 세 번이면 각도가 0.55배로 느려진다. ← →로 그만둔다. 다섯 번을 튀기면 `five_flag`(`skip_five`), 하늘이가 짖고(`DogRig.bark`) 물결 자리가 금빛으로 환해지며 기억 장면이 한 번 더 나오고 끝난다 — 그때는 "…다섯 번은 어렵다."를 띄우지 않는다(`Interactable`이 `skip.best >= 5`를 본다).
+- 물수제비는 물과 약 20도로 낮게 닿아야 잘 튄다(Clanet 외, Nature 2004). 돌은 손 자리(`player.hand_point()`)에서 낮고 평평하게(높이 18px) 날아간다.
 
 ## 빛 알갱이 (LightMotes, 장면표 4-1·4-2)
 

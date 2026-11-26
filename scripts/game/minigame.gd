@@ -132,7 +132,9 @@ func has_key_hint() -> bool:
 
 func _place_hint() -> void:
 	if _hint and _player:
-		_hint.global_position = _player.hand_point() + Vector2(40.0, -30.0)
+		# 손 옆, 단 손이 몸 뒤로 가 있어도(던지려고 젖힘) 몸에 겹치지 않게 늘 하윤 앞쪽에
+		var hand := _player.hand_point()
+		_hint.global_position = Vector2(maxf(hand.x + 40.0, _player.global_position.x + 80.0), hand.y - 30.0)
 
 
 ## 키 안내 한 줄(키 모양 + 동사). 화면 안 손 옆에 두는 작은 것.
