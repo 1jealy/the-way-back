@@ -17,6 +17,7 @@
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 [ext_resource type="Script" path="res://scripts/game/stone_skip.gd" id="skip_script"]
 [ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
+[ext_resource type="Script" path="res://scripts/game/stepping_stones.gd" id="stones_script"]
 
 [node name="Riverside" unique_id=22785897 instance=ExtResource("1_tpl")]
 place_id = &"riverside"
@@ -147,3 +148,7 @@ item = &"stone_pouch"
 prompt = "주머니 꺼내기"
 art_offset = Vector2(0, -36)
 art_rotation = 6.0
+
+[node name="Stones_5-3" type="Node2D" parent="."]
+position = Vector2(3990, 810)
+script = ExtResource("stones_script")

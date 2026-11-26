@@ -107,6 +107,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 | `pickup_art` | 주운 물건 그림 이름(예: `prop_key`). 조사하면 그 그림이 대상 위로 떠올랐다 사라진다(1.4초, 조작은 안 막는다). 대사 없이 "주웠다"를 보여 줄 때 |
 | `album_art` | 펼친 앨범 그림 이름(1-3 `album_open`). 있으면 조사할 때 `AlbumView`가 그림을 `album_pages`(3)쪽으로 나눠 한 쪽씩 보여 준다(E·→ 다음, ← 앞, 마지막 쪽에서 E 또는 Esc로 덮음, 잠금 `album`). 덮은 뒤에 `lines` |
 | `show_locked` | `requires_flag`가 서기 전에도 안내가 뜨고, 조사하면 잠긴 소리(`sfx_locked_`)만 난다(잠긴 서랍·문). 신호 `locked` |
+| `locked_grants_flag` | `show_locked`일 때 잠긴 것을 처음 확인하면(덜컹) 세우는 플래그. 다른 대상의 `requires_flag`로 써서 "잠겼네 → 둘러보다 찾는다"를 만든다(1-4 서랍 `house_drawer_tried` → 마루 벽 액자 x 2650, #121. 액자 자리는 임시 배경 `HOUSE_FRAME_X`와 같다) |
 | `sound` | 조사할 때 낼 소리 이름 앞머리(예: `sfx_pickup_`) |
 
 - 신호: `interacted`(조사 시작) / `finished`(대사를 다 넘김). 다음 연출은 `finished`를 기다린다(고정 시간으로 기다리지 않는다).
@@ -167,6 +168,13 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 - "[E] 감나무 흔들기" → 잎이 몇 장 떨어지고(`sfx_tree_shake_`) 감 하나(`prop_persimmon`)가 `drop_from`에서 떨어져 땅에 닿고(`sfx_persimmon_drop_`, 신호 `dropped`) 조금 구른다.
 - 진행과 상관없다(선택). 조작을 막지 않는다. 한 번만(`one_shot`).
+
+## 징검다리 (SteppingStones, 장면표 5-3)
+
+`Node2D` + `scripts/game/stepping_stones.gd`. 강가 `Stones_5-3`(징검다리 가운데 땅 위 x 3990). 돌은 배경에 그리지 않고 여기서 그린다(`stones`, 이 노드 기준 x, 진짜 그림이 오면 `art`에 돌 한 개).
+
+- 첫 돌은 하늘이가 버티는 돌(`AskSpot_5-3`의 target과 같은 자리, 스모크 검사)이다. `hold_flag`(`river_stone_held`)가 서기 전에는 기우뚱 흔들리고 물결이 자주 인다. 서면 가라앉아 멈추고 발밑에 잔물결이 이따금 퍼진다.
+- 하윤이 돌을 밟으면 그 돌이 `sink_depth`만큼 가라앉았다 올라오고(서 있으면 조금 가라앉은 채) 물결이 퍼지며 찰랑 소리(`sfx_stone_skip_`를 낮게). 신호 `stepped(i)`. 조작은 막지 않는다.
 
 ## 물그림자 (WaterReflection, 장면표 5-2)
 

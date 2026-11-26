@@ -89,11 +89,12 @@ lines = PackedStringArray("하윤: …할아버지.")
 album_art = "album_open"
 
 [node name="Look_1-4_Frame" type="Area2D" parent="." index="6" unique_id=2028437250]
-position = Vector2(3430, 810)
+position = Vector2(2650, 810)
 script = ExtResource("8_sauk6")
 prompt = "액자 살펴보기"
 lines = PackedStringArray()
 grants_flag = &"house_drawer_key"
+requires_flag = &"house_drawer_tried"
 one_shot = true
 sound = "sfx_pickup_"
 pickup_art = "prop_key"
@@ -107,6 +108,7 @@ grants_flag = &"has_map"
 requires_flag = &"house_drawer_key"
 one_shot = true
 show_locked = true
+locked_grants_flag = &"house_drawer_tried"
 
 [node name="Sound" type="Node2D" parent="." index="8" unique_id=1232819768]
 

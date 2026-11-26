@@ -226,7 +226,8 @@ func _script_path(node: Node) -> String:
 
 func _check_parts() -> void:
 	var granted := {}  # 플래그 → 처음 세우는 [장소 순서, x]
-	var required := []  # [장소 순서, x, 플래그, 이름]
+	var required := []  # [장소 순서, x, 플래그, 이름, 막는 벽인가]
+	var gate_xs := {}  # 장소 순서 → 막는 벽 x들
 	var circles := {}
 	var memories := {}  # 동그라미 → [장소, 장면, 그림 있나, 소절 있나]
 	var chases := []  # [장소, 덤불 땅 x들, 지도 그림 있나]
@@ -281,12 +282,16 @@ func _check_parts() -> void:
 				continue
 			if path == GATE:
 				var opens: StringName = node.get("opens_on_flag")
+				gate_xs[i] = gate_xs.get(i, []) + [x]
 				if not opens.is_empty():
-					required.append([i, x, opens, "%s/%s" % [place_id, node.name]])
+					required.append([i, x, opens, "%s/%s" % [place_id, node.name], true])
 				continue
 			var flag: StringName = node.get("grants_flag")
 			if not flag.is_empty() and not granted.has(flag):
 				granted[flag] = [i, x]
+			var locked_flag: Variant = node.get("locked_grants_flag")  # 잠긴 걸 확인하면 세우는 플래그(#121)
+			if locked_flag is StringName and not locked_flag.is_empty() and not granted.has(locked_flag):
+				granted[locked_flag] = [i, x]
 			if path in [INTERACTABLE, PASSAGE, BENCH, SHAKE]:
 				var req: StringName = node.get("requires_flag")
 				if not req.is_empty():
@@ -364,6 +369,18 @@ func _check_parts() -> void:
 	_check(not album_art.is_empty() and not find_art.call(album_art).is_empty() and int(album_look.get("album_pages")) == 3,
 			"부품: 집 1-3 앨범이 펼친 앨범 그림(세 쪽)을 넘긴다 '%s'" % album_art)
 	house_scene.free()
+	var river_scene: Node = load("res://scenes/places/riverside.tscn").instantiate()
+	var stones_node: Node2D = river_scene.get_node_or_null("Stones_5-3")
+	var hold_spot: Node2D = river_scene.get_node_or_null("AskSpot_5-3")
+	var stones_ok: bool = stones_node != null and hold_spot != null
+	if stones_ok:
+		var offs: PackedFloat32Array = stones_node.get("stones")
+		var first_x: float = stones_node.position.x + offs[0]
+		var target_x: float = hold_spot.position.x + Vector2(hold_spot.get("target_offset")).x
+		stones_ok = absf(first_x - target_x) < 1.0 and stones_node.get("hold_flag") == hold_spot.get("grants_flag") \
+				and first_x > river_scene.get_node("Gate_5-3").position.x
+	_check(stones_ok, "부품: 강가 5-3 징검다리 첫 돌이 하늘이가 버티는 자리(AskSpot_5-3 target), 막는 벽 너머")
+	river_scene.free()
 	var shakes := _find_by_script("house", SHAKE)
 	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
 			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
@@ -371,7 +388,11 @@ func _check_parts() -> void:
 	var chain_ok := true
 	for r in required:
 		var g: Array = granted.get(r[2], [])
-		if g.is_empty() or g[0] > r[0] or (g[0] == r[0] and g[1] > r[1] + 400.0):
+		# 같은 장소 안에서 되돌아가 찾는 것(1-4: 오른쪽 서랍이 잠긴 걸 보고 왼쪽 액자로)은 괜찮다 —
+		# 막는 벽이 아니고, 두 자리 사이에 막는 벽이 없으면.
+		var backtrack_ok: bool = g.size() == 2 and g[0] == r[0] and r.size() < 5 \
+				and not gate_xs.get(r[0], []).any(func(gx): return gx > r[1] and gx < g[1])
+		if g.is_empty() or g[0] > r[0] or (g[0] == r[0] and g[1] > r[1] + 400.0 and not backtrack_ok):
 			chain_ok = false
 			print("        %s: requires_flag '%s'를 세우는 곳이 앞에 없다" % [r[3], r[2]])
 	_check(chain_ok, "부품: requires_flag·막는 벽(Gate)의 플래그마다 그 앞(왼쪽·앞 장소)에서 세운다")
@@ -389,6 +410,13 @@ func _find_by_script(place_id: String, script_path: String) -> Array:
 			out.append([node.name, node.position.x if node is Node2D else 0.0])
 	place.free()
 	return out
+
+
+## tools/placeholder_art.py의 숫자 상수 하나(예: HOUSE_FRAME_X = 2650). 없으면 NAN.
+func _placeholder_value(name: String) -> float:
+	var text := FileAccess.get_file_as_string("res://tools/placeholder_art.py")
+	var m := RegEx.create_from_string("(?m)^" + name + r" = ([0-9.]+)").search(text)
+	return float(m.get_string(1)) if m else NAN
 
 
 ## tools/placeholder_art.py의 숫자 목록 상수(예: FIELD_SNAGS = [5000, 5900, 6800]).
@@ -426,9 +454,18 @@ func _check_house_puzzle(main: Node, player: CharacterBody2D) -> void:
 	var place: Node = main.current_place()
 	var frame: Node = place.get_node("Look_1-4_Frame")
 	var drawer: Node = place.get_node("Look_1-5_Drawer")
+	player.global_position.x = frame.global_position.x
+	await _wait(0.3)
+	_check(not frame.is_offered(), "집: 서랍이 잠긴 걸 보기 전에는 액자 안내가 뜨지 않는다(#121)")
 	player.global_position.x = drawer.global_position.x
 	await _wait(0.3)
 	_check(not drawer.is_available(), "집: 열쇠 없이는 서랍을 열 수 없다")
+	await _press(&"interact")
+	await _wait(0.3)
+	_check(state.has_flag(&"house_drawer_tried"), "집: 잠긴 서랍을 열어 보면(덜컹) house_drawer_tried")
+	_check(absf(frame.global_position.x - drawer.global_position.x) >= 500.0
+			and is_equal_approx(frame.global_position.x, float(_placeholder_value("HOUSE_FRAME_X"))),
+			"집: 액자는 서랍에서 떨어진 마루 벽, 임시 배경의 액자와 같은 자리 (%.0f)" % frame.global_position.x)
 	player.global_position.x = frame.global_position.x
 	await _wait(0.3)
 	await _press(&"interact")
