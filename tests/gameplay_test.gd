@@ -589,6 +589,8 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_clearing()
+	await _check_map_closeup()
 	await _check_album()
 	await _check_reflection()
 	await _check_bank_light()
@@ -823,6 +825,74 @@ func _check_shake() -> void:
 	_check(down and is_zero_approx(tree.fallen.position.y) and _player.controls_enabled, "감나무: 땅에 떨어진다(조작은 막지 않는다)")
 	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
 	tree.queue_free()
+	await _wait(0.2)
+
+
+## 4-3 빈터(ClearingLight): 바닥에 앉으면 빛이 쏟아지고, 하늘이가 한쪽을 보며 꼬리를 흔든다. 일어나면 돌아온다.
+func _check_clearing() -> void:
+	var sit: Area2D = load("res://scripts/game/bench_sit.gd").new()
+	sit.prompt = "앉기"
+	sit.pose = &"sit_floor"
+	_main.current_place().add_child(sit)
+	sit.global_position = Vector2(_player.global_position.x + 40.0, 810.0)
+	var light: Node2D = load("res://scripts/game/clearing_light.gd").new()
+	light.pour_seconds = 0.4
+	light.fade_seconds = 0.4
+	_main.current_place().add_child(light)
+	light.global_position = sit.global_position
+	sit.sat_down.connect(light._pour)
+	sit.stood_up.connect(light._fade)
+	var joined: bool = _dog.is_joined()
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.7)
+	var beam: Sprite2D = light.get_node("Beam")
+	var layers: CanvasItem = _main.current_place().get_node("Layers")
+	_check(sit.sitting and _player.pose == &"sit_floor" and light.pouring and beam.modulate.a > 0.45 and layers.modulate.r > 1.05,
+			"빈터: 바닥에 앉으면 빛이 쏟아지고 장소가 밝아진다")
+	if joined:
+		_check(_dog.wagging and _dog.facing == light.look_dir and _dog.state == _dog.State.SCRIPTED,
+				"빈터: 하늘이가 멈춰 한쪽을 보며 꼬리를 흔든다")
+	await _press(&"move_right")
+	await _wait(0.7)
+	_check(not sit.sitting and not light.pouring and beam.modulate.a < 0.1 and is_equal_approx(layers.modulate.r, 1.0),
+			"빈터: 일어나면 빛이 걷히고 장소 색이 돌아온다")
+	if joined:
+		_check(not _dog.wagging and _dog.state != _dog.State.SCRIPTED, "빈터: 일어나면 하늘이가 다시 따라온다")
+	light.queue_free()
+	sit.queue_free()
+	await _wait(0.2)
+
+
+## 7-2 지도 클로즈업: 하윤 글씨 동그라미(다섯째)는 체크한 뒤 그 메모 쪽으로 다가가 크게 보이고,
+## 접으면 물러났다가 접힌다. 다른 동그라미는 다가가지 않는다.
+func _check_map_closeup() -> void:
+	var map: Control = _main.map_screen()
+	var paper: Control = map.get_node("Paper")
+	var had5: bool = _state.has_flag(&"map_circle_5")
+	_state.flags.erase(&"map_circle_5")
+	map.open(5)
+	await _wait(3.0)
+	_check(map.is_open() and map.closeup and paper.scale.x > 1.5 and _state.has_flag(&"map_circle_5"),
+			"지도 클로즈업: 다섯째 동그라미를 체크하면 하윤 글씨 쪽으로 다가가 크게 보인다 (%.2f)" % paper.scale.x)
+	var screen_rect := Rect2(paper.position + (Vector2(90, 50) - paper.pivot_offset) * paper.scale + paper.pivot_offset,
+			Vector2(1740, 980) * paper.scale)
+	_check(screen_rect.encloses(Rect2(0, 0, 1920, 1080)), "지도 클로즈업: 확대해도 종이가 화면을 다 덮는다 %s" % screen_rect)
+	await _press(&"open_map")
+	var shut := await _wait_until(func(): return not map.is_open(), 3.0)
+	_check(shut and not map.closeup and is_equal_approx(paper.scale.y, 1.0) and paper.position == Vector2.ZERO,
+			"지도 클로즈업: 접으면 물러났다가 접힌다")
+	if not had5:
+		_state.flags.erase(&"map_circle_5")
+	var had1: bool = _state.has_flag(&"map_circle_1")
+	_state.flags.erase(&"map_circle_1")
+	map.open(1)
+	await _wait(1.6)
+	_check(not map.closeup and is_equal_approx(paper.scale.x, 1.0), "지도 클로즈업: 할아버지 글씨 동그라미는 다가가지 않는다")
+	await _press(&"open_map")
+	await _wait_until(func(): return not map.is_open(), 3.0)
+	if not had1:
+		_state.flags.erase(&"map_circle_1")
 	await _wait(0.2)
 
 

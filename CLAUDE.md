@@ -200,6 +200,14 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - `auto_sit = false`(2-5): "[E] 앉기" → 방향키나 E로 일어난다. 조작 잠금 이유 `sit`.
 - 하늘이 만남은 `appears_on_flag`(`station_sat`)가 서야 하늘이가 나타난다. 그래서 3-3 벤치는 만남 자리보다 왼쪽, 알아채는 거리(360px) 밖에 둔다.
 
+## 빈터의 빛 (ClearingLight, 장면표 4-3)
+
+`Node2D` + `scripts/game/clearing_light.gd`. 숲 `Light_4-3`과 바닥 앉기 `Sit_4-3`(BenchSit, `pose` `sit_floor`, `requires_flag` `map_circle_3`, 둘 다 x 6120).
+
+- 동그라미 3 뒤에 "[E] 앉기" → 하윤이 바닥에 앉으면(`sat_down`) 위에서 빛기둥이 짙어지고 금빛 알갱이가 쏟아지며 장소 층이 `place_tint`로 밝아진다(신호 `poured`).
+- 하늘이는 그 자리에 멈춰(`dog.script_move_to`) `look_dir` 쪽을 보고 꼬리를 신나게 흔든다(`dog.wag(true)` → `DogRig.set_excited`).
+- 일어나면(`stood_up`) 천천히 돌아오고 하늘이를 놓아준다(`faded`). 몇 번이든 앉을 수 있다. 대사 없음.
+
 ## 오프닝과 영정사진 (장면표 0-1, 1-2, 7-8)
 
 - **0-1 오프닝** `scripts/game/opening.gd`(`OpeningScene`, 집 `Opening_0-1`): 손그림 컷신 0(`cut_accident`, 사고 뒤 비 오는 밤 길가에 할아버지의 모자와 카메라. 사람·하윤 물건은 그리지 않는다)과 빗소리(`sfx_rain_`) → 어둠이 걷히고 하윤이 일어난다(잠금 `opening`, 끝나면 `opening_seen`).
@@ -246,6 +254,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - `has_map` 플래그가 서야 M이 먹는다 → 1-5의 서랍 조사 대상에 `grants_flag = has_map`을 준다.
 - `has_map`이 서면 화면 왼쪽 위에 "[M] 지도"가 뜨고, 처음 펼치면(`map_opened` 플래그) 사라진다(장면표 1-5 "M 안내").
 - **동그라미 체크는 조사 대상의 `map_circle`(1~5)** 로 한다. E → 지도가 펼쳐지고 그 동그라미에 체크 → 하윤이 접으면 그 조사 대상의 `lines`가 나온다. 플래그 `map_circle_1`~`map_circle_5`. 장면 2-2, 3-1, 4-3, 5-4, 7-2.
+- **하윤 글씨 동그라미 클로즈업**(7-2): `MapData.CIRCLES`의 `child`가 참인 동그라미(다섯째)는 체크한 뒤 동그라미와 메모 사이로 `CLOSEUP_ZOOM`(2배)까지 천천히 다가간다(`MapScreen.closeup`). 가운데는 종이 안쪽으로 당겨 확대해도 종이가 화면을 다 덮는다. 접으면 물러났다가 접힌다.
 - 지나온 길은 지금 장소의 `place_id`와 그 안에서의 위치로 그린다. 새 장소를 만들면 `MapData.PLACES`에도 넣어야 지도에 나온다.
 - 메모 문구는 `map_data.gd` 한 곳에 있다. 고치면 `docs/design.md` "지도의 다섯 동그라미" 표도 같이 고친다(글꼴 도구가 둘 다에서 글자를 모은다).
 - **지도 그림**: `MapData.PAPER_ART`(`assets/art/map/`)가 있으면 그 그림을 `PAPER_RECT`(1740×980)에 깔고, 코드는 접힌 자국·강·철교·작은 기호·배를 그리지 않는다. 동그라미·메모·체크·지나온 길·장소 이름은 코드가 그린다(그림 위에서는 종이색 테두리). 길과 가지 않는 길은 그림에 아직 없어서 코드가 그린다 — 그림에 들어오면 `_draw_route`·`_draw_side_roads`도 끈다. 좌표는 그림에 맞춰 `map_data.gd`만 고친다.
