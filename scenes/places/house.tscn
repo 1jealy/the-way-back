@@ -86,6 +86,7 @@ position = Vector2(2220, 810)
 script = ExtResource("8_sauk6")
 prompt = "앨범 넘기기"
 lines = PackedStringArray("하윤: …할아버지.")
+album_art = "album_open"
 
 [node name="Look_1-4_Frame" type="Area2D" parent="." index="6" unique_id=2028437250]
 position = Vector2(3430, 810)

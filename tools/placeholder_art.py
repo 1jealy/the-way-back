@@ -1188,6 +1188,80 @@ def build_cuts() -> None:
         print(f"{path.relative_to(ROOT)}  {path.stat().st_size // 1024} KB")
 
 
+# ---------------------------------------------------------------- 앨범(임시)
+# 장면표 1-3: 마루의 사진 앨범을 세 쪽 넘긴다. 진짜 그림은 일러스트 담당이 펼친 앨범 한 장(세 쪽)으로 그린다.
+# 게임(scripts/ui/album_view.gd)이 한 쪽씩 가운데로 옮겨 보여 준다. 쪽은 그림 폭을 셋으로 나눈 자리다.
+
+ALBUM_W, ALBUM_H = 2400, 1000
+
+
+def album_open() -> Image.Image:
+    """펼친 앨범 세 쪽: 1쪽 아기 하윤을 안은 할아버지, 2쪽 할아버지와 흰 개(화면 쪽 귀 끝 갈색), 3쪽 빈 쪽."""
+    L = Layer(ALBUM_W)
+    L.rect(0, 0, ALBUM_W, ALBUM_H, rgba(92, 58, 40))  # 앨범 표지(가장자리)
+    page_w = ALBUM_W / 3
+    sepia_bg, sepia_dark, sepia_mid = rgba(214, 196, 162), rgba(92, 72, 52), rgba(150, 124, 92)
+    for i in range(3):
+        x0 = i * page_w + 18
+        x1 = (i + 1) * page_w - 18
+        L.rect(x0, 26, x1, ALBUM_H - 26, rgba(244, 236, 216))  # 종이
+        L.rect(x1 - 30, 26, x1, ALBUM_H - 26, rgba(230, 220, 196))  # 접히는 쪽 그늘
+        cx = (x0 + x1) / 2
+        px0, py0, px1, py1 = cx - 260, 170, cx + 260, 720  # 사진 자리
+        if i < 2:
+            L.rect(px0 - 14, py0 - 14, px1 + 14, py1 + 14, rgba(250, 248, 240))  # 사진 흰 테
+            L.rect(px0, py0, px1, py1, sepia_bg)
+            L.rect(px0, py1 - 140, px1, py1, rgba(196, 176, 140))  # 땅
+        for (mx, my, sx, sy) in ((px0 - 14, py0 - 14, 1, 1), (px1 + 14, py0 - 14, -1, 1),
+                                 (px0 - 14, py1 + 14, 1, -1), (px1 + 14, py1 + 14, -1, -1)):
+            L.poly([(mx, my), (mx + 60 * sx, my), (mx, my + 60 * sy)], rgba(60, 44, 34))  # 사진 귀
+        if i == 0:  # 아기를 안은 할아버지(정면, 허리 위)
+            L.ellipse((cx - 150, 430, cx + 150, 830), sepia_dark)  # 몸(사진 아래로 잘린다)
+            L.ellipse((cx - 62, 280, cx + 62, 420), sepia_mid)  # 얼굴
+            L.ellipse((cx - 100, 268, cx + 100, 300), sepia_dark)  # 모자 챙
+            L.ellipse((cx - 62, 220, cx + 62, 292), sepia_dark)  # 모자
+            L.ellipse((cx - 95, 470, cx + 75, 590), rgba(236, 226, 204))  # 포대기
+            L.ellipse((cx - 70, 470, cx - 10, 525), rgba(222, 196, 168))  # 아기 얼굴
+            L.ellipse((cx - 120, 540, cx + 110, 610), sepia_mid)  # 안은 팔
+        elif i == 1:  # 할아버지와 흰 개(오른쪽을 본다, 화면 쪽 귀 끝 갈색)
+            gx = cx - 150
+            L.ellipse((gx - 60, 380, gx + 60, 640), sepia_dark)  # 몸
+            L.rect(gx - 40, 600, gx - 8, 690, sepia_dark)
+            L.rect(gx + 8, 600, gx + 40, 690, sepia_dark)
+            L.ellipse((gx - 40, 290, gx + 40, 380), sepia_mid)  # 얼굴
+            L.ellipse((gx - 64, 282, gx + 64, 304), sepia_dark)  # 모자 챙
+            L.ellipse((gx - 40, 240, gx + 40, 296), sepia_dark)
+            dx, dy = cx + 40, 590  # 개 몸통 가운데
+            white, shade = rgba(246, 242, 232), rgba(222, 214, 198)
+            for lx in (-62, -34, 34, 62):  # 다리
+                L.rect(dx + lx - 9, dy + 20, dx + lx + 9, dy + 100, shade if lx in (-34, 62) else white)
+            L.ellipse((dx - 100, dy - 50, dx + 100, dy + 50), white)  # 몸통
+            L.line([(dx - 96, dy - 20), (dx - 140, dy - 70)], white, 18)  # 꼬리
+            L.ellipse((dx + 66, dy - 130, dx + 156, dy - 40), white)  # 머리
+            L.ellipse((dx + 130, dy - 96, dx + 176, dy - 62), white)  # 주둥이
+            L.ellipse((dx + 168, dy - 90, dx + 180, dy - 78), rgba(50, 40, 34))  # 코
+            L.poly([(dx + 84, dy - 120), (dx + 100, dy - 176), (dx + 116, dy - 118)], white)  # 화면 쪽 귀
+            L.poly([(dx + 91, dy - 148), (dx + 100, dy - 176), (dx + 109, dy - 146)], rgba(150, 96, 56))  # 귀 끝 갈색
+            L.ellipse((dx + 120, dy - 104, dx + 130, dy - 94), rgba(50, 40, 34))  # 눈
+        if i == 0:
+            L.rect(px0 - 14, py1 + 14, px1 + 14, py1 + 140, rgba(244, 236, 216))  # 사진 아래(잘린 몸을 덮는다)
+            L.rect(px0 - 14, py1, px1 + 14, py1 + 14, rgba(250, 248, 240))
+            for (mx, my, sx) in ((px0 - 14, py1 + 14, 1), (px1 + 14, py1 + 14, -1)):
+                L.poly([(mx, my), (mx + 60 * sx, my), (mx, my - 60)], rgba(60, 44, 34))
+        # i == 2: 빈 쪽(사진 귀만 남아 있다)
+    L.rect(page_w - 4, 26, page_w + 4, ALBUM_H - 26, rgba(120, 84, 60))  # 쪽 사이 홈
+    L.rect(2 * page_w - 4, 26, 2 * page_w + 4, ALBUM_H - 26, rgba(120, 84, 60))
+    return L.render()[0].crop((0, 0, ALBUM_W, ALBUM_H))
+
+
+def build_album() -> None:
+    out = OUT_DIR / "album"
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / "album_open.png"
+    album_open().save(path, optimize=True)
+    print(f"{path.relative_to(ROOT)}  {path.stat().st_size // 1024} KB")
+
+
 # ---------------------------------------------------------------- 기억 장면(임시)
 # 진짜 기억 장면은 일러스트 담당이 단색 선 스케치로 그린다(장면표 2-2, 3-1, 4-3, 5-4).
 # 투명 바탕에 어두운 선만. 게임이 셰이더로 색을 입히고 희미하게 겹친다(shaders/memory.gdshader).
@@ -1572,7 +1646,7 @@ def main() -> int:
     parser.add_argument("places", nargs="*", help="place_id (그릴 수 있는 것: %s)" % ", ".join(PAINTERS))
     parser.add_argument("--all", action="store_true")
     args = parser.parse_args()
-    places = list(PAINTERS) + ["cut", "memory", "prop"] if args.all else args.places
+    places = list(PAINTERS) + ["cut", "memory", "prop", "album"] if args.all else args.places
     if not places:
         parser.error("장소를 하나 이상 적거나 --all")
     for p in places:
@@ -1581,6 +1655,9 @@ def main() -> int:
             continue
         if p == "memory":  # 기억 장면 자리(임시)
             build_memories()
+            continue
+        if p == "album":  # 1-3 펼친 앨범(임시)
+            build_album()
             continue
         if p == "prop":  # 움직이는 소품(임시)
             build_props()
