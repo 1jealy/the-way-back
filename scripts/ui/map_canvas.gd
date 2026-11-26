@@ -267,14 +267,29 @@ func _draw_trail() -> void:
 func _draw_circle_mark(n: int) -> void:
 	var c := MapData.circle_pos(n)
 	var child: bool = MapData.CIRCLES[n - 1]["child"]
-	var pts := PackedVector2Array()
-	# 손으로 그린 동그라미: 한 바퀴를 조금 넘겨 겹치게, 반지름이 살짝 흔들린다.
-	var steps := 40
-	for s in steps + 4:
-		var a := TAU * float(s) / float(steps) - 1.2
-		var r := CIRCLE_RADIUS + sin(a * 3.0 + n) * (6.0 if child else 3.0)
-		pts.append(c + Vector2(cos(a), sin(a)) * r)
-	draw_polyline(pts, CHILD_COLOR if child else PENCIL, LINE_W + 1.0 if child else LINE_W, true)
+	# 손으로 휙 그린 동그라미(#117 뒤): 옆으로 조금 긴 타원을 비스듬히, 한 바퀴를 넘겨 그린다.
+	# 끝이 시작보다 바깥으로 밀려 두 끝이 엇갈리고, 그리기 시작·끝은 가늘게 빠진다. 동그라미마다 기울기·찌그러짐이 다르다.
+	var tilt := -0.18 + 0.09 * float((n * 7) % 5 - 2)
+	var rx := CIRCLE_RADIUS * (1.12 + 0.04 * float(n % 3))
+	var ry := CIRCLE_RADIUS * (0.86 - 0.03 * float(n % 2))
+	var turns := 1.18
+	var steps := 56
+	var start := -2.3 + 0.4 * float(n % 4)
+	var w := LINE_W + 1.0 if child else LINE_W
+	var color: Color = CHILD_COLOR if child else PENCIL
+	var prev := Vector2.ZERO
+	for s in steps + 1:
+		var u := float(s) / float(steps)
+		var a := start + TAU * turns * u
+		# 그리는 동안 반지름이 조금씩 커진다(시작은 안쪽, 끝은 바깥쪽) + 손 떨림
+		var grow := lerpf(0.94, 1.08, u) + sin(a * 2.0 + n) * (0.05 if child else 0.025)
+		var e := Vector2(cos(a) * rx, sin(a) * ry) * grow
+		var p := c + e.rotated(tilt)
+		if s > 0:
+			# 시작과 끝은 힘이 빠져 가늘고 옅다
+			var taper := clampf(minf(u, 1.0 - u) / 0.12, 0.25, 1.0)
+			draw_line(prev, p, Color(color, color.a * (0.55 + 0.45 * taper)), w * (0.45 + 0.55 * taper), true)
+		prev = p
 	var t: float = checks.get(n, 0.0)
 	if t <= 0.0:
 		return

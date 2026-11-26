@@ -248,6 +248,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - 지나온 길은 지금 장소의 `place_id`와 그 안에서의 위치로 그린다. 새 장소를 만들면 `MapData.PLACES`에도 넣어야 지도에 나온다.
 - 메모 문구는 `map_data.gd` 한 곳에 있다. 고치면 `docs/design.md` "지도의 다섯 동그라미" 표도 같이 고친다(글꼴 도구가 둘 다에서 글자를 모은다).
 - **지도 그림**: `MapData.PAPER_ART`(`assets/art/map/`)가 있으면 그 그림을 `PAPER_RECT`(1740×980)에 깔고, 코드는 접힌 자국·강·철교·작은 기호·배를 그리지 않는다. 동그라미·메모·체크·지나온 길·장소 이름은 코드가 그린다(그림 위에서는 종이색 테두리). 길과 가지 않는 길은 그림에 아직 없어서 코드가 그린다 — 그림에 들어오면 `_draw_route`·`_draw_side_roads`도 끈다. 좌표는 그림에 맞춰 `map_data.gd`만 고친다.
+- **동그라미 모양**: 손으로 휙 그린 타원 — 옆으로 조금 길고 비스듬하며(동그라미마다 기울기·찌그러짐이 다르다) 한 바퀴 넘게 돌아 두 끝이 엇갈리고, 시작·끝은 가늘고 옅게 빠진다(`_draw_circle_mark`).
 - **색연필 질감**: 코드가 긋는 선(길·동그라미·체크·지나온 길, 굵기 `LINE_W` 6 · `TRAIL_W` 8 · `CHECK_W` 9)에는 `shaders/pencil.gdshader`가 걸린다(종이 결에 걸려 군데군데 비고 한 방향으로 긁힌 결, 결은 지도 좌표에 붙는다). 그래서 지도 그림은 `_draw`가 아니라 뒤에 깐 자식 `Paper`(TextureRect, `show_behind_parent`)가 그리고, 글(Label 자식)에는 질감이 안 걸린다.
 - **지도 글씨**: 맨 위 메모·장소 이름·메모 1~4는 할아버지 글씨(`grandpa_hand_subset.ttf`, Nanum Pen Script), 다섯째 메모만 하윤 글씨(`hayun_hand_subset.ttf`, Gamja Flower)다(반전 복선). 둘 다 지도 문구 글자만 든 서브셋이라, 지도 문구를 고치면 `python3 tools/font_subset.py`로 세 글꼴을 다시 만든다(CI가 `--check`로 본다). 없는 글자는 본문 글꼴로 그린다(`map_canvas.gd`의 fallback).
 - **기억 장면**(동그라미 1~4, `scripts/game/memory_scene.gd` `MemoryScene`): B가 그 동그라미 조사 대상 오른쪽에 놓는다(`Memory_2-2`, 원점은 그림 아래 가운데, y 890이면 그림의 땅 선이 땅에 맞는다). `circle`이 같은 조사 대상이 지도를 접은 뒤 `play()`를 기다리고 나서 글을 띄운다. 단색 선 스케치(`art`, 예: `mem_wind`)를 `shaders/memory.gdshader`로 빛처럼 희미하게 겹치고, 그동안 휘파람 한 소절(`phrase` = `mus_phrase_N`, 한 번만)이 나고 환경음이 줄고 하윤 조작이 멈춘다(잠금 이유 `memory`). 대사 없음.
