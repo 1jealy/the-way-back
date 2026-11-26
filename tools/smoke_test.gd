@@ -312,10 +312,31 @@ func _check_parts() -> void:
 	_check(mem_ok, "부품: 기억 장면 1~4가 동그라미 1~4와 같은 장소·장면에 하나씩, 그림·휘파람 소절이 있다 %s" % [memories])
 	_check(granted.has(&"has_map") and granted[&"has_map"][0] == 0, "부품: 집에서 지도(has_map)를 얻는다")
 	var snags := _placeholder_list("FIELD_SNAGS")
-	var chase_ok: bool = chases.size() == 1 and chases[0][0] == "field" and chases[0][2] and chases[0][1].size() == 3
+	# #111: 지도는 한 번에 덤불 하나로 날아가 묻힌다(연 날리기 뒤에 보인다). 그 덤불이 임시 배경의 덤불 중 하나.
+	var chase_ok: bool = chases.size() == 1 and chases[0][0] == "field" and chases[0][2] and chases[0][1].size() == 1
 	if chase_ok:
-		for k in 3:
-			chase_ok = chase_ok and k < snags.size() and is_equal_approx(chases[0][1][k], snags[k])
+		var hit := false
+		for x in snags:
+			hit = hit or is_equal_approx(chases[0][1][0], x)
+		chase_ok = hit
+	var flutes := _find_by_script("forest", "res://scripts/game/flute_echo.gd")
+	var flute_items := _find_by_script("forest", "res://scripts/game/keepsake.gd")
+	var forest_scene: Node = load("res://scenes/places/forest.tscn").instantiate()
+	var right2: Node = forest_scene.get_node_or_null("Look_4-2_Light23")
+	var flute_ok: bool = flutes.size() == 1 and flute_items.size() == 1 and flute_items[0][1] < flutes[0][1] \
+			and right2 != null and right2.fallback_until_flag == &"flute_echo_done" \
+			and is_equal_approx(forest_scene.get_node(String(flutes[0][0])).entrance_x, right2.position.x) \
+			and forest_scene.get_node_or_null("AskSpot_4-2_2") == null
+	forest_scene.free()
+	_check(flute_ok, "부품: 숲 둘째 갈림길에 버들피리 → 선율 따라 불기, 메아리 입구 = 맞는 입구(따라 불기 전에는 되돌아옴) %s %s" % [flute_items, flutes])
+	var pouches := _find_by_script("riverside", "res://scripts/game/keepsake.gd")
+	var skips := _find_by_script("riverside", "res://scripts/game/stone_skip.gd")
+	_check(pouches.size() == 1 and skips.size() == 1 and pouches[0][1] < skips[0][1],
+			"부품: 강가 5-4에 돌 주머니 하나, 물수제비 자리보다 왼쪽 %s %s" % [pouches, skips])
+	var kites := _find_by_script("field", "res://scripts/game/kite_fly.gd")
+	var keeps := _find_by_script("field", "res://scripts/game/keepsake.gd")
+	_check(kites.size() == 1 and keeps.size() == 1 and kites[0][1] < chases[0][1][0] and kites[0][1] > 4300.0,
+			"부품: 들판 2-3에 방패연 하나와 연 날리기 하나, 지도가 묻히는 덤불보다 왼쪽 %s %s" % [kites, keeps])
 	var tractor := _find_by_script("field", "res://scripts/game/tractor_pass.gd")
 	_check(tractor.size() == 1 and String(tractor[0][0]) == "Tractor_2-4" and chases.size() == 1 and tractor[0][1] > 7000.0,
 			"부품: 들판 2-4에 경운기(Tractor_2-4) 하나, 2-3 벽(Gate_2-3) 오른쪽 %s" % [tractor])
@@ -330,7 +351,7 @@ func _check_parts() -> void:
 	var shakes := _find_by_script("house", SHAKE)
 	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
 			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
-	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 덤불 셋이 임시 배경 FIELD_SNAGS와 같은 자리, 지도 그림이 있다 %s / %s" % [chases, snags])
+	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 묻히는 덤불이 임시 배경 FIELD_SNAGS 중 하나, 지도 그림이 있다 %s / %s" % [chases, snags])
 	var chain_ok := true
 	for r in required:
 		var g: Array = granted.get(r[2], [])

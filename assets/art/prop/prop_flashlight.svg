@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="150" viewBox="0 0 340 150">
+  <!-- 할아버지 손전등 (게임 크기의 2배). 오른쪽을 비춘다. 오래 써서 손잡이 칠이 벗겨졌다 -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- 끈 고리 -->
+    <path d="M22 66 C4 70 4 96 22 98" fill="none" stroke="#7A5530" stroke-width="7"/>
+    <path d="M22 66 C4 70 4 96 22 98" fill="none" stroke="#B9874F" stroke-width="3.5"/>
+    <!-- 몸통 -->
+    <rect x="20" y="52" width="196" height="58" rx="12" fill="#5F7D6B" stroke="#4A3A2C" stroke-width="3.5"/>
+    <path d="M24 92 H212 V98 Q212 106 204 106 H32 Q24 106 24 98 Z" fill="#4C6858"/>
+    <path d="M34 62 H200" stroke="#86A390" stroke-width="5"/>
+    <!-- 벗겨진 칠 -->
+    <path d="M72 70 C82 66 96 68 100 76 C94 84 80 84 72 80 Z" fill="#C9B79A"/>
+    <path d="M140 84 C148 80 158 82 160 88 C154 94 144 92 140 88 Z" fill="#C9B79A"/>
+    <!-- 미끄럼 막는 홈 -->
+    <g stroke="#3D5245" stroke-width="3">
+      <path d="M46 58 V104"/><path d="M58 58 V104"/>
+    </g>
+    <!-- 스위치 -->
+    <rect x="118" y="38" width="34" height="18" rx="6" fill="#8D9A93" stroke="#4A3A2C" stroke-width="3"/>
+    <rect x="128" y="34" width="14" height="10" rx="3" fill="#5D6762" stroke="#4A3A2C" stroke-width="2.5"/>
+    <!-- 머리 -->
+    <path d="M214 46 L262 30 V132 L214 116 Z" fill="#B8BEC1" stroke="#4A3A2C" stroke-width="3.5"/>
+    <path d="M214 98 L262 112 V132 L214 116 Z" fill="#969CA0"/>
+    <path d="M222 52 L254 42" stroke="#E2E6E8" stroke-width="4"/>
+    <!-- 렌즈 -->
+    <ellipse cx="266" cy="81" rx="16" ry="54" fill="#DCE0E2" stroke="#4A3A2C" stroke-width="3.5"/>
+    <ellipse cx="268" cy="81" rx="10" ry="44" fill="#FFF1C9"/>
+    <ellipse cx="270" cy="66" rx="4" ry="12" fill="#FFFFFF" fill-opacity="0.85"/>
+  </g>
+</svg>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="320" viewBox="0 0 300 320">
+  <!-- 할아버지 회중시계 (게임 크기의 2배). 3시 17분에 멈춰 있다. 줄 끝에 대합실 문 열쇠 -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- 용두 -->
+    <circle cx="168" cy="34" r="10" fill="none" stroke="#7A5530" stroke-width="6"/>
+    <circle cx="168" cy="34" r="10" fill="none" stroke="#E3B566" stroke-width="3"/>
+    <rect x="156" y="40" width="24" height="22" rx="5" fill="#E3B566" stroke="#7A5530" stroke-width="3"/>
+    <path d="M160 46 H176 M160 52 H176" stroke="#C88F42" stroke-width="2"/>
+    <!-- 몸통 -->
+    <circle cx="168" cy="178" r="118" fill="#E3B566" stroke="#7A5530" stroke-width="4"/>
+    <path d="M234 80 A118 118 0 0 1 168 296 A118 118 0 0 0 260 128 A118 118 0 0 0 234 80 Z" fill="#C88F42"/>
+    <path d="M98 98 A100 100 0 0 1 148 70" fill="none" stroke="#F7DFA6" stroke-width="7"/>
+    <!-- 문자판 -->
+    <circle cx="168" cy="178" r="94" fill="#F6EEDC" stroke="#7A5530" stroke-width="3"/>
+    <path d="M224 102 A94 94 0 0 1 168 272 A100 100 0 0 0 236 124 Z" fill="#EBDFC5"/>
+    <g stroke="#5E4A3A" stroke-width="4">
+      <path d="M168 94 V110"/><path d="M252 178 H236"/><path d="M168 262 V246"/><path d="M84 178 H100"/>
+    </g>
+    <g stroke="#5E4A3A" stroke-width="2.5" opacity="0.8">
+      <path d="M210 105 L206 112"/><path d="M241 136 L234 140"/><path d="M241 220 L234 216"/><path d="M210 251 L206 244"/>
+      <path d="M126 105 L130 112"/><path d="M95 136 L102 140"/><path d="M95 220 L102 216"/><path d="M126 251 L130 244"/>
+    </g>
+    <!-- 바늘: 3시 17분 -->
+    <path d="M168 178 L223 186" stroke="#3A2E26" stroke-width="7"/>
+    <path d="M168 178 L244 194" stroke="#3A2E26" stroke-width="4"/>
+    <circle cx="168" cy="178" r="7" fill="#3A2E26"/>
+    <!-- 줄 -->
+    <path d="M168 40 C134 6 46 18 34 110 C28 166 44 206 34 236" fill="none" stroke="#7A5530" stroke-width="7"/>
+    <path d="M168 40 C134 6 46 18 34 110 C28 166 44 206 34 236" fill="none" stroke="#E0B76A" stroke-width="3.5" stroke-dasharray="5 5"/>
+    <!-- 열쇠 -->
+    <g transform="translate(34 236) rotate(8)">
+      <circle cx="0" cy="12" r="13" fill="#D9AE62" stroke="#7A5530" stroke-width="3"/>
+      <circle cx="0" cy="12" r="5" fill="#F4EBD6" stroke="#7A5530" stroke-width="2"/>
+      <path d="M0 25 V72 M0 56 H12 M0 67 H9" fill="none" stroke="#7A5530" stroke-width="8"/>
+      <path d="M0 25 V72 M0 56 H12 M0 67 H9" fill="none" stroke="#D9AE62" stroke-width="4"/>
+    </g>
+    <!-- 유리 반사 -->
+    <path d="M114 128 A70 70 0 0 1 156 98" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-opacity="0.55"/>
+  </g>
+</svg>

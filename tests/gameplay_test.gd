@@ -543,6 +543,28 @@ func _run() -> void:
 	await _speak_through(box)
 	_check(not _player.is_locked_by(&"stone_skip"), "물수제비: 끝나면 잠금이 풀린다")
 	spot4.queue_free()
+
+	# 물수제비 미니게임(#115): 돌 주머니가 있으면 선택 미니게임. 할아버지 물결 다섯 자리, 발밑 돌 다섯.
+	# 셋 미만이면 한 번 어긋남, 세 번이면 각도가 느려진다. 돌을 다 쓰면 다시 채워진다. ← →로 그만둔다.
+	_state.set_flag(&"item_stone_pouch")
+	skip.stones = 3
+	var game_done := [false]
+	skip.finished.connect(func(): game_done[0] = true, CONNECT_ONE_SHOT)
+	skip.play()
+	await _wait(0.4)
+	_check(skip.running and _player.is_locked_by(&"minigame") and skip.has_key_hint(), "물수제비 미니게임: 주머니가 있으면 미니게임, 손 옆 키 안내")
+	_check(skip._ghosts.size() == 5 and skip._pile.size() == 3, "물수제비 미니게임: 물 위에 할아버지 물결 다섯 자리, 발밑에 남은 돌")
+	_check(skip.skips_for(20.0) == 5 and skip.skips_for(30.0) == 3 and skip.skips_for(60.0) == 0, "물수제비 미니게임: 20도에 가까울수록 많이 튄다")
+	for k in 3:
+		skip.angle = 60.0
+		await skip._release()
+	_check(skip.misses >= 3 and skip.help, "물수제비 미니게임: 세 번 셋 미만이면 도움(각도가 느려진다)")
+	_check(skip.stones_left == 3 and skip._pile.size() == 3, "물수제비 미니게임: 돌을 다 쓰면 다시 채워진다")
+	_check(not _state.has_flag(&"skip_five"), "물수제비 미니게임: 다섯 번 전에는 skip_five가 없다")
+	await _press(&"move_right")
+	_check(await _wait_until(func(): return game_done[0], 3.0) and _player.controls_enabled, "물수제비 미니게임: ← →로 그만두면 다시 걷는다")
+	_state.set_flag(&"item_stone_pouch", false)
+	_state.flags.erase(&"item_stone_pouch")
 	skip.queue_free()
 	await _wait(0.2)
 
@@ -568,6 +590,7 @@ func _run() -> void:
 	await _check_tractor()
 	await _check_shake()
 	await _check_reflection()
+	await _check_bank_light()
 	await _check_motes()
 	await _check_shadow()
 	await _check_cutout()
@@ -695,14 +718,14 @@ func _check_map_chase() -> void:
 	_player.global_position.x = hill.global_position.x
 	await _wait(0.3)
 	_check(not hill.is_offered(), "지도 쫓기: 날아가 있는 동안 동그라미 조사(지도 펼치기)도 안 뜬다")
-	for k in 2:
-		_player.global_position.x = chase.stop_position(k).x - 100.0
-		var moved := await _wait_until(func(): return chase.stop_index == k + 1 and not chase.flying, 2.0)
-		_check(moved, "지도 쫓기: 덤불 %d에 다가가면 다시 날아간다" % (k + 1))
-	_check(not _state.has_flag(&"map_caught") and not gate.is_open(), "지도 쫓기: 줍기 전에는 아직 막혀 있다")
-	_player.global_position.x = chase.stop_position(2).x - 60.0
-	await _wait(1.0)
-	_check(chase.stop_index == 2, "지도 쫓기: 마지막 덤불에서는 더 날아가지 않는다")
+	_check(chase.buried and chase.stop_index == 0, "지도 쫓기: 지도는 한 번에 멀리 날아가 억새 속으로 사라진다(#111)")
+	_player.global_position.x = chase.stop_position(0).x
+	await _wait(0.3)
+	await _press(&"interact")
+	_check(not _state.has_flag(&"map_caught") and not gate.is_open(), "지도 쫓기: 연을 띄우기 전에는 그 자리에서도 못 줍는다")
+	await _check_kite_fly(place, chase)
+	_player.global_position.x = chase.stop_position(0).x
+	await _wait(0.3)
 	await _press(&"interact")
 	var got := await _wait_until(func(): return _state.has_flag(&"map_caught"), 2.0)
 	_check(got and not map.away and gate.is_open(), "지도 쫓기: E로 주우면 map_caught, 지도가 돌아오고 벽이 열린다")
@@ -712,6 +735,47 @@ func _check_map_chase() -> void:
 	_check(map.is_open(), "지도 쫓기: 주운 뒤에는 M이 다시 먹는다")
 	await _press(&"open_map")
 	await _wait(0.6)
+
+
+## 2-3 방패연(Keepsake) + 연 날리기(KiteFly, #111): 주우면 item_kite, 그 자리에서 연이 뜬다.
+## 세 번 어긋나면(연이 땅까지) 노을빛 띠가 두 배로 넓어진다. 돌풍 셋을 버티면 리본 셋이 붉고 kite_flown → 지도가 보인다.
+func _check_kite_fly(place: Node2D, chase: Node2D) -> void:
+	var item: Node2D = place.get_node_or_null("Keepsake_2-3_Kite")
+	var game: Node2D = place.get_node_or_null("KiteFly_2-3")
+	_check(item != null and game != null, "연: 들판에 방패연(Keepsake_2-3_Kite)과 연 날리기(KiteFly_2-3)가 있다")
+	if item == null or game == null:
+		return
+	_check(item.get_node_or_null("Art") != null and item.get_node("Art").visible, "연: 줍기 전에는 길가에 방패연 그림이 보인다")
+	_player.global_position.x = item.global_position.x
+	await _wait(0.3)
+	await _press(&"interact")
+	_check(_state.has_flag(&"item_kite"), "연: E로 주우면 item_kite")
+	_check(_player.is_locked_by(&"pickup") and _player.get_node("Visual/Rig").is_gesturing(), "연: 주울 때 하윤이 숙여서 집는다(#114)")
+	game.calm_seconds = 0.4
+	game.warn_seconds = 0.2
+	game.gust_seconds = 0.6
+	_check(await _wait_until(func(): return game.running, 3.0), "연: 주우면 그 자리에서 연 날리기가 시작된다")
+	_check(await _wait_until(func(): return not item.get_node("Art").visible, 4.0), "연: 주운 방패연 그림은 떠올라 사라진다")
+	_check(_player.is_locked_by(&"minigame") and _player.pose == &"kite", "연: 하윤이 멈추고 두 손으로 연줄을 잡는다")
+	_check(game.has_key_hint(), "연: 처음에는 손 옆에 [E] 꾹 누르면 감기")
+	var half: float = game.zone_high() - game.zone_low()
+	for k in 3:
+		game.h = 0.0
+		game.vh = -1.0
+		await _wait(0.1)
+	_check(game.misses >= 3 and game.help, "연: 연이 세 번 땅까지 내려오면 도움이 켜진다")
+	_check(is_equal_approx(game.zone_high() - game.zone_low(), half * 2.0), "연: 도움이 켜지면 노을빛 띠가 두 배로 넓어진다")
+	_check(not _state.has_flag(&"kite_flown"), "연: 어긋나도 실패 화면이 없고 계속한다")
+	var auto: Script = load("res://scripts/game/minigame.gd")
+	auto.autoplay = true
+	await _wait(0.4)
+	_check(not game.has_key_hint(), "연: 한 번 감으면 키 안내가 사라진다")
+	var flown := await _wait_until(func(): return _state.has_flag(&"kite_flown"), 15.0)
+	_check(flown and game.gusts_held == 3, "연: 돌풍 셋을 버티면 kite_flown (%d)" % game.gusts_held)
+	_check(not chase.buried, "연: 연이 높이 오르면 억새 속 지도가 보인다")
+	_check(await _wait_until(func(): return _player.controls_enabled, 6.0) and _player.pose == &"stand",
+			"연: 연을 거두면 다시 선다")
+	auto.autoplay = false
 
 
 ## 2-4 경운기(TractorPass): 다가오면 하윤이 멈춰 비켜서고, 가까이 오면 "안녕하세요",
@@ -785,6 +849,60 @@ func _check_reflection() -> void:
 			"물그림자: 물가를 벗어나면 반사가 사라지고 카메라가 돌아온다")
 	water.queue_free()
 	_player.global_position.x = water.global_position.x - 30.0
+## 6-2 강둑 비추기(BankLight, #116): 손전등이 없으면 시작하지 않고 냄새 부탁이 그대로다. 있으면 부탁 자리를 닫고,
+## 끊긴 끝을 지나면 손전등을 켠다. 물그림자를 오래 비추면 어긋남 → 세 번이면 빛이 넓어진다. 돌 다섯을 찾으면 길이 열린다.
+func _check_bank_light() -> void:
+	var place: Node2D = _main.current_place()
+	var px := _player.global_position.x
+	var spot: Area2D = _add_spot(1, 0.0, &"bank_test_path")
+	var game: Node2D = load("res://scripts/game/bank_light.gd").new()
+	game.trigger_flag = &"item_test_torch"
+	game.grants_flag = &"bank_test_path"
+	game.dwell = 0.3
+	place.add_child(game)
+	game.ask_spot = game.get_path_to(spot)
+	game.global_position = Vector2(px + 60.0, 810.0)
+	var st := PackedVector2Array()
+	for k in 5:
+		st.append(Vector2(px + 250.0 + k * 90.0, 960.0 + [0, 40, 66, 46, 10][k]))
+	game.stones = st
+	game.decoys = PackedVector2Array([Vector2(px + 960.0, 1021.0), Vector2(px + 1000.0, 1000.0)])
+	_player.global_position.x = px + 100.0
+	await _wait(0.4)
+	_check(not game.running and not spot.used, "강둑 비추기: 손전등 없이 오면 시작하지 않고 냄새 부탁이 그대로다")
+	_state.set_flag(&"item_test_torch")
+	await _wait(0.1)
+	_check(spot.used, "강둑 비추기: 손전등이 있으면 냄새 부탁 자리를 닫는다")
+	_check(await _wait_until(func(): return game.running, 2.0), "강둑 비추기: 손전등을 가진 채 끊긴 끝을 지나면 시작한다")
+	_check(_player.is_locked_by(&"minigame") and _player.pose == &"flashlight" and game.has_key_hint(),
+			"강둑 비추기: 하윤이 멈춰 손전등을 아래로 비추고, 손 옆에 [← →] 비추기")
+	var start_aim: float = game.aim
+	await _hold(&"move_left", 0.4)
+	_check(game.aim > start_aim + 5.0 and not game.has_key_hint(), "강둑 비추기: ←로 빛이 발밑 쪽으로 내려가고 키 안내가 사라진다")
+	for k in 3:
+		game._decoy_gone[0] = 0.0
+		game.aim = game.aim_for(game.decoys[0])
+		await _wait(game.dwell + 0.5)
+	_check(game.misses >= 3 and game.help and game.found == 0, "강둑 비추기: 물그림자를 오래 비추면 흩어지고(어긋남), 세 번이면 도움이 켜진다")
+	_check(not _state.has_flag(&"bank_test_path"), "강둑 비추기: 어긋나도 실패 화면 없이 계속한다")
+	game.aim = game.aim_for(game.stones[2])
+	await _wait(game.dwell + 0.3)
+	_check(game.found == 0, "강둑 비추기: 차례가 아닌 돌은 비춰도 찾은 것으로 치지 않는다")
+	game.aim = game.aim_for(game.stones[0])
+	await _wait(game.dwell + 0.3)
+	_check(game.found == 1, "강둑 비추기: 다음 돌에 빛이 머물면 그 돌을 찾는다")
+	var auto: Script = load("res://scripts/game/minigame.gd")
+	auto.autoplay = true
+	var lit := await _wait_until(func(): return _state.has_flag(&"bank_test_path"), 15.0)
+	auto.autoplay = false
+	_check(lit and game.found == 5, "강둑 비추기: 돌 다섯을 다 찾으면 길이 열린다(grants_flag)")
+	_check(await _wait_until(func(): return _player.controls_enabled, 4.0) and _player.pose == &"stand",
+			"강둑 비추기: 끝나면 손전등을 넣고 다시 선다")
+	game.queue_free()
+	spot.queue_free()
+	_player.global_position.x = px
+
+
 ## 4-1·4-2 빛 알갱이(LightMotes): 지나가면 떠오르고, 갈림길 구간에서는 하늘이 발밑에만 모인다.
 func _check_motes() -> void:
 	var motes: Node2D = load("res://scripts/game/light_motes.gd").new()

@@ -7,6 +7,17 @@ extends Interactable
 
 ## 옮겨 갈 x(장소 안).
 @export var to_x: float = 0.0
+## 이 플래그가 서기 전에는 to_x 대신 fallback_to_x로 간다(#111 숲 둘째 갈림길: 피리로 메아리를 따라 불기 전에는
+## 맞는 입구도 이끼 바위 앞으로 돌아온다). 비우면 늘 to_x.
+@export var fallback_until_flag: StringName = &""
+@export var fallback_to_x: float = 0.0
+
+
+## 지금 들어가면 옮겨 갈 x.
+func target_x() -> float:
+	if not fallback_until_flag.is_empty() and not GameState.has_flag(fallback_until_flag):
+		return fallback_to_x
+	return to_x
 
 
 func interact() -> void:
@@ -15,4 +26,4 @@ func interact() -> void:
 	await super.interact()
 	var main := get_tree().get_first_node_in_group("main")
 	if main and main.has_method("move_player_to"):
-		await main.move_player_to(to_x)
+		await main.move_player_to(target_x())
