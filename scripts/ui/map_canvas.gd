@@ -22,6 +22,8 @@ const CHECK_W := 9.0
 const GRANDPA_FONT := preload("res://assets/fonts/grandpa_hand_subset.ttf")
 const HAYUN_FONT := preload("res://assets/fonts/hayun_hand_subset.ttf")
 const BODY_FONT := preload("res://assets/fonts/noto_sans_kr_regular_subset.ttf")
+## 선에 거는 색연필 질감. 글(Label 자식)과 종이 그림(Paper)에는 안 걸린다.
+const PENCIL_SHADER := preload("res://shaders/pencil.gdshader")
 
 ## 하윤이 지나온 정도(MapData.route_point 참고). 음수면 그리지 않는다.
 var progress: float = -1.0:
@@ -41,6 +43,20 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists(MapData.PAPER_ART):
 		_paper = load(MapData.PAPER_ART)
+		# 종이 그림은 질감 없이 뒤에 깐다. 선(이 노드가 긋는 것)에만 색연필 질감을 건다.
+		var paper := TextureRect.new()
+		paper.name = "Paper"
+		paper.texture = _paper
+		paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		paper.stretch_mode = TextureRect.STRETCH_SCALE
+		paper.position = MapData.PAPER_RECT.position
+		paper.size = MapData.PAPER_RECT.size
+		paper.show_behind_parent = true
+		paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(paper)
+	var mat := ShaderMaterial.new()
+	mat.shader = PENCIL_SHADER
+	material = mat
 	for font: FontFile in [GRANDPA_FONT, HAYUN_FONT]:
 		if BODY_FONT not in font.fallbacks:
 			font.fallbacks = [BODY_FONT]
@@ -103,9 +119,7 @@ func has_paper_art() -> bool:
 
 
 func _draw() -> void:
-	if _paper:
-		draw_texture_rect(_paper, MapData.PAPER_RECT, false)
-	else:
+	if not _paper:
 		_draw_folds()
 		_draw_symbols()
 	_draw_side_roads()
