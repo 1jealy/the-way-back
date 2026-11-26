@@ -13,6 +13,7 @@
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_lllq7"]
 [ext_resource type="Script" path="res://scripts/game/passage.gd" id="12_did7t"]
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
+[ext_resource type="Script" path="res://scripts/game/bank_light.gd" id="bank_light_script"]
 
 [node name="Bridge" unique_id=943413289 instance=ExtResource("1_tpl")]
 place_id = &"bridge"
@@ -114,3 +115,9 @@ script = ExtResource("moment_script")
 dog_to = 80.0
 dog_hold = 1.8
 dog_look = -1
+
+[node name="BankLight_6-3" type="Node2D" parent="."]
+position = Vector2(3520, 810)
+script = ExtResource("bank_light_script")
+ask_spot = NodePath("../AskSpot_6-3")
+grants_flag = &"bridge_bank_path"

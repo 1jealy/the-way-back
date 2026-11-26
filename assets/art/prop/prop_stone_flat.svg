@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="44" viewBox="0 0 80 44">
+  <!-- 물수제비 납작한 돌 (게임 크기의 2배) -->
+  <g stroke-linejoin="round">
+    <path d="M8 24 C8 12 28 6 44 7 C62 8 74 14 72 24 C70 34 52 38 36 37 C20 36 8 32 8 24 Z" fill="#848892" stroke="#4A4650" stroke-width="3"/>
+    <path d="M12 28 C24 34 52 36 70 26 C66 34 50 38 36 37 C22 36 12 32 12 28 Z" fill="#6E727C"/>
+    <path d="M22 15 C32 11 46 11 56 14" fill="none" stroke="#B0B4BC" stroke-width="4" stroke-linecap="round"/>
+  </g>
+</svg>

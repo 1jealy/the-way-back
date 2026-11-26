@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <!-- 빛 알갱이 (피리 음, 메아리, 물건이 떠오를 때). 색은 게임이 modulate로 바꾼다 -->
+  <defs>
+    <radialGradient id="g" cx="48" cy="48" r="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFF6DA" stop-opacity="1"/>
+      <stop offset="0.18" stop-color="#FFE7A6" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#F3CF7A" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#F3CF7A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="48" cy="48" r="48" fill="url(#g)"/>
+</svg>

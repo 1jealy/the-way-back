@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="330" viewBox="0 0 320 330">
+  <!-- 방패연 몸통, 꼬리 없음 (연 날리기에서 꼬리는 코드가 그린다. 게임 크기의 2배). 하윤 그림체: 평면 색 + 그늘 한 톤 + 얇은 따뜻한 윤곽선 -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- 종이 -->
+    <path d="M44 22 H276 Q284 22 284 30 V306 Q284 314 276 314 H44 Q36 314 36 306 V30 Q36 22 44 22 Z" fill="#F6EBD3" stroke="#8B5E3C" stroke-width="3.5"/>
+    <!-- 오른쪽·아래 그늘 -->
+    <path d="M250 26 H276 Q280 26 280 30 V306 Q280 310 276 310 H52 Q60 296 72 296 H250 Z" fill="#EAD9B6"/>
+    <!-- 종이 결 -->
+    <g stroke="#E2CFA8" stroke-width="1.5" fill="none" opacity="0.8">
+      <path d="M60 90 C110 84 150 96 200 88"/>
+      <path d="M70 230 C120 224 170 236 240 228"/>
+      <path d="M56 270 C96 266 140 274 180 268"/>
+      <path d="M200 60 C220 58 240 62 262 58"/>
+    </g>
+    <!-- 대살(비치는 살): 머릿살·허릿살·장살·귀살 -->
+    <g stroke="#C29467" stroke-width="3" fill="none" opacity="0.75">
+      <path d="M40 30 H280"/>
+      <path d="M40 168 H280"/>
+      <path d="M160 26 V310"/>
+      <path d="M42 28 L278 308"/>
+      <path d="M278 28 L42 308"/>
+    </g>
+    <!-- 꼭지(위 반달) -->
+    <path d="M104 26 A56 56 0 0 0 216 26 Z" fill="#D2554A" stroke="#8B5E3C" stroke-width="3"/>
+    <path d="M190 26 A56 56 0 0 1 160 80 A56 56 0 0 0 214 30 Z" fill="#B44238"/>
+    <!-- 방구멍 -->
+    <circle cx="160" cy="168" r="40" fill="#9FBAD8" stroke="#8B5E3C" stroke-width="3.5"/>
+    <path d="M178 134 A40 40 0 0 1 178 202 A46 46 0 0 0 178 134 Z" fill="#86A3C4"/>
+    <!-- 양 귀의 색 -->
+    <path d="M38 280 L80 314 H44 Q36 314 36 306 Z" fill="#3E6496" stroke="#8B5E3C" stroke-width="3"/>
+    <path d="M282 280 L240 314 H276 Q284 314 284 306 Z" fill="#3E6496" stroke="#8B5E3C" stroke-width="3"/>
+    <!-- 목줄 매듭 -->
+    <circle cx="160" cy="168" r="5" fill="#8B5E3C"/>
+  </g>
+</svg>

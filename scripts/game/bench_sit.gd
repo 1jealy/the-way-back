@@ -5,7 +5,8 @@ extends Interactable
 ## - auto_sit = true(장면표 3-3): 하윤이 이 안에 들어오면 저절로 앉아 sit_seconds 동안 있다.
 ##   그동안 장소가 tint 색으로 천천히 물들고(노을이 짙어진다) 환경음이 줄고, 끝 무렵 end_sound가 난다.
 ##   다 앉고 나면 grants_flag를 세우고 일어난다. 안내 글은 뜨지 않는다.
-## - auto_sit = false(2-5): "[E] 앉기" → 방향키나 E로 일어난다. 몇 번이든 앉을 수 있다.
+## - auto_sit = false(2-5, 4-3): "[E] 앉기" → 방향키나 E로 일어난다. 몇 번이든 앉을 수 있다.
+##   4-3 빈터는 바닥에 앉고(pose sit_floor), 앉으면 ClearingLight가 빛을 쏟는다.
 ## 담당: A(게임플레이). (A 세션이 쉬는 동안 B 세션이 만듦, #32)
 
 signal sat_down
@@ -22,6 +23,8 @@ const LOCK := &"sit"
 @export var end_sound: String = ""
 ## 자동 앉기 동안 장소 환경음을 이만큼 줄인다(dB, 0이면 그대로).
 @export var ambience_duck_db: float = 0.0
+## 앉는 자세(sit = 벤치, sit_floor = 바닥, 4-3 빈터).
+@export var pose: StringName = &"sit"
 
 var sitting: bool = false
 var _player: Player
@@ -71,7 +74,7 @@ func _sit_down() -> void:
 	_player.lock(LOCK)
 	_player.global_position.x = global_position.x
 	_player.velocity = Vector2.ZERO
-	_player.set_pose(&"sit")
+	_player.set_pose(pose)
 	sat_down.emit()
 
 
