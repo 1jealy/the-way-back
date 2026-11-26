@@ -27,6 +27,9 @@ const LOCK := &"sit"
 @export var pose: StringName = &"sit"
 
 var sitting: bool = false
+## 자동 앉기 끝 무렵(end_sound 뒤)에는 방향키로 먼저 일어날 수 있다(#118 — 15초를 꼼짝없이 앉아 있었다).
+var can_stand_early: bool = false
+var _stand_early: bool = false
 var _player: Player
 
 
@@ -51,7 +54,12 @@ func interact() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not sitting or auto_sit:
+	if auto_sit:
+		if sitting and can_stand_early and (event.is_action_pressed("move_left") or event.is_action_pressed("move_right")):
+			get_viewport().set_input_as_handled()
+			_stand_early = true
+		return
+	if not sitting:
 		return
 	if event.is_action_pressed("move_left") or event.is_action_pressed("move_right") \
 			or event.is_action_pressed("interact"):
@@ -101,7 +109,13 @@ func _sit_auto() -> void:
 	# 멈춤(일시정지) 동안에는 흐르지 않는 타이머
 	await get_tree().create_timer(sit_seconds * 0.75, false).timeout
 	_play_sound(end_sound)
-	await get_tree().create_timer(sit_seconds * 0.25, false).timeout
+	can_stand_early = true
+	var left := sit_seconds * 0.25
+	while left > 0.0 and not _stand_early:
+		await get_tree().process_frame
+		if not get_tree().paused:
+			left -= get_process_delta_time()
+	can_stand_early = false
 	if amb and ambience_duck_db != 0.0:
 		create_tween().tween_property(amb, "volume_db", amb_db, 2.0)
 	if not grants_flag.is_empty():

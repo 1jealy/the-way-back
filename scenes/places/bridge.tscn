@@ -107,7 +107,8 @@ one_shot = true
 [node name="Moment_6-1_Creak" type="Node2D" parent="."]
 position = Vector2(2400, 810)
 script = ExtResource("moment_script")
-player_pause = 1.2
+dog_to = 0.0
+dog_hold = 1.6
 
 [node name="Moment_6-3_LookBack" type="Node2D" parent="."]
 position = Vector2(6600, 810)
