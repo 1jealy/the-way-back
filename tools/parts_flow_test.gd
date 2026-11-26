@@ -183,7 +183,7 @@ func _run() -> void:
 	await _wait(1.0)
 	Input.action_release(&"move_right")
 	_check(bench.sitting and not _player.controls_enabled, "간이역: 3-3 벤치에 닿으면 저절로 앉는다")
-	_check(await _wait_flag(&"station_sat", 17.0), "간이역: 15초 앉아 있다가 일어난다(station_sat)")
+	_check(await _wait_flag(&"station_sat", 9.0), "간이역: 6초 앉아 있다가 일어난다(station_sat)")
 	await _wait(0.5)
 	_check(_player.controls_enabled and _dog.visible, "간이역: 일어나면 하늘이가 나타난다")
 	_check(is_equal_approx(_dog.global_position.x, meeting.global_position.x), "간이역: 하늘이가 3-4 자리에 앉아 있다")

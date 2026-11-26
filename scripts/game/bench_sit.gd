@@ -15,8 +15,10 @@ signal stood_up
 const LOCK := &"sit"
 
 @export var auto_sit: bool = false
-## 자동으로 앉아 있는 시간(초). 장면표 3-3: 15초.
-@export var sit_seconds: float = 15.0
+## 자동으로 앉아 있는 시간(초). 장면표 3-3: 6초(처음 15초였는데 템포가 너무 느려 줄였다, #118).
+@export var sit_seconds: float = 6.0
+## 자동으로 앉고 이만큼 뒤에 손목을 만진다(3-3 복선). 평소 대기 동작(5초 가만히)을 기다리면 6초 안에 안 나온다.
+const WRIST_AT := 1.2
 ## 자동 앉기 동안 장소 층을 이 색으로 천천히 물들인다. 흰색이면 그대로.
 @export var tint: Color = Color.WHITE
 ## 자동 앉기 끝 무렵에 낼 소리(이름 앞머리, 예: "sfx_dog_bark_far_").
@@ -98,6 +100,7 @@ func _sit_auto() -> void:
 	var amb_db := amb.volume_db if amb else 0.0
 	if amb and ambience_duck_db != 0.0:
 		create_tween().tween_property(amb, "volume_db", amb_db + ambience_duck_db, sit_seconds * 0.6)
+	_touch_wrist_soon()
 	# 멈춤(일시정지) 동안에는 흐르지 않는 타이머
 	await get_tree().create_timer(sit_seconds * 0.75, false).timeout
 	_play_sound(end_sound)
@@ -107,3 +110,15 @@ func _sit_auto() -> void:
 	if not grants_flag.is_empty():
 		GameState.set_flag(grants_flag)
 	_stand_up()
+
+
+## 앉자마자 손목을 한 번 만진다(장면표 3-3 "앉아서 손목을 만진다").
+func _touch_wrist_soon() -> void:
+	await get_tree().create_timer(WRIST_AT, false).timeout
+	if not sitting or _player == null or not is_instance_valid(_player):
+		return
+	var rig := _player.get_node_or_null("Visual/Rig")
+	if rig and rig.has_method("play_wrist_touch") and not rig.is_gesturing():
+		rig.play_wrist_touch()
+		if _player.has_signal("wrist_touched"):
+			_player.wrist_touched.emit()
