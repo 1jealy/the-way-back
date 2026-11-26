@@ -13,11 +13,17 @@ const RIVER := Color(0.36, 0.48, 0.58, 0.55)
 const NOTE_COLOR := Color(0.2, 0.18, 0.16, 1.0)
 const CHILD_COLOR := Color(0.18, 0.24, 0.42, 1.0)
 const CIRCLE_RADIUS := 50.0
+## 선 굵기(#117 뒤): 지도 그림의 붓 선(6~8px)과 어울리게. 예전 3·4·6px은 그림 위에서 머리카락처럼 가늘었다.
+const LINE_W := 6.0
+const TRAIL_W := 8.0
+const CHECK_W := 9.0
 ## 지도 글씨. 할아버지(차분한 펜글씨)와 하윤(동글동글한 아이 글씨). 다섯째 메모만 하윤 글씨다(반전 복선).
 ## 지도 문구 글자만 든 서브셋이다(tools/font_subset.py). 없는 글자는 본문 글꼴로 그린다.
 const GRANDPA_FONT := preload("res://assets/fonts/grandpa_hand_subset.ttf")
 const HAYUN_FONT := preload("res://assets/fonts/hayun_hand_subset.ttf")
 const BODY_FONT := preload("res://assets/fonts/noto_sans_kr_regular_subset.ttf")
+## 선에 거는 색연필 질감. 글(Label 자식)과 종이 그림(Paper)에는 안 걸린다.
+const PENCIL_SHADER := preload("res://shaders/pencil.gdshader")
 
 ## 하윤이 지나온 정도(MapData.route_point 참고). 음수면 그리지 않는다.
 var progress: float = -1.0:
@@ -37,6 +43,20 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists(MapData.PAPER_ART):
 		_paper = load(MapData.PAPER_ART)
+		# 종이 그림은 질감 없이 뒤에 깐다. 선(이 노드가 긋는 것)에만 색연필 질감을 건다.
+		var paper := TextureRect.new()
+		paper.name = "Paper"
+		paper.texture = _paper
+		paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		paper.stretch_mode = TextureRect.STRETCH_SCALE
+		paper.position = MapData.PAPER_RECT.position
+		paper.size = MapData.PAPER_RECT.size
+		paper.show_behind_parent = true
+		paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(paper)
+	var mat := ShaderMaterial.new()
+	mat.shader = PENCIL_SHADER
+	material = mat
 	for font: FontFile in [GRANDPA_FONT, HAYUN_FONT]:
 		if BODY_FONT not in font.fallbacks:
 			font.fallbacks = [BODY_FONT]
@@ -99,9 +119,7 @@ func has_paper_art() -> bool:
 
 
 func _draw() -> void:
-	if _paper:
-		draw_texture_rect(_paper, MapData.PAPER_RECT, false)
-	else:
+	if not _paper:
 		_draw_folds()
 		_draw_symbols()
 	_draw_side_roads()
@@ -153,15 +171,15 @@ func _draw_route() -> void:
 			if not MapData.PLACES[i + 1].has("wiggle"):
 				for k in pts.size():
 					pts[k] = _wobble(pts[k], 1.3)
-			draw_polyline(pts, PENCIL, 3.0, true)
+			draw_polyline(pts, PENCIL, LINE_W, true)
 	for place in MapData.PLACES:
-		draw_circle(place["pos"], 6.0, PENCIL)
+		draw_circle(place["pos"], 9.0, PENCIL)
 	if not _paper:
 		_draw_boat()
 
 
 ## 점들을 이은 선을 일정한 간격의 짧은 선으로 그린다.
-func _draw_dashed(pts: PackedVector2Array, color: Color = PENCIL, dash: float = 10.0, gap: float = 12.0) -> void:
+func _draw_dashed(pts: PackedVector2Array, color: Color = PENCIL, dash: float = 14.0, gap: float = 14.0, width: float = LINE_W) -> void:
 	var drawing := true
 	var left := dash
 	for k in pts.size() - 1:
@@ -172,7 +190,7 @@ func _draw_dashed(pts: PackedVector2Array, color: Color = PENCIL, dash: float = 
 		while pos < seg:
 			var step := minf(left, seg - pos)
 			if drawing:
-				draw_line(a.lerp(b, pos / seg), a.lerp(b, (pos + step) / seg), color, 3.0, true)
+				draw_line(a.lerp(b, pos / seg), a.lerp(b, (pos + step) / seg), color, width, true)
 			pos += step
 			left -= step
 			if left <= 0.0:
@@ -189,9 +207,9 @@ func _draw_side_roads() -> void:
 				var wobbly := PackedVector2Array()
 				for k in pts.size():
 					wobbly.append(_wobble(pts[k], 2.7))
-				draw_polyline(wobbly, PENCIL_LIGHT, 4.0, true)
+				draw_polyline(wobbly, PENCIL_LIGHT, LINE_W, true)
 			"trail":
-				_draw_dashed(pts, PENCIL_LIGHT, 8.0, 10.0)
+				_draw_dashed(pts, PENCIL_LIGHT, 12.0, 12.0, LINE_W - 1.0)
 			"rail":
 				draw_polyline(pts, PENCIL_LIGHT, 2.0, true)
 				for k in pts.size() - 1:
@@ -243,20 +261,35 @@ func _draw_trail() -> void:
 		p += 0.08
 	pts.append(_wobble(MapData.route_point(progress), 4.1) + Vector2(0.0, 6.0))
 	if pts.size() >= 2:
-		draw_polyline(pts, TRAIL, 4.0, true)
+		draw_polyline(pts, TRAIL, TRAIL_W, true)
 
 
 func _draw_circle_mark(n: int) -> void:
 	var c := MapData.circle_pos(n)
 	var child: bool = MapData.CIRCLES[n - 1]["child"]
-	var pts := PackedVector2Array()
-	# 손으로 그린 동그라미: 한 바퀴를 조금 넘겨 겹치게, 반지름이 살짝 흔들린다.
-	var steps := 40
-	for s in steps + 4:
-		var a := TAU * float(s) / float(steps) - 1.2
-		var r := CIRCLE_RADIUS + sin(a * 3.0 + n) * (6.0 if child else 3.0)
-		pts.append(c + Vector2(cos(a), sin(a)) * r)
-	draw_polyline(pts, CHILD_COLOR if child else PENCIL, 4.0 if child else 3.0, true)
+	# 손으로 휙 그린 동그라미(#117 뒤): 옆으로 조금 긴 타원을 비스듬히, 한 바퀴를 넘겨 그린다.
+	# 끝이 시작보다 바깥으로 밀려 두 끝이 엇갈리고, 그리기 시작·끝은 가늘게 빠진다. 동그라미마다 기울기·찌그러짐이 다르다.
+	var tilt := -0.18 + 0.09 * float((n * 7) % 5 - 2)
+	var rx := CIRCLE_RADIUS * (1.12 + 0.04 * float(n % 3))
+	var ry := CIRCLE_RADIUS * (0.86 - 0.03 * float(n % 2))
+	var turns := 1.18
+	var steps := 56
+	var start := -2.3 + 0.4 * float(n % 4)
+	var w := LINE_W + 1.0 if child else LINE_W
+	var color: Color = CHILD_COLOR if child else PENCIL
+	var prev := Vector2.ZERO
+	for s in steps + 1:
+		var u := float(s) / float(steps)
+		var a := start + TAU * turns * u
+		# 그리는 동안 반지름이 조금씩 커진다(시작은 안쪽, 끝은 바깥쪽) + 손 떨림
+		var grow := lerpf(0.94, 1.08, u) + sin(a * 2.0 + n) * (0.05 if child else 0.025)
+		var e := Vector2(cos(a) * rx, sin(a) * ry) * grow
+		var p := c + e.rotated(tilt)
+		if s > 0:
+			# 시작과 끝은 힘이 빠져 가늘고 옅다
+			var taper := clampf(minf(u, 1.0 - u) / 0.12, 0.25, 1.0)
+			draw_line(prev, p, Color(color, color.a * (0.55 + 0.45 * taper)), w * (0.45 + 0.55 * taper), true)
+		prev = p
 	var t: float = checks.get(n, 0.0)
 	if t <= 0.0:
 		return
@@ -265,7 +298,7 @@ func _draw_circle_mark(n: int) -> void:
 	var a1 := c + Vector2(42.0, -22.0)
 	var a2 := c + Vector2(76.0, -78.0)
 	var first := clampf(t / 0.35, 0.0, 1.0)
-	draw_line(a0, a0.lerp(a1, first), CHECK, 6.0, true)
+	draw_line(a0, a0.lerp(a1, first), CHECK, CHECK_W, true)
 	if t > 0.35:
 		var second := clampf((t - 0.35) / 0.65, 0.0, 1.0)
-		draw_line(a1, a1.lerp(a2, second), CHECK, 6.0, true)
+		draw_line(a1, a1.lerp(a2, second), CHECK, CHECK_W, true)

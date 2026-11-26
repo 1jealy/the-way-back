@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="90" viewBox="0 0 360 90">
+  <!-- 할아버지가 깎은 버들피리 (게임 크기의 2배). 껍질을 벗긴 버들가지, 구멍 셋, 입에 무는 쪽은 비스듬히 깎였다 -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- 몸통 -->
+    <path d="M40 26 H324 Q342 26 342 45 Q342 64 324 64 H40 Z" fill="#E8D3A2" stroke="#7A5530" stroke-width="3.5"/>
+    <path d="M40 50 H330 Q338 50 340 54 Q336 64 324 64 H40 Z" fill="#D2B67F"/>
+    <path d="M52 34 H316" stroke="#F6E8C6" stroke-width="5"/>
+    <!-- 입 쪽 비스듬한 깎임 -->
+    <path d="M40 26 L14 40 Q8 45 14 50 L40 64 Z" fill="#F1E2BD" stroke="#7A5530" stroke-width="3.5"/>
+    <path d="M40 30 L58 30 L58 40 L40 40" fill="none" stroke="#7A5530" stroke-width="2.5"/>
+    <!-- 남겨 둔 껍질 띠 -->
+    <path d="M276 26 H300 V64 H276 Z" fill="#8C6A44" stroke="#7A5530" stroke-width="3"/>
+    <path d="M280 30 L296 60 M288 28 L298 46" stroke="#6E5234" stroke-width="2"/>
+    <!-- 구멍 셋 (낮음·가운데·높음) -->
+    <ellipse cx="138" cy="44" rx="10" ry="8" fill="#4E3A28" stroke="#7A5530" stroke-width="2"/>
+    <ellipse cx="184" cy="44" rx="10" ry="8" fill="#4E3A28" stroke="#7A5530" stroke-width="2"/>
+    <ellipse cx="230" cy="44" rx="10" ry="8" fill="#4E3A28" stroke="#7A5530" stroke-width="2"/>
+    <!-- 나뭇결 -->
+    <g stroke="#C9AC76" stroke-width="1.5" fill="none" opacity="0.8">
+      <path d="M80 40 C100 38 112 42 120 40"/><path d="M250 38 C258 40 266 38 272 40"/><path d="M70 56 C90 54 110 58 128 56"/>
+    </g>
+  </g>
+</svg>

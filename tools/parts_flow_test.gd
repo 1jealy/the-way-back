@@ -70,6 +70,14 @@ func _wait_flag(flag: StringName, seconds: float) -> bool:
 	return _state.has_flag(flag)
 
 
+func _wait_until(cond: Callable, seconds: float) -> bool:
+	for i in int(seconds * 20.0):
+		if cond.call():
+			return true
+		await _wait(0.05)
+	return cond.call()
+
+
 func _go(place_id: String) -> Node:
 	_main.go_to("res://scenes/places/%s.tscn" % place_id)
 	await _wait(2.0)
@@ -105,26 +113,49 @@ func _run() -> void:
 	_check(_state.has_flag(&"has_map"), "집: 서랍에서 지도를 얻는다")
 	var hint: Label = _main.get_node("Overlay/MapHint")
 	_check(hint.visible, "집: 지도를 얻으면 [M] 지도 안내가 뜬다")
+	var torch: Node2D = house.get_node("Keepsake_1-6_Flashlight")  # #116
+	await _walk_to(torch.global_position.x)
+	await _press(&"interact")
+	_check(await _wait_flag(&"item_flashlight", 3.0), "집: 마당에서 할아버지 손전등을 줍는다(item_flashlight)")
+	await _wait(1.5)
 	await _walk_to(gate.global_position.x + 200.0)
 	_check(_player.global_position.x > gate.global_position.x, "집: 지도를 얻으면 대문을 지나간다")
 
-	# 들판: 2-3 날아간 지도. 지나가면 바람 → 덤불 셋을 따라 걷는다 → 마지막 덤불에서 줍는다. 그 전에는 Gate_2-3.
+	# 들판: 2-3 날아간 지도(#111). 지나가면 바람 → 지도가 억새 속으로 사라진다 → 방패연을 줍고 띄운다 →
+	# 높이 올린 연에서 지도가 보인다 → 줍는다. 그 전에는 Gate_2-3.
 	var field: Node = await _go("field")
 	var chase: Node2D = field.get_node("MapChase_2-3")
 	var field_gate: Node2D = field.get_node("Gate_2-3")
+	var kite_item: Node2D = field.get_node("Keepsake_2-3_Kite")
+	var kite_game: Node2D = field.get_node("KiteFly_2-3")
 	await _walk_to(chase.global_position.x + 60.0)
 	await _wait(0.5)
 	_check(chase.state == 1 and _main.dialogue_box().visible, "들판: 지나가면 바람에 지도가 날아가고 대사가 뜬다")
 	await _close_dialogue()
-	for k in 3:
-		await _walk_to(chase.stop_position(k).x - 40.0)
-		await _wait(2.2)
-	_check(chase.stop_index == 2 and not _state.has_flag(&"map_caught"), "들판: 걸어서 따라가면 지도가 마지막 덤불까지 간다")
+	await _wait(3.0)
+	_check(chase.buried and not _state.has_flag(&"map_caught"), "들판: 지도가 억새 속으로 사라진다")
+	await _walk_to(chase.stop_position(0).x)
+	await _press(&"interact")
+	_check(not _state.has_flag(&"map_caught"), "들판: 연을 띄우기 전에는 지도를 못 줍는다")
 	await _walk_to(field_gate.global_position.x + 200.0)
 	_check(_player.global_position.x < field_gate.global_position.x, "들판: 줍기 전에는 Gate_2-3에서 막힌다")
-	await _walk_to(chase.stop_position(2).x)
+	await _walk_to(kite_item.global_position.x)
 	await _press(&"interact")
-	_check(await _wait_flag(&"map_caught", 2.0), "들판: 마지막 덤불에서 E로 지도를 줍는다(map_caught)")
+	_check(await _wait_flag(&"item_kite", 2.0), "들판: 방패연을 줍는다(item_kite)")
+	kite_game.calm_seconds = 0.6
+	kite_game.warn_seconds = 0.3
+	kite_game.gust_seconds = 0.8
+	var autoplay_script: Script = load("res://scripts/game/minigame.gd")
+	autoplay_script.autoplay = true
+	_check(await _wait_until(func(): return kite_game.running, 4.0), "들판: 연을 주우면 그 자리에서 띄운다")
+	_check(not _player.controls_enabled, "들판: 연을 날리는 동안 하윤은 걷지 않는다")
+	_check(await _wait_flag(&"kite_flown", 20.0), "들판: 돌풍 세 번을 버티면 연이 높이 오른다(kite_flown)")
+	_check(not chase.buried, "들판: 연이 오르면 지도가 다시 보인다")
+	_check(await _wait_until(func(): return _player.controls_enabled, 8.0), "들판: 연을 거두면 다시 걷는다")
+	autoplay_script.autoplay = false
+	await _walk_to(chase.stop_position(0).x)
+	await _press(&"interact")
+	_check(await _wait_flag(&"map_caught", 2.0), "들판: 보인 지도를 E로 줍는다(map_caught)")
 	await _walk_to(field_gate.global_position.x + 200.0)
 	_check(_player.global_position.x > field_gate.global_position.x, "들판: 지도를 주우면 지나간다")
 	# 들판: 2-4 경운기. 다가오면 비켜서서 인사하고, 지나간 뒤에 다시 걷는다.
@@ -192,42 +223,70 @@ func _run() -> void:
 	await _walk_to(door_gate.global_position.x + 200.0)
 	_check(_player.global_position.x > door_gate.global_position.x, "간이역: 문을 열면 대합실로 지나간다")
 
-	# 숲 4-2: 빛 갈림길 두 번. 냄새 → 틀린 빛(이끼 바위 앞으로) → 맞는 빛(다음으로).
+	# 숲 4-2: 빛 갈림길 두 번. 첫째는 냄새 → 틀린 빛(이끼 바위 앞으로) → 맞는 빛(다음으로).
+	# 둘째(#111)는 버들피리를 줍고 메아리를 따라 불어야 맞는 빛이 다음으로 이어진다.
 	var forest: Node = await _go("forest")
-	for k in [1, 2]:
-		var ask: Node2D = forest.get_node("AskSpot_4-2_%d" % k)
-		var fork_gate: Node2D = forest.get_node("Gate_4-2_%d" % k)
-		await _walk_to(fork_gate.global_position.x + 200.0)
-		_check(_player.global_position.x < fork_gate.global_position.x, "숲: 갈림길 %d은 걸어서는 못 지나간다" % k)
-		await _walk_to(ask.global_position.x)
-		await _wait(1.0)
-		await _press(&"ask_dog")
-		_check(await _wait_flag(ask.grants_flag, 20.0), "숲: 갈림길 %d에서 냄새 → 맞는 빛 쪽으로 짖는다" % k)
-		await _wait(6.0)
-		var right_x: float = ask.global_position.x + ask.target_offset.x
-		var wrong: Node2D = null
-		var right: Node2D = null
-		for i in 3:
-			var light: Node2D = forest.get_node("Look_4-2_Light%d%d" % [k, i + 1])
-			if is_equal_approx(light.global_position.x, right_x):
-				right = light
-			elif wrong == null:
-				wrong = light
-		await _walk_to(wrong.global_position.x)
-		await _press(&"interact")
-		await _wait(2.0)
-		_check(absf(_player.global_position.x - wrong.to_x) < 5.0 and _player.global_position.x < ask.global_position.x,
-				"숲: 갈림길 %d 틀린 빛을 따라가면 이끼 바위 앞으로 돌아온다" % k)
-		await _walk_to(right.global_position.x)
-		await _press(&"interact")
-		await _wait(2.0)
-		_check(_player.global_position.x > fork_gate.global_position.x, "숲: 갈림길 %d 맞는 빛을 따라가면 지나간다" % k)
+	var ask: Node2D = forest.get_node("AskSpot_4-2_1")
+	var fork_gate: Node2D = forest.get_node("Gate_4-2_1")
+	await _walk_to(fork_gate.global_position.x + 200.0)
+	_check(_player.global_position.x < fork_gate.global_position.x, "숲: 갈림길 1은 걸어서는 못 지나간다")
+	await _walk_to(ask.global_position.x)
+	await _wait(1.0)
+	await _press(&"ask_dog")
+	_check(await _wait_flag(ask.grants_flag, 20.0), "숲: 갈림길 1에서 냄새 → 맞는 빛 쪽으로 짖는다")
+	await _wait(6.0)
+	var right_x: float = ask.global_position.x + ask.target_offset.x
+	var wrong: Node2D = null
+	var right: Node2D = null
+	for i in 3:
+		var light: Node2D = forest.get_node("Look_4-2_Light1%d" % (i + 1))
+		if is_equal_approx(light.global_position.x, right_x):
+			right = light
+		elif wrong == null:
+			wrong = light
+	await _walk_to(wrong.global_position.x)
+	await _press(&"interact")
+	await _wait(2.0)
+	_check(absf(_player.global_position.x - wrong.to_x) < 5.0 and _player.global_position.x < ask.global_position.x,
+			"숲: 갈림길 1 틀린 빛을 따라가면 이끼 바위 앞으로 돌아온다")
+	await _walk_to(right.global_position.x)
+	await _press(&"interact")
+	await _wait(2.0)
+	_check(_player.global_position.x > fork_gate.global_position.x, "숲: 갈림길 1 맞는 빛을 따라가면 지나간다")
+
+	var flute_item: Node2D = forest.get_node("Keepsake_4-2_Flute")
+	var flute_game: Node2D = forest.get_node("FluteEcho_4-2")
+	var gate2: Node2D = forest.get_node("Gate_4-2_2")
+	var right2: Node2D = forest.get_node("Look_4-2_Light23")
+	await _walk_to(right2.global_position.x)
+	await _press(&"interact")
+	await _wait(2.0)
+	_check(_player.global_position.x < gate2.global_position.x and not flute_game.running,
+			"숲: 피리 없이는 맞는 빛도 이끼 바위 앞으로 돌아온다")
+	await _walk_to(flute_item.global_position.x)
+	await _press(&"interact")
+	_check(await _wait_flag(&"item_willow_flute", 2.0), "숲: 버들피리를 줍는다(item_willow_flute)")
+	flute_game.echo_gap = 0.25
+	var auto: Script = load("res://scripts/game/minigame.gd")
+	auto.autoplay = true
+	await _walk_to(flute_game.global_position.x + 60.0)
+	_check(await _wait_until(func(): return flute_game.running or flute_game.done, 3.0), "숲: 피리를 가진 채 지나가면 메아리가 들린다")
+	_check(await _wait_flag(&"flute_echo_done", 15.0), "숲: 메아리를 따라 불면 flute_echo_done")
+	auto.autoplay = false
+	_check(await _wait_until(func(): return _player.controls_enabled, 6.0), "숲: 따라 불고 나면 다시 걷는다")
+	await _walk_to(right2.global_position.x)
+	await _press(&"interact")
+	await _wait(2.0)
+	_check(_player.global_position.x > gate2.global_position.x, "숲: 따라 분 뒤에는 맞는 빛을 따라가면 지나간다")
 
 	# 강가·철교의 부탁 자리
 	for pid in ["riverside", "bridge"]:
 		var place: Node = await _go(pid)
 		for spot in place.get_children():
 			if not String(spot.name).begins_with("AskSpot_"):
+				continue
+			if pid == "bridge":  # 손전등이 있으면 냄새 부탁 자리는 닫힌다(#116). 없을 때는 gameplay_test가 본다
+				_check(spot.used, "철교: 손전등을 가져왔으면 냄새 부탁(AskSpot_6-3)은 닫힌다")
 				continue
 			var stones: Node2D = place.get_node_or_null("Gate_5-3")
 			if stones:
@@ -242,9 +301,14 @@ func _run() -> void:
 				await _wait(3.0)
 				_check(absf(_dog.global_position.x - _player.global_position.x) < 250.0, "%s: 건너간 뒤 하늘이가 따라온다" % pid)
 			await _wait(6.0)
-			if pid == "riverside":  # 5-4 동그라미 4 → 지도를 접으면 기억 장면 4 → 하윤의 물수제비 → 글
+			if pid == "riverside":  # 5-4 돌 주머니(#115) → 동그라미 4 → 기억 장면 4 → 물수제비 미니게임(선택)
+				var pouch: Node2D = place.get_node("Keepsake_5-4_Pouch")
 				var shallows: Node2D = place.get_node("Look_5-4_Shallows")
 				var memory: Node = place.get_node("Memory_5-4")
+				await _walk_to(pouch.global_position.x)
+				await _press(&"interact")
+				_check(await _wait_flag(&"item_stone_pouch", 3.0), "강가: 돌 주머니를 줍는다(item_stone_pouch)")
+				await _wait(2.0)
 				await _walk_to(shallows.global_position.x)
 				await _press(&"interact")
 				await _wait(2.5)
@@ -252,23 +316,34 @@ func _run() -> void:
 				await _wait(1.0)
 				_check(memory.playing and not _main.dialogue_box().visible, "강가: 동그라미 4를 접으면 기억 장면 4가 겹쳐 뜬다")
 				await memory.ended
-				# 기억 뒤 하윤이 돌을 던진다(#32): 두 번 튀고 가라앉은 뒤에 글
 				var skip: Node = place.get_node("Skip_5-4")
 				await _wait(0.3)
-				_check(skip.playing and not _main.dialogue_box().visible, "강가: 기억 장면 뒤 하윤이 물수제비를 뜬다")
+				_check(skip.playing and skip.running and not _main.dialogue_box().visible,
+						"강가: 기억 장면 뒤 돌 주머니로 물수제비(미니게임)를 한다")
+				var auto_skip: Script = load("res://scripts/game/minigame.gd")
+				auto_skip.autoplay = true
 				await skip.finished
-				await _wait(0.5)
-				_check(skip.touches == skip.skips + 1 and _main.dialogue_box().visible, "강가: 두 번 튀고 가라앉은 뒤 글이 나온다")
-				await _close_dialogue()
-			if pid == "bridge":
-				var slope: Node2D = place.get_node("Look_6-3_Slope")
-				var edge: Node2D = place.get_node("Gate_6-2")
-				await _walk_to(edge.global_position.x + 200.0)
-				_check(_player.global_position.x < edge.global_position.x, "철교: 끊긴 끝(Gate_6-2)에서 막힌다")
-				await _walk_to(slope.global_position.x)
-				await _press(&"interact")
-				await _wait(2.0)
-				_check(absf(_player.global_position.x - slope.to_x) < 5.0, "철교: 냄새 뒤 강둑으로 내려가면 강둑 길에 선다 (%.0f)" % _player.global_position.x)
+				auto_skip.autoplay = false
+				await _wait(0.8)
+				_check(skip.best >= 5 and _state.has_flag(&"skip_five") and not _main.dialogue_box().visible,
+						"강가: 다섯 번을 튀기면 skip_five, \"다섯 번은 어렵다\" 글은 안 나온다")
+				_check(_player.controls_enabled, "강가: 물수제비가 끝나면 다시 걷는다")
+		if pid == "bridge":
+			var slope: Node2D = place.get_node("Look_6-3_Slope")
+			var edge: Node2D = place.get_node("Gate_6-2")
+			var lamp: Node = place.get_node("BankLight_6-3")
+			var auto_lamp: Script = load("res://scripts/game/minigame.gd")
+			auto_lamp.autoplay = true
+			await _walk_to(edge.global_position.x + 200.0)
+			_check(_player.global_position.x < edge.global_position.x, "철교: 끊긴 끝(Gate_6-2)에서 막힌다")
+			_check(await _wait_until(func(): return lamp.running or lamp.done, 3.0), "철교: 손전등을 가진 채 끊긴 끝에 서면 강둑 아래를 비춘다")
+			_check(await _wait_flag(&"bridge_bank_path", 20.0), "철교: 디딤돌 다섯을 찾으면 bridge_bank_path")
+			auto_lamp.autoplay = false
+			_check(await _wait_until(func(): return _player.controls_enabled, 6.0), "철교: 다 비추면 다시 걷는다")
+			await _walk_to(slope.global_position.x)
+			await _press(&"interact")
+			await _wait(2.0)
+			_check(absf(_player.global_position.x - slope.to_x) < 5.0, "철교: 디딤돌을 찾은 뒤 강둑으로 내려가면 강둑 길에 선다 (%.0f)" % _player.global_position.x)
 
 	# 나루터 엔딩(7-2 ~ 7-5, 지금은 사진 뒤 바로 제목)
 	var ferry: Node = await _go("ferry")

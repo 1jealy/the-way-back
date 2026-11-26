@@ -95,6 +95,29 @@ func play_throw() -> void:
 		await rig.play_throw()
 
 
+## 줍기 동작(#114): 무릎을 굽혀 허리를 숙이고 집은 뒤 일어난다. 손이 땅에 닿는 때에 돌아온다.
+## 그동안 잠금(pickup)이고 일어나면 풀린다. 컷아웃이 없으면 바로 돌아온다.
+func play_pickup() -> void:
+	var rig := _rig()
+	if rig == null or not rig.has_method("play_pickup"):
+		return
+	lock(&"pickup")
+	await rig.play_pickup()
+	_unlock_after_pickup()
+
+
+func _unlock_after_pickup() -> void:
+	await get_tree().create_timer(0.55, false).timeout
+	unlock(&"pickup")
+
+
+## 장면이 매 프레임 자세 위에 얹는 움직임(관절: 도). 비우면 자세 그대로(#114).
+func set_motion(m: Dictionary) -> void:
+	var rig := _rig()
+	if rig and "motion" in rig:
+		rig.motion = m
+
+
 ## 던진 물건이 출발할 손 자리(전역 좌표).
 func hand_point() -> Vector2:
 	var rig := _rig()
