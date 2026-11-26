@@ -13,6 +13,10 @@ const RIVER := Color(0.36, 0.48, 0.58, 0.55)
 const NOTE_COLOR := Color(0.2, 0.18, 0.16, 1.0)
 const CHILD_COLOR := Color(0.18, 0.24, 0.42, 1.0)
 const CIRCLE_RADIUS := 50.0
+## 선 굵기(#117 뒤): 지도 그림의 붓 선(6~8px)과 어울리게. 예전 3·4·6px은 그림 위에서 머리카락처럼 가늘었다.
+const LINE_W := 6.0
+const TRAIL_W := 8.0
+const CHECK_W := 9.0
 ## 지도 글씨. 할아버지(차분한 펜글씨)와 하윤(동글동글한 아이 글씨). 다섯째 메모만 하윤 글씨다(반전 복선).
 ## 지도 문구 글자만 든 서브셋이다(tools/font_subset.py). 없는 글자는 본문 글꼴로 그린다.
 const GRANDPA_FONT := preload("res://assets/fonts/grandpa_hand_subset.ttf")
@@ -153,15 +157,15 @@ func _draw_route() -> void:
 			if not MapData.PLACES[i + 1].has("wiggle"):
 				for k in pts.size():
 					pts[k] = _wobble(pts[k], 1.3)
-			draw_polyline(pts, PENCIL, 3.0, true)
+			draw_polyline(pts, PENCIL, LINE_W, true)
 	for place in MapData.PLACES:
-		draw_circle(place["pos"], 6.0, PENCIL)
+		draw_circle(place["pos"], 9.0, PENCIL)
 	if not _paper:
 		_draw_boat()
 
 
 ## 점들을 이은 선을 일정한 간격의 짧은 선으로 그린다.
-func _draw_dashed(pts: PackedVector2Array, color: Color = PENCIL, dash: float = 10.0, gap: float = 12.0) -> void:
+func _draw_dashed(pts: PackedVector2Array, color: Color = PENCIL, dash: float = 14.0, gap: float = 14.0, width: float = LINE_W) -> void:
 	var drawing := true
 	var left := dash
 	for k in pts.size() - 1:
@@ -172,7 +176,7 @@ func _draw_dashed(pts: PackedVector2Array, color: Color = PENCIL, dash: float = 
 		while pos < seg:
 			var step := minf(left, seg - pos)
 			if drawing:
-				draw_line(a.lerp(b, pos / seg), a.lerp(b, (pos + step) / seg), color, 3.0, true)
+				draw_line(a.lerp(b, pos / seg), a.lerp(b, (pos + step) / seg), color, width, true)
 			pos += step
 			left -= step
 			if left <= 0.0:
@@ -189,9 +193,9 @@ func _draw_side_roads() -> void:
 				var wobbly := PackedVector2Array()
 				for k in pts.size():
 					wobbly.append(_wobble(pts[k], 2.7))
-				draw_polyline(wobbly, PENCIL_LIGHT, 4.0, true)
+				draw_polyline(wobbly, PENCIL_LIGHT, LINE_W, true)
 			"trail":
-				_draw_dashed(pts, PENCIL_LIGHT, 8.0, 10.0)
+				_draw_dashed(pts, PENCIL_LIGHT, 12.0, 12.0, LINE_W - 1.0)
 			"rail":
 				draw_polyline(pts, PENCIL_LIGHT, 2.0, true)
 				for k in pts.size() - 1:
@@ -243,7 +247,7 @@ func _draw_trail() -> void:
 		p += 0.08
 	pts.append(_wobble(MapData.route_point(progress), 4.1) + Vector2(0.0, 6.0))
 	if pts.size() >= 2:
-		draw_polyline(pts, TRAIL, 4.0, true)
+		draw_polyline(pts, TRAIL, TRAIL_W, true)
 
 
 func _draw_circle_mark(n: int) -> void:
@@ -256,7 +260,7 @@ func _draw_circle_mark(n: int) -> void:
 		var a := TAU * float(s) / float(steps) - 1.2
 		var r := CIRCLE_RADIUS + sin(a * 3.0 + n) * (6.0 if child else 3.0)
 		pts.append(c + Vector2(cos(a), sin(a)) * r)
-	draw_polyline(pts, CHILD_COLOR if child else PENCIL, 4.0 if child else 3.0, true)
+	draw_polyline(pts, CHILD_COLOR if child else PENCIL, LINE_W + 1.0 if child else LINE_W, true)
 	var t: float = checks.get(n, 0.0)
 	if t <= 0.0:
 		return
@@ -265,7 +269,7 @@ func _draw_circle_mark(n: int) -> void:
 	var a1 := c + Vector2(42.0, -22.0)
 	var a2 := c + Vector2(76.0, -78.0)
 	var first := clampf(t / 0.35, 0.0, 1.0)
-	draw_line(a0, a0.lerp(a1, first), CHECK, 6.0, true)
+	draw_line(a0, a0.lerp(a1, first), CHECK, CHECK_W, true)
 	if t > 0.35:
 		var second := clampf((t - 0.35) / 0.65, 0.0, 1.0)
-		draw_line(a1, a1.lerp(a2, second), CHECK, 6.0, true)
+		draw_line(a1, a1.lerp(a2, second), CHECK, CHECK_W, true)
