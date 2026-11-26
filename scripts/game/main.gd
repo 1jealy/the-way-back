@@ -23,7 +23,12 @@ var _changing: bool = false
 const LOOK_AHEAD := 150.0
 const LOOK_RATE_WALK := 1.4
 const LOOK_RATE_REST := 0.5
+const GLANCE_MAX := 760.0
+const GLANCE_RATE := 2.2
 var _look: float = 0.0
+## 연출이 카메라를 잠깐 다른 곳으로 돌린다(glance_at): 바라볼 세계 x, 남은 시간.
+var _glance_x: float = NAN
+var _glance_left: float = 0.0
 
 ## 처음 걷기 안내(집에서만): 하윤이 이만큼 걸으면 사라지고 플래그를 세운다(#87).
 const WALK_HINT_FLAG := &"walked_once"
@@ -136,8 +141,21 @@ func _update_look(delta: float) -> void:
 	var walking := _player.controls_enabled and absf(_player.velocity.x) > 10.0
 	var target := signf(_player.velocity.x) * LOOK_AHEAD if walking else 0.0
 	var rate := LOOK_RATE_WALK if walking else LOOK_RATE_REST
+	if not is_nan(_glance_x):
+		_glance_left -= delta
+		if _glance_left <= 0.0:
+			_glance_x = NAN
+		else:
+			target = clampf(_glance_x - _player.global_position.x, -GLANCE_MAX, GLANCE_MAX)
+			rate = GLANCE_RATE
 	_look = lerpf(_look, target, 1.0 - exp(-rate * delta))
 	_camera.offset.x = _look
+
+
+## 연출용: 카메라가 world_x 쪽을 seconds 동안 바라봤다가 돌아온다(연 날리기 뒤 지도 자리, #119).
+func glance_at(world_x: float, seconds: float) -> void:
+	_glance_x = world_x
+	_glance_left = seconds
 
 
 ## 처음 시작한 집에서만 "A D / ← →  걷기"를 띄우고, 조금 걸으면 사라진다(#87).

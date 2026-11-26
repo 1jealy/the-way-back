@@ -119,5 +119,6 @@ dog_look = -1
 [node name="BankLight_6-3" type="Node2D" parent="."]
 position = Vector2(3520, 810)
 script = ExtResource("bank_light_script")
+start_prompt = "강둑 비추기"
 ask_spot = NodePath("../AskSpot_6-3")
 grants_flag = &"bridge_bank_path"

@@ -31,8 +31,12 @@ const LIT_COLOR := Color(1.0, 0.93, 0.72)
 ## 빛이 이만큼 머물러야 돌을 찾는다(초).
 @export var dwell: float = 0.7
 
-## 지금까지 찾은 돌 수.
+## 지금까지 찾은 돌 수. 돌은 어느 순서로 비춰도 된다(#119 — 순서대로만 받아서 다른 돌을 비추면 반응이 없었다).
 var found: int = 0
+## 돌마다 찾았나.
+var lit: Array[bool] = []
+## 지금 빛이 머무르는 돌(없으면 -1).
+var _cur: int = -1
 ## 빛의 각도(도, 수평에서 아래로).
 var aim: float = 40.0
 ## aim(비추는 중) / done
@@ -81,7 +85,7 @@ func _process(delta: float) -> void:
 	if not running and not done and GameState.has_flag(trigger_flag):
 		var player := get_tree().get_first_node_in_group("player") as Player
 		if player and player.controls_enabled and player.global_position.x >= global_position.x:
-			play()
+			request_start()
 	super._process(delta)
 
 
@@ -98,6 +102,10 @@ func _begin() -> void:
 	_sfx.play()
 	aim = 40.0
 	found = 0
+	lit.clear()
+	lit.resize(stones.size())
+	lit.fill(false)
+	_cur = -1
 	phase = &"aim"
 	var tw := create_tween()
 	tw.tween_property(_beam, "modulate:a", 1.0, 0.35)
@@ -237,7 +245,7 @@ func _tick(delta: float) -> void:
 	if phase == &"aim":
 		var dir := 0.0
 		if MiniGame.autoplay:
-			var want := aim_for(stones[found])
+			var want := aim_for(stones[next_unlit()])
 			dir = clampf((want - aim) / 4.0, -1.0, 1.0)
 		else:
 			# 오른쪽(→)은 멀리(빛을 든다), 왼쪽(←)은 가까이(발밑으로)
@@ -258,10 +266,20 @@ func _tick(delta: float) -> void:
 
 func _check(delta: float) -> void:
 	var half := _half()
-	if found < stones.size() and angle_off(stones[found]) < half * 0.6:
+	# 빛 가운데에 가장 가까운, 아직 못 찾은 돌
+	var best := -1
+	var best_off := half * 0.6
+	for i in stones.size():
+		if not lit[i] and angle_off(stones[i]) < best_off:
+			best = i
+			best_off = angle_off(stones[i])
+	if best != _cur:
+		_cur = best
+		_hold = 0.0
+	if _cur >= 0:
 		_hold += delta
 		if _hold >= dwell:
-			_light(found)
+			_light(_cur)
 	else:
 		_hold = maxf(0.0, _hold - delta * 2.0)
 	for i in decoys.size():
@@ -277,13 +295,23 @@ func _check(delta: float) -> void:
 			_decoy_hold[i] = maxf(0.0, _decoy_hold[i] - delta)
 
 
+## 아직 못 찾은 돌 중 가장 가까운(번호가 작은) 것. 다 찾았으면 -1.
+func next_unlit() -> int:
+	for i in lit.size():
+		if not lit[i]:
+			return i
+	return -1
+
+
 func _light(i: int) -> void:
 	_hold = 0.0
+	_cur = -1
+	lit[i] = true
 	found += 1
 	_hinted = false
 	_pulse = 1.0
 	_sfx.stream = _chime
-	_sfx.pitch_scale = 1.0 + i * 0.12
+	_sfx.pitch_scale = 1.0 + (found - 1) * 0.12  # 찾을수록 종소리가 올라간다
 	_sfx.play()
 	var g := _stone_glows[i]
 	var tw := create_tween().set_parallel()
@@ -327,14 +355,15 @@ func _shade() -> void:
 	for i in _stone_nodes.size():
 		var s := _stone_nodes[i]
 		var a := 0.0
-		if i < found:
+		if lit[i]:
 			a = 1.0
 			s.modulate = Color(LIT_COLOR.lerp(STONE_COLOR, 0.35), 1.0)
 			continue
 		var off := angle_off(stones[i])
 		a = clampf(1.0 - (off - half * 0.5) / (half * 1.6), 0.0, 1.0) * on * 0.9
-		if i == found:
+		if i == _cur:
 			a = maxf(a, clampf(_hold / dwell, 0.0, 1.0))
+		if i == next_unlit():
 			if help:
 				a = maxf(a, 0.18 + 0.12 * sin(_t * 3.0))
 		s.modulate = Color(STONE_COLOR, a)

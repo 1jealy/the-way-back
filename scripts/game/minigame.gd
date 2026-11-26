@@ -28,6 +28,9 @@ static var autoplay: bool = false
 @export var grants_flag: StringName = &""
 ## 이만큼 어긋나면 도움이 켜진다(빛이 넓어지거나 하늘이가 먼저 움직인다).
 @export var help_after: int = 3
+## 비우지 않으면 저절로 시작하지 않고, 그 자리에 "[E] <start_prompt>"를 띄워 하윤이 직접 시작한다
+## (#119 — 지나가면 조작을 빼앗고 시작해서 물건을 꺼내 쓴다는 느낌이 약했다). 검사(autoplay)는 바로 시작.
+@export var start_prompt: String = ""
 
 var running: bool = false
 var done: bool = false
@@ -36,6 +39,9 @@ var help: bool = false
 
 var _player: Player
 var _hint: Node2D
+var _starter: Interactable
+## [E]로 시작했으면 그 E를 한 번 뗄 때까지는 놀이 입력으로 치지 않는다(시작하자마자 연이 감기지 않게).
+var _wait_release: bool = false
 
 
 func _ready() -> void:
@@ -57,6 +63,48 @@ func play() -> void:
 	started.emit()
 	_begin()
 	await cleared
+
+
+## 하위 부품의 시작 조건이 맞을 때 부른다. start_prompt가 있으면 [E] 안내를 띄워 기다리고, 없으면 바로 시작.
+func request_start() -> void:
+	if running or done:
+		return
+	if start_prompt.is_empty() or MiniGame.autoplay:
+		play()
+		return
+	if _starter != null:
+		return
+	_starter = Interactable.new()
+	_starter.name = "Starter"
+	_starter.prompt = start_prompt
+	_starter.size = Vector2(420.0, 300.0)
+	_starter.one_shot = true  # 진행에 필요한 대상이라 하늘이 힌트가 가리킨다
+	add_child(_starter)
+	_starter.global_position = Vector2(global_position.x, 810.0)
+	_starter.interacted.connect(_on_starter)
+
+
+## [E]로 시작 안내를 눌렀다.
+func _on_starter() -> void:
+	if _starter:
+		_starter.queue_free()
+		_starter = null
+	_wait_release = true
+	play()
+
+
+## 놀이가 E(꾹 누르기)를 읽을 때 쓴다. 시작한 E를 뗀 뒤부터 참이 될 수 있다.
+func e_held() -> bool:
+	if _wait_release:
+		if Input.is_action_pressed("interact"):
+			return false
+		_wait_release = false
+	return Input.is_action_pressed("interact")
+
+
+## 시작 안내가 떠 있나(검사용).
+func is_offering() -> bool:
+	return _starter != null
 
 
 ## 하위 부품: 시작할 때.

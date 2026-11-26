@@ -589,6 +589,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_flute_rounds()
 	await _check_clearing()
 	await _check_map_closeup()
 	await _check_album()
@@ -757,7 +758,11 @@ func _check_kite_fly(place: Node2D, chase: Node2D) -> void:
 	game.calm_seconds = 0.4
 	game.warn_seconds = 0.2
 	game.gust_seconds = 0.6
-	_check(await _wait_until(func(): return game.running, 3.0), "연: 주우면 그 자리에서 연 날리기가 시작된다")
+	var offered := await _wait_until(func(): return game.is_offering(), 4.0)
+	_check(offered and not game.running, "연: 주우면 저절로 시작하지 않고 [E] 연 띄우기가 뜬다(#119)")
+	await _wait(0.2)
+	await _press(&"interact")
+	_check(await _wait_until(func(): return game.running, 1.0), "연: E를 누르면 그 자리에서 연 날리기가 시작된다")
 	_check(await _wait_until(func(): return not item.get_node("Art").visible, 4.0), "연: 주운 방패연 그림은 떠올라 사라진다")
 	_check(_player.is_locked_by(&"minigame") and _player.pose == &"kite", "연: 하윤이 멈추고 두 손으로 연줄을 잡는다")
 	_check(game.has_key_hint(), "연: 처음에는 손 옆에 [E] 꾹 누르면 감기")
@@ -932,6 +937,36 @@ func _check_album() -> void:
 	await _wait(0.2)
 
 
+## 숲 피리(FluteEcho, #119): [E] 안내로 직접 시작하고, 첫 판은 앞 세 음만 → 다음 판에 전부. 다 맞으면 grants_flag.
+func _check_flute_rounds() -> void:
+	var game: Node2D = load("res://scripts/game/flute_echo.gd").new()
+	game.trigger_flag = &"item_test_flute"
+	game.grants_flag = &"test_flute_done"
+	game.start_prompt = "피리 불기"
+	game.echo_gap = 0.2
+	game.entrance_x = _player.global_position.x + 900.0
+	_main.current_place().add_child(game)
+	game.global_position = Vector2(_player.global_position.x - 20.0, 810.0)
+	_state.set_flag(&"item_test_flute")
+	var offered := await _wait_until(func(): return game.is_offering(), 1.0)
+	_check(offered and not game.running, "피리: 지나가도 저절로 시작하지 않고 [E] 피리 불기가 뜬다(#119)")
+	await _wait(0.2)
+	await _press(&"interact")
+	var on := await _wait_until(func(): return game.running, 1.0)
+	_check(on and game.round_len == 3 and game.melody.size() > 3, "피리: 첫 판은 앞 세 음만 메아리친다")
+	var auto: Script = load("res://scripts/game/minigame.gd")
+	auto.autoplay = true
+	var second := await _wait_until(func(): return game.round_len == game.melody.size(), 8.0)
+	var finished := await _wait_until(func(): return _state.has_flag(&"test_flute_done"), 10.0)
+	auto.autoplay = false
+	_check(second and finished, "피리: 첫 판을 해내면 끝까지 메아리치고, 다 맞으면 끝난다")
+	await _wait_until(func(): return _player.controls_enabled, 4.0)
+	game.queue_free()
+	for f in [&"item_test_flute", &"test_flute_done"]:
+		_state.flags.erase(f)
+	await _wait(3.0)
+
+
 ## 5-2 물그림자(WaterReflection): 물가에서 하윤은 흐리게 비치고 하늘이는 비치지 않는다. 카메라가 살짝 내려간다.
 func _check_reflection() -> void:
 	var water: Node2D = load("res://scripts/game/water_reflection.gd").new()
@@ -990,14 +1025,18 @@ func _check_bank_light() -> void:
 		game._decoy_gone[0] = 0.0
 		game.aim = game.aim_for(game.decoys[0])
 		await _wait(game.dwell + 0.5)
-	_check(game.misses >= 3 and game.help and game.found == 0, "강둑 비추기: 물그림자를 오래 비추면 흩어지고(어긋남), 세 번이면 도움이 켜진다")
+	_check(game.misses >= 3 and game.help, "강둑 비추기: 물그림자를 오래 비추면 흩어지고(어긋남), 세 번이면 도움이 켜진다")
 	_check(not _state.has_flag(&"bank_test_path"), "강둑 비추기: 어긋나도 실패 화면 없이 계속한다")
-	game.aim = game.aim_for(game.stones[2])
+	var before: int = game.found
+	var far: int = game.lit.rfind(false)  # 아직 못 찾은 돌 중 가장 먼 것(순서상 맨 뒤)
+	game.aim = game.aim_for(game.stones[far])
 	await _wait(game.dwell + 0.3)
-	_check(game.found == 0, "강둑 비추기: 차례가 아닌 돌은 비춰도 찾은 것으로 치지 않는다")
-	game.aim = game.aim_for(game.stones[0])
+	_check(far > game.next_unlit() and game.found > before and game.lit[far],
+			"강둑 비추기: 어느 돌이든 빛이 머물면 그 돌을 찾는다(순서 없음, #119)")
+	before = game.found
+	game.aim = game.aim_for(game.stones[far])
 	await _wait(game.dwell + 0.3)
-	_check(game.found == 1, "강둑 비추기: 다음 돌에 빛이 머물면 그 돌을 찾는다")
+	_check(game.found == before, "강둑 비추기: 이미 찾은 돌은 다시 세지 않는다")
 	var auto: Script = load("res://scripts/game/minigame.gd")
 	auto.autoplay = true
 	var lit := await _wait_until(func(): return _state.has_flag(&"bank_test_path"), 15.0)

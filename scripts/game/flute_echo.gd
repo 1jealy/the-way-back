@@ -22,6 +22,12 @@ const MIX_RATE := 22050
 @export var melody: PackedInt32Array = PackedInt32Array([1, 2, 1, 0])
 ## 메아리 음 사이 간격(초).
 @export var echo_gap: float = 0.75
+## 첫 판은 앞의 이만큼만 메아리친다(짧게 → 전부, #119). 0이면 처음부터 전부.
+@export var warmup_notes: int = 3
+## 지금 판에서 따라 불 음 수.
+var round_len: int = 0
+## 틀린 뒤 다시 듣는 판은 메아리가 조금 빠르다(#119 — 처음부터 다시 듣는 대기가 길었다).
+var _retry: bool = false
 
 ## 지금까지 맞게 분 음 수.
 var played: int = 0
@@ -47,7 +53,7 @@ func _process(delta: float) -> void:
 	if not running and not done and GameState.has_flag(trigger_flag):
 		var player := get_tree().get_first_node_in_group("player") as Player
 		if player and player.controls_enabled and player.global_position.x >= global_position.x:
-			play()
+			request_start()
 	super._process(delta)
 
 
@@ -60,6 +66,8 @@ func _begin() -> void:
 		_player.face(1)
 		_player.set_pose(&"flute")
 	_build()
+	round_len = mini(warmup_notes, melody.size()) if warmup_notes > 0 else melody.size()
+	_retry = false
 	_listen()
 
 
@@ -142,9 +150,9 @@ func _listen() -> void:
 	for i in _slots.size():
 		_slots[i].modulate.a = 0.0
 		_rings[i].default_color.a = 0.0
-	await _wait(0.6)
-	var gap := echo_gap * (1.5 if help else 1.0)
-	for i in melody.size():
+	await _wait(0.3 if _retry else 0.6)
+	var gap := echo_gap * (1.5 if help else 1.0) * (0.7 if _retry else 1.0)
+	for i in round_len:
 		if gen != _gen or not running:
 			return
 		_echo(melody[i])
@@ -160,7 +168,7 @@ func _listen() -> void:
 		return
 	# 하윤 차례. 도움 전에는 알갱이가 조금 흐려진다(외워서 따라 불기).
 	if not help:
-		for s in _slots:
+		for s in _slots.slice(0, round_len):
 			create_tween().tween_property(s, "modulate:a", 0.35, 0.8)
 	phase = &"play"
 	show_key_hint(["←", "E", "→"], "낮게 · 가운데 · 높게")
@@ -213,8 +221,11 @@ func _blow(note: int) -> void:
 		_slots[i].modulate.a = 1.0
 		_rings[i].global_position = slot_position(i)
 		create_tween().tween_property(_rings[i], "default_color:a", 0.95, 0.3)
-		if played >= melody.size():
-			_finish()
+		if played >= round_len:
+			if round_len < melody.size():
+				_next_round()
+			else:
+				_finish()
 	else:
 		_note_player.stream = _breath
 		_note_player.play()
@@ -228,9 +239,25 @@ func _blow(note: int) -> void:
 			create_tween().tween_property(_slots[k], "modulate:a", 0.0, 0.5)
 			create_tween().tween_property(_rings[k], "default_color:a", 0.0, 0.5)
 		miss()
-		await _wait(1.0)
+		_retry = true
+		await _wait(0.5)
 		if running:
 			_listen()
+
+
+## 첫 판(짧은 선율)을 해냈다: 링이 한 번 반짝이고, 이번엔 끝까지 메아리친다.
+func _next_round() -> void:
+	phase = &"listen"
+	hide_key_hint()
+	for k in round_len:
+		var t := create_tween()
+		t.tween_property(_rings[k], "default_color:a", 0.0, 0.6)
+		t.parallel().tween_property(_slots[k], "modulate:a", 0.0, 0.6)
+	round_len = melody.size()
+	_retry = false
+	await _wait(0.9)
+	if running:
+		_listen()
 
 
 ## 다 맞았다: 입구가 환해지고 하늘이가 그 입구 앞으로 달려가 앉는다.

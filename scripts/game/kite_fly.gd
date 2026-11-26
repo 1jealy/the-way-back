@@ -27,7 +27,7 @@ const CREAM := Color(0.96, 0.91, 0.8)
 @export var zone_center: float = 0.68
 @export var zone_half: float = 0.1
 ## 돌풍 사이 쉬는 시간, 예고 시간, 돌풍 시간(초).
-@export var calm_seconds: float = 3.0
+@export var calm_seconds: float = 1.4
 @export var warn_seconds: float = 1.0
 @export var gust_seconds: float = 1.4
 ## 돌풍 동안 이만큼(비율) 띠 안에 있으면 버틴 것.
@@ -73,7 +73,7 @@ func _process(delta: float) -> void:
 			_waiting -= delta
 			if _waiting <= 0.0:
 				_waiting = -1.0
-				play()
+				request_start()
 	super._process(delta)
 
 
@@ -221,7 +221,7 @@ func _set_phase(p: StringName, seconds: float) -> void:
 func _holding() -> bool:
 	if MiniGame.autoplay:
 		return h < zone_center
-	return Input.is_action_pressed("interact")
+	return e_held()
 
 
 func _tick(delta: float) -> void:
@@ -323,7 +323,14 @@ func _finish() -> void:
 	await tween.finished
 	if not grants_flag.is_empty():
 		GameState.set_flag(grants_flag)  # 지도 자리가 보인다(MapChase.reveal_flag)
-	await _wait(1.6)
+	# 높이 오른 연에서 보이듯, 카메라가 지도가 반짝이는 억새 쪽을 잠깐 바라본다(#119)
+	var chase := get_tree().get_first_node_in_group("map_chase")
+	var main := get_tree().get_first_node_in_group("main")
+	if chase and main and main.has_method("glance_at") and chase.has_method("stop_position"):
+		main.glance_at(chase.stop_position(chase.stops.size() - 1).x, 2.4)
+		await _wait(2.4)
+	else:
+		await _wait(1.6)
 	var fade := create_tween().set_parallel()
 	for n in [_kite_root, _string, _band, _tail]:
 		fade.tween_property(n, "modulate:a", 0.0, 0.8)

@@ -149,6 +149,7 @@ art_rotation = -18.0
 [node name="KiteFly_2-3" type="Node2D" parent="."]
 position = Vector2(5300, 810)
 script = ExtResource("kite_script")
+start_prompt = "연 띄우기"
 grants_flag = &"kite_flown"
 
 [node name="Gate_2-3" type="StaticBody2D" parent="."]

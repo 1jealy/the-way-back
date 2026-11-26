@@ -160,6 +160,7 @@ art_rotation = -8.0
 [node name="FluteEcho_4-2" type="Node2D" parent="."]
 position = Vector2(4760, 810)
 script = ExtResource("flute_script")
+start_prompt = "피리 불기"
 grants_flag = &"flute_echo_done"
 entrance_x = 5600.0
 
