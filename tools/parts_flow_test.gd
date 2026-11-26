@@ -312,10 +312,10 @@ func _run() -> void:
 				await _wait(0.3)
 				_check(skip.playing and skip.running and not _main.dialogue_box().visible,
 						"강가: 기억 장면 뒤 돌 주머니로 물수제비(미니게임)를 한다")
-				var auto: Script = load("res://scripts/game/minigame.gd")
-				auto.autoplay = true
+				var auto_skip: Script = load("res://scripts/game/minigame.gd")
+				auto_skip.autoplay = true
 				await skip.finished
-				auto.autoplay = false
+				auto_skip.autoplay = false
 				await _wait(0.8)
 				_check(skip.best >= 5 and _state.has_flag(&"skip_five") and not _main.dialogue_box().visible,
 						"강가: 다섯 번을 튀기면 skip_five, \"다섯 번은 어렵다\" 글은 안 나온다")
