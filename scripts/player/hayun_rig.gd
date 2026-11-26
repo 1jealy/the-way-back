@@ -94,6 +94,9 @@ const POSES := {
 	# 피리 불기(숲 4-2, #111): 두 손을 입 앞으로 모으고 고개를 살짝 숙인다.
 	&"flute": {"shoulder": -58.0, "elbow": -118.0, "far_shoulder": -50.0, "far_elbow": -122.0, "head": 2.0,
 			"torso": 2.0},
+	# 손전등 비추기(철교 6-2, #116): 가까운 팔을 앞으로 뻗어 아래를 비추고, 먼 팔은 몸 옆에. 고개는 아래를 본다.
+	&"flashlight": {"shoulder": -48.0, "elbow": -14.0, "far_shoulder": -14.0, "far_elbow": -24.0, "head": 9.0,
+			"torso": 5.0, "ponytail": 3.0},
 	# 바닥에 앉기(오프닝 0-1 마루, 배 위 7-6): 다리를 앞으로 뻗는다.
 	&"sit_floor": {"hip": -92.0, "knee": 10.0, "ankle": -6.0, "far_hip": -90.0, "far_knee": 14.0, "far_ankle": -6.0,
 			"skirt": -8.0, "far_skirt": -10.0, "shoulder": -30.0, "elbow": -30.0, "far_shoulder": -26.0, "far_elbow": -30.0,

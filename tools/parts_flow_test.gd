@@ -113,6 +113,11 @@ func _run() -> void:
 	_check(_state.has_flag(&"has_map"), "집: 서랍에서 지도를 얻는다")
 	var hint: Label = _main.get_node("Overlay/MapHint")
 	_check(hint.visible, "집: 지도를 얻으면 [M] 지도 안내가 뜬다")
+	var torch: Node2D = house.get_node("Keepsake_1-6_Flashlight")  # #116
+	await _walk_to(torch.global_position.x)
+	await _press(&"interact")
+	_check(await _wait_flag(&"item_flashlight", 3.0), "집: 마당에서 할아버지 손전등을 줍는다(item_flashlight)")
+	await _wait(1.5)
 	await _walk_to(gate.global_position.x + 200.0)
 	_check(_player.global_position.x > gate.global_position.x, "집: 지도를 얻으면 대문을 지나간다")
 
@@ -280,6 +285,9 @@ func _run() -> void:
 		for spot in place.get_children():
 			if not String(spot.name).begins_with("AskSpot_"):
 				continue
+			if pid == "bridge":  # 손전등이 있으면 냄새 부탁 자리는 닫힌다(#116). 없을 때는 gameplay_test가 본다
+				_check(spot.used, "철교: 손전등을 가져왔으면 냄새 부탁(AskSpot_6-3)은 닫힌다")
+				continue
 			var stones: Node2D = place.get_node_or_null("Gate_5-3")
 			if stones:
 				await _walk_to(stones.global_position.x + 200.0)
@@ -320,15 +328,22 @@ func _run() -> void:
 				_check(skip.best >= 5 and _state.has_flag(&"skip_five") and not _main.dialogue_box().visible,
 						"강가: 다섯 번을 튀기면 skip_five, \"다섯 번은 어렵다\" 글은 안 나온다")
 				_check(_player.controls_enabled, "강가: 물수제비가 끝나면 다시 걷는다")
-			if pid == "bridge":
-				var slope: Node2D = place.get_node("Look_6-3_Slope")
-				var edge: Node2D = place.get_node("Gate_6-2")
-				await _walk_to(edge.global_position.x + 200.0)
-				_check(_player.global_position.x < edge.global_position.x, "철교: 끊긴 끝(Gate_6-2)에서 막힌다")
-				await _walk_to(slope.global_position.x)
-				await _press(&"interact")
-				await _wait(2.0)
-				_check(absf(_player.global_position.x - slope.to_x) < 5.0, "철교: 냄새 뒤 강둑으로 내려가면 강둑 길에 선다 (%.0f)" % _player.global_position.x)
+		if pid == "bridge":
+			var slope: Node2D = place.get_node("Look_6-3_Slope")
+			var edge: Node2D = place.get_node("Gate_6-2")
+			var lamp: Node = place.get_node("BankLight_6-3")
+			var auto_lamp: Script = load("res://scripts/game/minigame.gd")
+			auto_lamp.autoplay = true
+			await _walk_to(edge.global_position.x + 200.0)
+			_check(_player.global_position.x < edge.global_position.x, "철교: 끊긴 끝(Gate_6-2)에서 막힌다")
+			_check(await _wait_until(func(): return lamp.running or lamp.done, 3.0), "철교: 손전등을 가진 채 끊긴 끝에 서면 강둑 아래를 비춘다")
+			_check(await _wait_flag(&"bridge_bank_path", 20.0), "철교: 디딤돌 다섯을 찾으면 bridge_bank_path")
+			auto_lamp.autoplay = false
+			_check(await _wait_until(func(): return _player.controls_enabled, 6.0), "철교: 다 비추면 다시 걷는다")
+			await _walk_to(slope.global_position.x)
+			await _press(&"interact")
+			await _wait(2.0)
+			_check(absf(_player.global_position.x - slope.to_x) < 5.0, "철교: 디딤돌을 찾은 뒤 강둑으로 내려가면 강둑 길에 선다 (%.0f)" % _player.global_position.x)
 
 	# 나루터 엔딩(7-2 ~ 7-5, 지금은 사진 뒤 바로 제목)
 	var ferry: Node = await _go("ferry")

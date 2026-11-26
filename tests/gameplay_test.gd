@@ -590,6 +590,7 @@ func _run() -> void:
 	await _check_tractor()
 	await _check_shake()
 	await _check_reflection()
+	await _check_bank_light()
 	await _check_motes()
 	await _check_shadow()
 	await _check_cutout()
@@ -848,6 +849,60 @@ func _check_reflection() -> void:
 			"물그림자: 물가를 벗어나면 반사가 사라지고 카메라가 돌아온다")
 	water.queue_free()
 	_player.global_position.x = water.global_position.x - 30.0
+## 6-2 강둑 비추기(BankLight, #116): 손전등이 없으면 시작하지 않고 냄새 부탁이 그대로다. 있으면 부탁 자리를 닫고,
+## 끊긴 끝을 지나면 손전등을 켠다. 물그림자를 오래 비추면 어긋남 → 세 번이면 빛이 넓어진다. 돌 다섯을 찾으면 길이 열린다.
+func _check_bank_light() -> void:
+	var place: Node2D = _main.current_place()
+	var px := _player.global_position.x
+	var spot: Area2D = _add_spot(1, 0.0, &"bank_test_path")
+	var game: Node2D = load("res://scripts/game/bank_light.gd").new()
+	game.trigger_flag = &"item_test_torch"
+	game.grants_flag = &"bank_test_path"
+	game.dwell = 0.3
+	place.add_child(game)
+	game.ask_spot = game.get_path_to(spot)
+	game.global_position = Vector2(px + 60.0, 810.0)
+	var st := PackedVector2Array()
+	for k in 5:
+		st.append(Vector2(px + 250.0 + k * 90.0, 960.0 + [0, 40, 66, 46, 10][k]))
+	game.stones = st
+	game.decoys = PackedVector2Array([Vector2(px + 960.0, 1021.0), Vector2(px + 1000.0, 1000.0)])
+	_player.global_position.x = px + 100.0
+	await _wait(0.4)
+	_check(not game.running and not spot.used, "강둑 비추기: 손전등 없이 오면 시작하지 않고 냄새 부탁이 그대로다")
+	_state.set_flag(&"item_test_torch")
+	await _wait(0.1)
+	_check(spot.used, "강둑 비추기: 손전등이 있으면 냄새 부탁 자리를 닫는다")
+	_check(await _wait_until(func(): return game.running, 2.0), "강둑 비추기: 손전등을 가진 채 끊긴 끝을 지나면 시작한다")
+	_check(_player.is_locked_by(&"minigame") and _player.pose == &"flashlight" and game.has_key_hint(),
+			"강둑 비추기: 하윤이 멈춰 손전등을 아래로 비추고, 손 옆에 [← →] 비추기")
+	var start_aim: float = game.aim
+	await _hold(&"move_left", 0.4)
+	_check(game.aim > start_aim + 5.0 and not game.has_key_hint(), "강둑 비추기: ←로 빛이 발밑 쪽으로 내려가고 키 안내가 사라진다")
+	for k in 3:
+		game._decoy_gone[0] = 0.0
+		game.aim = game.aim_for(game.decoys[0])
+		await _wait(game.dwell + 0.5)
+	_check(game.misses >= 3 and game.help and game.found == 0, "강둑 비추기: 물그림자를 오래 비추면 흩어지고(어긋남), 세 번이면 도움이 켜진다")
+	_check(not _state.has_flag(&"bank_test_path"), "강둑 비추기: 어긋나도 실패 화면 없이 계속한다")
+	game.aim = game.aim_for(game.stones[2])
+	await _wait(game.dwell + 0.3)
+	_check(game.found == 0, "강둑 비추기: 차례가 아닌 돌은 비춰도 찾은 것으로 치지 않는다")
+	game.aim = game.aim_for(game.stones[0])
+	await _wait(game.dwell + 0.3)
+	_check(game.found == 1, "강둑 비추기: 다음 돌에 빛이 머물면 그 돌을 찾는다")
+	var auto: Script = load("res://scripts/game/minigame.gd")
+	auto.autoplay = true
+	var lit := await _wait_until(func(): return _state.has_flag(&"bank_test_path"), 15.0)
+	auto.autoplay = false
+	_check(lit and game.found == 5, "강둑 비추기: 돌 다섯을 다 찾으면 길이 열린다(grants_flag)")
+	_check(await _wait_until(func(): return _player.controls_enabled, 4.0) and _player.pose == &"stand",
+			"강둑 비추기: 끝나면 손전등을 넣고 다시 선다")
+	game.queue_free()
+	spot.queue_free()
+	_player.global_position.x = px
+
+
 ## 4-1·4-2 빛 알갱이(LightMotes): 지나가면 떠오르고, 갈림길 구간에서는 하늘이 발밑에만 모인다.
 func _check_motes() -> void:
 	var motes: Node2D = load("res://scripts/game/light_motes.gd").new()
