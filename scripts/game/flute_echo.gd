@@ -170,6 +170,10 @@ func _echo(note: int) -> void:
 	_echo_player.stream = _tones[note]
 	_echo_player.volume_db = 0.0 if help else -6.0
 	_echo_player.play()
+	# 하늘이가 메아리에 귀를 쫑긋하고 고개를 갸웃한다(높은 음일수록 고개를 든다, #120)
+	var dog := get_tree().get_first_node_in_group("dog")
+	if dog and dog.has_method("perk"):
+		dog.perk(0.55, -4.0 - note * 4.0)
 
 
 func _tick(delta: float) -> void:

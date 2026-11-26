@@ -589,6 +589,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_pet()
 	await _check_clearing()
 	await _check_map_closeup()
 	await _check_album()
@@ -930,6 +931,33 @@ func _check_album() -> void:
 	_check(_player.controls_enabled and not is_instance_valid(album), "앨범: 덮고 대사를 넘기면 다시 걷는다")
 	look.queue_free()
 	await _wait(0.2)
+
+
+## 하늘이 일상 교감(#120): 부탁 자리 밖에서 F → 하윤이 쪼그려 손을 뻗고 하늘이가 곁에 와 올려다보며 꼬리를 흔든다.
+## 걸으면 바로 그친다. 가만히 서 있으면 한 번 다가와 올려다본다. 소리에는 귀를 쫑긋한다.
+func _check_pet() -> void:
+	if not _dog.is_joined():
+		_check(false, "하늘이 교감: 검사할 때 하늘이가 합류해 있어야 한다")
+		return
+	await _wait(0.5)
+	_check(_dog.available_spot() == null and _dog.can_pet(), "하늘이 교감: 부탁 자리 밖에서 가만히 서 있으면 쓰다듬을 수 있다")
+	var got := [false]
+	_dog.petted.connect(func(): got[0] = true)
+	await _press_ask()
+	await _wait(0.6)
+	_check(got[0] and _dog.state == _dog.State.PET and _player.pose == &"crouch" and _dog.wagging and _player.controls_enabled,
+			"하늘이 교감: F로 쓰다듬으면 하윤이 쪼그리고 하늘이가 와서 꼬리를 흔든다(조작은 막지 않는다)")
+	_check(absf(absf(_dog.global_position.x - _player.global_position.x) - _dog.PET_GAP) < 40.0, "하늘이 교감: 하늘이가 하윤 곁으로 온다")
+	await _hold(&"move_right", 0.3)
+	await _wait(0.1)
+	_check(_dog.state != _dog.State.PET and _player.pose == &"stand" and not _dog.wagging, "하늘이 교감: 걸으면 바로 그치고 일어난다")
+	await _wait(0.8)
+	await _wait(_dog.GAZE_DELAY + 0.3)
+	_check(_dog._gazed and _dog._gaze_left > 0.0, "하늘이 교감: 가만히 서 있으면 다가와 올려다본다")
+	_dog.perk(0.3)
+	_check(_dog._perk_left > 0.0, "하늘이 교감: 소리에 귀를 쫑긋한다(perk)")
+	await _hold(&"move_left", 0.2)
+	await _wait(0.5)
 
 
 ## 5-2 물그림자(WaterReflection): 물가에서 하윤은 흐리게 비치고 하늘이는 비치지 않는다. 카메라가 살짝 내려간다.

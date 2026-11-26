@@ -13,8 +13,10 @@ signal meet_arrived
 signal script_arrived
 ## 하윤이 오래 서 있어서 다음 목표 쪽을 알려 줄 때. target_x는 그 목표.
 signal hinted(target_x: float)
+## 부탁 자리 밖에서 F로 쓰다듬었다(#120).
+signal petted
 
-enum State { HIDDEN, MEETING, FOLLOW, SIT, HINT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN, SCRIPTED }
+enum State { HIDDEN, MEETING, FOLLOW, SIT, HINT, TASK_GO, TASK_ACT, HOLD, TASK_RETURN, SCRIPTED, PET }
 
 const JOIN_FLAG := &"dog_joined"
 ## 부탁 자리에서 머리 위 표시에 띄우는 말(행동마다). 0 가져와 / 1 냄새 / 2 기다려 = AskSpot.Action 순서.
@@ -35,6 +37,13 @@ const HINT_LOOK_SECONDS := 1.5
 const HINT_SPEED := 255.0
 const SIT_DELAY := 2.0
 const ACT_SECONDS := 0.8
+## 쓰다듬기(#120): 하윤 곁 이 거리로 다가와 올려다보며 꼬리를 흔든다. 이만큼 있다가 그친다(움직이면 바로).
+const PET_GAP := 125.0
+const PET_SECONDS := 3.2
+## 하윤이 이만큼 가만히 서 있으면 한 번 다가와 올려다본다(힌트 8초보다 먼저, #120).
+const GAZE_DELAY := 4.0
+const GAZE_SECONDS := 2.2
+const GAZE_GAP := 100.0
 ## 하윤 조작을 막는 이유 이름(Player.lock).
 const LOCK := &"dog_task"
 
@@ -54,6 +63,11 @@ var _player_still: float = 0.0
 var _hinted: bool = false
 var _hint_x: float = 0.0
 var _hint_left: float = 0.0
+var _pet_left: float = 0.0
+var _pet_x: float = 0.0
+var _gazed: bool = false
+var _gaze_left: float = 0.0
+var _perk_left: float = 0.0
 
 @onready var _visual: Node2D = $Visual
 @onready var _stand: Node2D = $Visual/Stand
@@ -176,9 +190,63 @@ func _unhandled_input(event: InputEvent) -> void:
 	if spot:
 		_start_task(spot)
 		get_viewport().set_input_as_handled()
+	elif can_pet():
+		_start_pet()
+		get_viewport().set_input_as_handled()
+
+
+## 부탁 자리 밖에서 F: 쓰다듬을 수 있나(합류했고, 하던 일이 없고, 하윤이 서서 조작할 수 있을 때).
+func can_pet() -> bool:
+	if not is_joined() or is_busy() or state in [State.SCRIPTED, State.MEETING, State.PET]:
+		return false
+	return _player != null and _player.controls_enabled and _player.is_on_floor() \
+			and absf(_player.velocity.x) < 1.0 and _player.pose == &"stand"
+
+
+## 하윤이 쪼그려 손을 뻗고, 하늘이가 곁으로 와 올려다보며 꼬리를 흔든다. 걸으면 바로 그친다.
+func _start_pet() -> void:
+	state = State.PET
+	_pet_left = PET_SECONDS
+	var side := signf(global_position.x - _player.global_position.x)
+	if side == 0.0:
+		side = -_player.facing
+	_pet_x = _player.global_position.x + side * PET_GAP
+	_player.face(int(side))
+	_player.set_pose(&"crouch")
+	_player.set_motion({"shoulder": -38.0, "elbow": -12.0})
+	wag(true)
+	attend({"head": -14.0, "ear": -6.0})
+	petted.emit()
+
+
+func _end_pet() -> void:
+	if state != State.PET:
+		return
+	state = State.FOLLOW
+	wag(false)
+	attend({})
+	if _player:
+		_player.set_motion({})
+		if _player.pose == &"crouch":
+			_player.set_pose(&"stand")
+
+
+## 고개·귀를 돌린다(DogRig.attention). {}면 원래대로.
+func attend(a: Dictionary) -> void:
+	if _rig and "attention" in _rig:
+		_rig.attention = a
+
+
+## 소리·움직임에 잠깐 귀를 쫑긋하고 고개를 갸웃한다(미니게임 중 반응, #120).
+func perk(seconds: float = 0.6, head: float = -6.0) -> void:
+	if not is_joined():
+		return
+	_perk_left = seconds
+	attend({"head": head, "ear": -12.0, "tilt": 5.0})
 
 
 func _start_task(spot: AskSpot) -> void:
+	_end_pet()
 	_spot = spot
 	state = State.TASK_GO
 	if spot.action != AskSpot.Action.HOLD:
@@ -191,6 +259,10 @@ func _physics_process(delta: float) -> void:
 	if state == State.HIDDEN:
 		return
 	_track_player_still(delta)
+	if _perk_left > 0.0:
+		_perk_left -= delta
+		if _perk_left <= 0.0 and state != State.PET:
+			attend({})
 	var goal_x := global_position.x
 	var max_speed := 0.0
 	match state:
@@ -212,7 +284,20 @@ func _physics_process(delta: float) -> void:
 				_idle = _idle + delta if is_zero_approx(_player.velocity.x) else 0.0
 				if _idle >= SIT_DELAY:
 					state = State.SIT
+			if _player_still >= GAZE_DELAY and not _gazed:
+				_gazed = true
+				_gaze_left = GAZE_SECONDS
+				attend({"head": -16.0, "ear": -4.0})
+			if _gaze_left > 0.0:
+				# 가만히 선 하윤 곁으로 한 걸음 다가와 올려다본다
+				_gaze_left -= delta
+				goal_x = _player.global_position.x - _player.facing * GAZE_GAP
+				max_speed = 140.0
+				if _gaze_left <= 0.0:
+					attend({})
 			if _player_still >= HINT_DELAY and not _hinted:
+				_gaze_left = 0.0
+				attend({})
 				_start_hint()
 		State.HINT:
 			if absf(_player.velocity.x) > 1.0:
@@ -243,6 +328,13 @@ func _physics_process(delta: float) -> void:
 				if absf(goal_x - global_position.x) < 2.0:
 					_script_moving = false
 					script_arrived.emit()
+		State.PET:
+			goal_x = _pet_x
+			max_speed = 260.0
+			facing = 1 if _player.global_position.x >= global_position.x else -1
+			_pet_left -= delta
+			if _pet_left <= 0.0 or absf(_player.velocity.x) > 1.0 or not _player.controls_enabled:
+				_end_pet()
 		State.TASK_RETURN:
 			goal_x = _follow_x()
 			max_speed = TASK_SPEED
@@ -260,6 +352,10 @@ func _track_player_still(delta: float) -> void:
 	if absf(_player.velocity.x) > 1.0:
 		_player_still = 0.0
 		_hinted = false
+		_gazed = false
+		if _gaze_left > 0.0:
+			_gaze_left = 0.0
+			attend({})
 	elif _player.controls_enabled:
 		_player_still += delta
 
@@ -345,7 +441,7 @@ func _move_toward_x(goal_x: float, max_speed: float, delta: float) -> void:
 	_update_claws(delta)
 	if absf(velocity.x) > 1.0:
 		facing = 1 if velocity.x > 0.0 else -1
-	elif state in [State.FOLLOW, State.SIT] and _player:
+	elif state in [State.FOLLOW, State.SIT, State.PET] and _player:
 		facing = 1 if _player.global_position.x >= global_position.x else -1
 	elif state == State.MEETING:
 		var p := get_tree().get_first_node_in_group("player") as Node2D
@@ -389,6 +485,7 @@ func _update_claws(delta: float) -> void:
 func script_move_to(x: float, speed: float = MEET_SPEED) -> void:
 	if not is_joined():
 		return
+	_end_pet()
 	state = State.SCRIPTED
 	_script_goal_x = x
 	_script_speed = speed

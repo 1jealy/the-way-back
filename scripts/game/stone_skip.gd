@@ -334,6 +334,9 @@ func _throw_from(hand: Vector2, n: int, fill: bool) -> void:
 			t.tween_property(_ghosts[i], "default_color", Color(0.97, 0.98, 1.0, 0.95), 0.15)
 			t.tween_property(_ghosts[i], "default_color", Color(0.92, 0.95, 1.0, 0.3), 1.6)
 		_play_sound("sfx_stone_skip_")
+		var dog := get_tree().get_first_node_in_group("dog")
+		if dog and dog.has_method("perk"):
+			dog.perk(0.45, -10.0)  # 돌이 튈 때마다 하늘이가 고개를 들어 따라본다(#120)
 		var length := hop_lengths[mini(i, hop_lengths.size() - 1)]
 		var height := hop_heights[mini(i, hop_heights.size() - 1)]
 		var next := at + Vector2(length, 0.0)

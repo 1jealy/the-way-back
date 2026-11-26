@@ -371,6 +371,10 @@ func _draw_beam() -> void:
 
 ## 손전등 든 몸: 팔이 빛을 따라 오르내리고 고개는 빛이 가는 곳을 본다. 숨 쉬듯 살짝 흔들리고 찾으면 움찔한다.
 func _pose_player() -> void:
+	# 하늘이가 빛이 가는 쪽을 눈으로 따라간다(발밑이면 고개를 숙이고, 멀면 든다, #120)
+	var dog := get_tree().get_first_node_in_group("dog")
+	if phase == &"aim" and dog and dog.has_method("attend") and dog.is_joined() and not dog.is_busy():
+		dog.attend({"head": clampf((aim - 50.0) * 0.5, -14.0, 16.0), "ear": -5.0})
 	if _player == null:
 		return
 	var d := aim - 45.0
@@ -392,6 +396,9 @@ func _place_torch() -> void:
 
 ## 다 찾았다: 돌이 가까운 것부터 하나씩 다시 빛나 길이 된다.
 func _finish() -> void:
+	var watcher := get_tree().get_first_node_in_group("dog")
+	if watcher and watcher.has_method("attend"):
+		watcher.attend({})  # 빛을 따라보던 고개를 돌려 놓는다
 	phase = &"done"
 	hide_key_hint()
 	await _wait(0.6)

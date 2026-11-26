@@ -93,6 +93,10 @@ var _pose_cur: Dictionary = {}
 var _bark_t: float = -1.0
 ## 신나서 꼬리를 크게·빨리 흔드는 정도(0~1). Dog.wag()가 정한다(4-3 빈터).
 var excited: float = 0.0
+## 고개·귀를 어딘가로 돌린다(#120): 하윤을 올려다보기, 소리에 귀 쫑긋, 빛·돌을 눈으로 따라가기.
+## head(도, -는 고개를 든다) / ear(도, -는 귀를 세운다) / tilt(도, 고개 갸웃). 천천히 따라간다.
+var attention: Dictionary = {}
+var _attn: Dictionary = {"head": 0.0, "ear": 0.0, "tilt": 0.0}
 var _excited_target: float = 0.0
 
 
@@ -166,6 +170,8 @@ func _process(delta: float) -> void:
 		return
 	_time += delta
 	excited = move_toward(excited, _excited_target, delta * 1.5)
+	for k in _attn:
+		_attn[k] = lerpf(_attn[k], float(attention.get(k, 0.0)), 1.0 - exp(-6.0 * delta))
 	var dog := get_parent().get_parent() as CharacterBody2D
 	var speed := absf(dog.velocity.x) if dog else 0.0
 	var walking := speed > 10.0
@@ -242,6 +248,8 @@ func _angles() -> Dictionary:
 		out[j] = float(out.get(j, 0.0)) + float(_pose_cur[j])
 	if pose == &"sniff" or pose == &"sniff_walk":
 		out["head"] = float(out["head"]) + sin(_time * 22.0) * 2.5  # 킁킁
+	out["head"] = float(out["head"]) + _attn["head"] + _attn["tilt"] * sin(_time * 2.4)
+	out["ear"] = float(out["ear"]) + _attn["ear"]
 	if _bark_t >= 0.0:
 		out["head"] = float(out["head"]) + BARK_HEAD * sin(clampf(_bark_t / BARK_SECONDS, 0.0, 1.0) * PI)
 	return out
