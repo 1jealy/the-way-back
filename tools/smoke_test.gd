@@ -347,7 +347,7 @@ func _check_parts() -> void:
 	var tall: Node = field_scene.get_node_or_null("Grass_2-3_Tall")
 	var verge: Node = field_scene.get_node_or_null("Grass_2-1_Verge")
 	var kite_item: Node = field_scene.get_node(String(keeps[0][0])) if keeps.size() == 1 else null
-	var grass_ok: bool = grasses.size() == 2 and tall != null and verge != null and kite_item != null \
+	var grass_ok: bool = grasses.size() == 3 and tall != null and verge != null and kite_item != null \
 			and verge.position.x <= 0.0 and verge.position.x + verge.length >= field_scene.width \
 			and tall.position.x <= 4300.0 and tall.position.x + tall.length >= chases[0][1][0] \
 			and tall.front_ratio > 0.0 and tall.front_z > 0 and tall.back_z < 0 \
