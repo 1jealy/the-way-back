@@ -21,7 +21,7 @@ const JOINTS := {
 	"head": ["torso", Vector2(204, 165)],
 	"ponytail": ["head", Vector2(152, 152)],
 	"hip": ["root", Vector2(187, 336)],
-	"skirt": ["torso", Vector2(195, 300)],
+	"skirt": ["torso", Vector2(208, 328)],
 	"knee": ["hip", Vector2(183, 470)],
 	"ankle": ["knee", Vector2(178, 548)],
 	"shoulder": ["torso", Vector2(174, 198)],
@@ -82,11 +82,11 @@ const POSES := {
 	&"stand": {},
 	# 쪼그려 앉기(하늘이 만남 3-4, 돌 줍기 5-4): 무릎을 가슴 쪽으로, 팔은 앞으로 내린다.
 	&"crouch": {"hip": -100.0, "knee": 120.0, "ankle": -20.0, "far_hip": -95.0, "far_knee": 118.0, "far_ankle": -23.0,
-			"skirt": -30.0, "far_skirt": -30.0, "shoulder": -38.0, "elbow": -25.0, "far_shoulder": -30.0, "far_elbow": -25.0,
+			"skirt": -118.0, "far_skirt": -112.0, "shoulder": -38.0, "elbow": -25.0, "far_shoulder": -30.0, "far_elbow": -25.0,
 			"torso": 22.0, "head": -8.0, "ponytail": 6.0},
 	# 벤치에 앉기(2-5, 3-3): 허벅지는 앞으로 눕고 종아리는 내린다. 손은 무릎 위에.
 	&"sit": {"torso": 4.0, "hip": -85.0, "knee": 85.0, "ankle": 0.0, "far_hip": -82.0, "far_knee": 80.0, "far_ankle": 2.0,
-			"skirt": -28.0, "far_skirt": -28.0, "shoulder": -22.0, "elbow": -45.0, "far_shoulder": -18.0, "far_elbow": -45.0,
+			"skirt": -86.0, "far_skirt": -82.0, "shoulder": -22.0, "elbow": -45.0, "far_shoulder": -18.0, "far_elbow": -45.0,
 			"head": 3.0},
 	# 연줄 잡기(들판 연 날리기 2-3, #111): 두 손을 앞으로 들어 줄을 잡고 연을 올려다본다.
 	&"kite": {"shoulder": -62.0, "elbow": -28.0, "far_shoulder": -50.0, "far_elbow": -40.0, "head": -12.0,
@@ -99,7 +99,7 @@ const POSES := {
 			"torso": 5.0, "ponytail": 3.0},
 	# 바닥에 앉기(오프닝 0-1 마루, 배 위 7-6): 다리를 앞으로 뻗는다.
 	&"sit_floor": {"hip": -92.0, "knee": 10.0, "ankle": -6.0, "far_hip": -90.0, "far_knee": 14.0, "far_ankle": -6.0,
-			"skirt": -8.0, "far_skirt": -10.0, "shoulder": -30.0, "elbow": -30.0, "far_shoulder": -26.0, "far_elbow": -30.0,
+			"skirt": -90.0, "far_skirt": -86.0, "shoulder": -30.0, "elbow": -30.0, "far_shoulder": -26.0, "far_elbow": -30.0,
 			"head": 4.0},
 }
 ## 자세가 바뀌는 빠르기(클수록 빠르다, 약 0.3초). 지금은 아래 용수철(POSE_OMEGA)이 쓴다. 남겨 둔 값.
@@ -159,11 +159,12 @@ const WRIST_SIT_KEYS := [
 const PICKUP_KEYS := [
 	[0.0, {}],
 	[0.4, {"torso": 50.0, "hip": -40.0, "knee": 66.0, "ankle": -26.0, "far_hip": -34.0, "far_knee": 62.0,
-			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -34.0, "elbow": -4.0,
-			"far_shoulder": -22.0, "far_elbow": -10.0, "head": 0.0, "ponytail": -34.0}],
+			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -50.0, "elbow": -4.0,
+			"far_shoulder": -38.0, "far_elbow": -10.0, "head": 2.0, "ponytail": -34.0}],
+	# 손이 땅의 물건까지 닿는다(#120 모션 손질: 손이 무릎께에서 멈춰 집는 것 같지 않았다)
 	[0.58, {"torso": 52.0, "hip": -42.0, "knee": 68.0, "ankle": -26.0, "far_hip": -36.0, "far_knee": 64.0,
-			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -28.0, "elbow": -18.0,
-			"far_shoulder": -20.0, "far_elbow": -14.0, "head": -2.0, "ponytail": -36.0}],
+			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -62.0, "elbow": -6.0,
+			"far_shoulder": -48.0, "far_elbow": -10.0, "head": 4.0, "ponytail": -36.0}],
 	[1.05, {"shoulder": -24.0, "elbow": -40.0, "head": -4.0, "ponytail": -6.0}],
 	[1.35, {}],
 ]

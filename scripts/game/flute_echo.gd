@@ -183,6 +183,7 @@ func _listen(retry: bool = false) -> void:
 
 
 func _echo(note: int) -> void:
+	dog_react(0.5 + 0.25 * note)  # 메아리에 귀를 쫑긋(#120)
 	_echo_player.stream = _tones[note]
 	_echo_player.volume_db = 0.0 if help else -6.0
 	_echo_player.play()
@@ -222,6 +223,7 @@ func _blow(note: int) -> void:
 	if note == melody[i]:
 		_note_player.stream = _tones[note]
 		_note_player.play()
+		dog_react(0.6)
 		played += 1
 		var t := create_tween().set_parallel()
 		t.tween_property(mote, "global_position", slot_position(i), 0.4).set_trans(Tween.TRANS_SINE)
