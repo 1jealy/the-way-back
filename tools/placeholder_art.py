@@ -204,6 +204,8 @@ def lerp_color(a: Color, b: Color, t: float) -> Color:
 # 해 기우는 오후. 은빛·금빛 억새, 옅은 하늘색. 해는 오른쪽 낮게, 그림자는 왼쪽으로 길다.
 
 # 2-3 지도가 걸리는 억새 덤불(땅 x). field.tscn MapChase_2-3의 position.x + stops와 같아야 한다(스모크 검사가 본다).
+# 1-4 가족사진 액자(열쇠)가 걸린 마루 벽의 땅 x. house.tscn Look_1-4_Frame의 position.x와 같아야 한다(스모크 검사).
+HOUSE_FRAME_X = 2650
 FIELD_SNAGS = [5000, 5900, 6800]
 
 
@@ -592,9 +594,11 @@ def house(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     L.rect(x - 170, 670, x - 30, 720, wood)
     L.ellipse((x - 106, 690, x - 94, 702), rgba(200, 170, 90))
     L.rect(x + 160, 656, x + 180, 792, dark)
-    L.rect(x + 20, 360, x + 200, 480, dark)
-    L.rect(x + 32, 372, x + 188, 468, rgba(222, 210, 186))
-    for hx, hy, r in ((x + 70, 420, 14), (x + 110, 410, 17), (x + 150, 424, 11)):
+    # 가족사진 액자: 서랍에서 떨어진 마루 벽(#121 — 서랍이 잠긴 걸 보고 둘러보다 찾게). house.tscn Look_1-4_Frame과 같은 x.
+    fx = HOUSE_FRAME_X - 90
+    L.rect(fx, 360, fx + 180, 480, dark)
+    L.rect(fx + 12, 372, fx + 168, 468, rgba(222, 210, 186))
+    for hx, hy, r in ((fx + 50, 420, 14), (fx + 90, 410, 17), (fx + 130, 424, 11)):
         L.ellipse((hx - r, hy - r, hx + r, hy + r), rgba(150, 132, 110))
     # 집 끝: 처마
     L.poly([(yard_x - 40, 130), (yard_x + 300, 220), (yard_x + 300, 246), (yard_x - 40, 170)], rgba(74, 70, 74))
@@ -909,9 +913,7 @@ def riverside(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     x = mk("5-3", 3990)  # 5-3 징검다리
     L.rect(x - 480, 788, x + 480, 866, water)
     water_streaks(L, rng, x - 460, x + 460, 796, 860, 40, rgba(206, 214, 230, 160))
-    for sx in range(int(x - 420), int(x + 440), 140):
-        L.ellipse((sx - 56, 792, sx + 56, 822), rgba(110, 108, 116))
-        L.ellipse((sx - 50, 790, sx + 50, 810), rgba(146, 144, 150))
+    # 돌은 게임(SteppingStones_5-3)이 그린다 — 밟으면 가라앉고 첫 돌은 흔들린다(#121)
 
     w = layer_width(width, "props")
     layers["props"] = L = Layer(w)

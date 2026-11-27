@@ -589,6 +589,8 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_locked_flag()
+	await _check_stones()
 	await _check_clearing()
 	await _check_map_closeup()
 	await _check_album()
@@ -946,6 +948,62 @@ func _check_album() -> void:
 	await _wait(0.2)
 	_check(_player.controls_enabled and not is_instance_valid(album), "앨범: 덮고 대사를 넘기면 다시 걷는다")
 	look.queue_free()
+	await _wait(0.2)
+
+
+## 잠긴 걸 확인하면 플래그(locked_grants_flag, #121): 덜컹 한 번에 세우고, 그걸 requires로 둔 대상이 그제야 뜬다.
+func _check_locked_flag() -> void:
+	var drawer: Area2D = _add_interactable(PackedStringArray(), &"", 30.0)
+	drawer.requires_flag = &"test_key"
+	drawer.show_locked = true
+	drawer.locked_grants_flag = &"test_tried"
+	var frame: Area2D = _add_interactable(PackedStringArray(), &"test_key", 30.0)
+	frame.requires_flag = &"test_tried"
+	frame.global_position.x += 400.0
+	await _wait(0.3)
+	var before: bool = frame.is_available()
+	await _press(&"interact")
+	await _wait(0.2)
+	_check(not before and _state.has_flag(&"test_tried") and not _state.has_flag(&"test_key"),
+			"잠긴 걸 확인: 덜컹 하면 플래그가 서고, 그 전에는 다음 대상이 안 된다")
+	_player.global_position.x = frame.global_position.x
+	await _wait(0.3)
+	_check(frame.is_available(), "잠긴 걸 확인: 그 뒤에는 다음 대상(액자)을 조사할 수 있다")
+	drawer.queue_free()
+	frame.queue_free()
+	_state.flags.erase(&"test_tried")
+	await _wait(0.2)
+
+
+## 5-3 징검다리(SteppingStones, #121): 첫 돌은 버티기 전까지 흔들리고, 버티면 멈춘다. 밟은 돌은 가라앉았다 올라온다.
+func _check_stones() -> void:
+	var stones: Node2D = load("res://scripts/game/stepping_stones.gd").new()
+	stones.hold_flag = &"test_stone_held"
+	stones.stones = PackedFloat32Array([0.0, 140.0, 280.0])
+	_main.current_place().add_child(stones)
+	stones.global_position = Vector2(_player.global_position.x + 600.0, 810.0)
+	await _wait(0.6)
+	var first: Node2D = stones.get_node("Stone0")
+	var rot_max := 0.0
+	for i in 20:
+		rot_max = maxf(rot_max, absf(first.rotation))
+		await _wait(0.05)
+	_check(rot_max > deg_to_rad(1.5), "징검다리: 버티기 전에는 첫 돌이 흔들린다 (%.1f도)" % rad_to_deg(rot_max))
+	_state.set_flag(&"test_stone_held")
+	await _wait(0.2)
+	_check(is_zero_approx(first.rotation) and first.position.y > 0.0, "징검다리: 하늘이가 버티면 첫 돌이 가라앉아 멈춘다")
+	var hit := [-1]
+	stones.stepped.connect(func(i: int): hit[0] = i)
+	var second: Node2D = stones.get_node("Stone1")
+	_player.global_position.x = stones.global_position.x + 140.0
+	await _wait(0.05)
+	var sunk: float = second.position.y
+	var rippled: bool = stones.get_children().any(func(c): return c is Line2D)
+	await _wait(1.2)
+	_check(hit[0] == 1 and sunk > 3.0 and second.position.y < sunk, "징검다리: 밟은 돌이 가라앉았다 올라온다 (%.1f → %.1f)" % [sunk, second.position.y])
+	_check(rippled, "징검다리: 밟으면 물결이 퍼진다")
+	stones.queue_free()
+	_state.flags.erase(&"test_stone_held")
 	await _wait(0.2)
 
 

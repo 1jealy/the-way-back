@@ -25,6 +25,9 @@ signal locked
 @export var one_shot: bool = false
 ## requires_flag가 서기 전에도 안내가 뜨고, 조사하면 잠겨 있다는 소리만 난다(잠긴 서랍·문).
 @export var show_locked: bool = false
+## show_locked일 때, 잠긴 것을 처음 확인하면(덜컹) 세우는 플래그. 다른 조사 대상의 requires_flag로 써서
+## "잠겼네 → 둘러보다 찾는다" 흐름을 만든다(1-4 서랍 → 마루 벽의 액자, #121).
+@export var locked_grants_flag: StringName = &""
 ## 조사할 때 낼 소리(assets/audio 이름 앞머리, 예: "sfx_pickup_"). 비우면 없음.
 @export var sound: String = ""
 ## 1~5면 조사할 때 지도를 펼치고 그 동그라미에 체크한다(장면 2-2, 3-1, 4-3, 5-4, 7-2).
@@ -122,6 +125,8 @@ func interact() -> void:
 	if is_offered() and not _unlocked():
 		_play_sound("sfx_locked_")
 		_shake_prompt()
+		if not locked_grants_flag.is_empty() and not GameState.has_flag(locked_grants_flag):
+			GameState.set_flag(locked_grants_flag)
 		locked.emit()
 		return
 	if not is_available():
