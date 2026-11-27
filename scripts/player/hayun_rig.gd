@@ -21,7 +21,7 @@ const JOINTS := {
 	"head": ["torso", Vector2(204, 165)],
 	"ponytail": ["head", Vector2(152, 152)],
 	"hip": ["root", Vector2(187, 336)],
-	"skirt": ["torso", Vector2(190, 332)],
+	"skirt": ["torso", Vector2(208, 328)],
 	"knee": ["hip", Vector2(183, 470)],
 	"ankle": ["knee", Vector2(178, 548)],
 	"shoulder": ["torso", Vector2(174, 198)],
