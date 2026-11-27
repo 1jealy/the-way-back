@@ -109,7 +109,13 @@ func _run() -> void:
 	await _press(&"interact")
 	await _walk_to(drawer.global_position.x)
 	await _press(&"interact")
-	await _close_dialogue()
+	# 1-5: 서랍을 열면 지도 컷신(#135) 위로 대사가 뜬다. 대사를 넘기고 컷신이 걷힐 때까지 기다린다.
+	for i in 40:
+		await _wait(0.5)
+		if _main.dialogue_box().visible:
+			await _press(&"interact")
+		elif _player.controls_enabled:
+			break
 	_check(_state.has_flag(&"has_map"), "집: 서랍에서 지도를 얻는다")
 	var hint: Label = _main.get_node("Overlay/MapHint")
 	_check(hint.visible, "집: 지도를 얻으면 [M] 지도 안내가 뜬다")

@@ -1,11 +1,11 @@
 class_name KiteFly
 extends PhraseGame
-## 들판 2-3 연 날리기(#111 → #146에서 "휘파람 따라 하기"로). 지도가 바람에 날아가 억새 속으로 사라진 뒤,
-## 길가에서 방패연(할아버지가 하윤 몸에 맞게 만들어 준 작은 연)을 줍고 [E] 연 띄우기로 그 자리에서 띄운다.
+## 들판 2-3 연 날리기(#111 → #146에서 "휘파람 따라 하기"로). 지도가 바람에 날아가 들풀 속으로 사라진 뒤,
+## 길가에서 마름모 연(할아버지가 하윤 몸에 맞게 만들어 준 작은 연)을 줍고 [E] 연 띄우기로 그 자리에서 띄운다.
 ## 연이 떠 있으면 바람 너머에서 할아버지 휘파람이 한 소절(들판, 세 음) 들린다. 음마다 하늘의 그 높이에 빛이 반짝인다.
 ## 하윤이 ← 낮게 · E 가운데 · → 높게로 연을 그 높이로 옮기면 연줄이 바람에 그 높이의 음으로 운다.
 ## 맞으면 꼬리 리본 하나가 붉게 물든다(셋 = 세 음). 틀리면 연이 휘청 내려앉고 리본이 다시 하얘진 뒤 휘파람이 다시 들린다.
-## 다 맞으면 할아버지가 받아 불고, 연이 높이 올라 억새 속 지도가 보인다(grants_flag kite_flown) — 카메라가 지도 쪽으로 갔다 온다.
+## 다 맞으면 할아버지가 받아 불고, 연이 높이 올라 들풀 속 지도가 보인다(grants_flag kite_flown) — 카메라가 지도 쪽으로 갔다 온다.
 ## 도움(세 번 어긋나면): 휘파람이 크고 느리고, 반짝임이 하윤 차례에도 남고, 하늘이가 다음 음마다 짖는다.
 ## 이 소절(세 음)이 숲 소절의 앞 세 음이다 — 숲에서 피리로 이어 분다.
 ## 장소 씬에 B가 놓는다(KiteFly_2-3, 물건 Keepsake_2-3_Kite와 같은 자리). 원점은 땅 위.
@@ -197,7 +197,7 @@ func _on_finish() -> void:
 	await _wait(1.4)
 	if not grants_flag.is_empty():
 		GameState.set_flag(grants_flag)  # 지도 자리가 보인다(MapChase.reveal_flag)
-	# 보상(#119): 카메라가 억새 속에서 반짝이는 지도 쪽으로 옮겨 갔다가 돌아온다
+	# 보상(#119): 카메라가 들풀 속에서 반짝이는 지도 쪽으로 옮겨 갔다가 돌아온다
 	var chase := get_tree().get_first_node_in_group("map_chase") as Node2D
 	if chase and chase.has_method("stop_position") and _player:
 		pan_camera(clampf(chase.stop_position(chase.stop_index).x - _player.global_position.x, -700.0, 700.0), 1.1)
@@ -282,7 +282,7 @@ func _place_kite(delta: float) -> void:
 	# 꼬리 리본: 연 아래에서 바람 반대쪽(왼쪽)으로 물결친다. 맞힌 음만큼 붉게 물든다.
 	for i in _ribbons.size():
 		var r := _ribbons[i]
-		var base := Vector2(-34.0 + 34.0 * i, 60.0)
+		var base := Vector2(-6.0 + 6.0 * i, 76.0)  # 마름모 연의 아래 끝(#136)
 		var pts := PackedVector2Array()
 		for k in 9:
 			var u := k / 8.0

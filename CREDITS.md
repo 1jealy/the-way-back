@@ -30,6 +30,7 @@
 | --- | --- | --- |
 | `assets/art/placeholder/**/*.png` | 코드로 그린 임시 배경(`tools/placeholder_art.py`). 외부 에셋 아님 | 이 프로젝트 것 |
 | `assets/art/map/map_paper.jpg` | 할아버지 지도(최종본), 팀 일러스트 담당이 그림 | 이 프로젝트 것 |
+| `assets/art/cut/cut_map.png` | 1-5 지도 펼치기 손그림 컷신, 팀 일러스트 담당이 그림 | 이 프로젝트 것 |
 
 ## 배경 그림을 만든 AI 도구와 모델
 

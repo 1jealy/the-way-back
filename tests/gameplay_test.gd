@@ -462,7 +462,7 @@ func _run() -> void:
 			var branch_start: Vector2 = map_data.side_road_points(road)[0]
 			branches_ok = branches_ok and branch_start.distance_to(map_data.segment_point(at[0], at[1])) < 0.5
 	_check(branches_ok, "지도: 갈라지는 오솔길이 길 위에서 시작한다")
-	_check(canvas.has_node("Side_읍내") and canvas.has_node("Side_산"), "지도: 가지 않는 길 이름(읍내, 산)")
+	_check(canvas.has_node("Side_마을") and canvas.has_node("Side_산"), "지도: 가지 않는 길 이름(마을, 산)")
 	await _press(&"open_map")
 	await _wait(0.5)
 	_check(not map.is_open() and _player.controls_enabled, "지도: M으로 접으면 다시 걷는다")
@@ -615,6 +615,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_cutscene_look()
 	await _check_clearing()
 	await _check_map_closeup()
 	await _check_album()
@@ -860,10 +861,10 @@ func _check_tractor() -> void:
 	_check(gone and not tractor.running, "경운기: 왼쪽으로 멀어져 사라지고, 다시 오지 않는다")
 
 
-## 흔들면 떨어지는 조사 대상(ShakeDrop, 1-6 감나무): E → 감이 떨어져 땅에 닿는다. 한 번만.
+## 흔들면 떨어지는 조사 대상(ShakeDrop, 1-6 사과나무): E → 사과가 떨어져 땅에 닿는다. 한 번만.
 func _check_shake() -> void:
 	var tree: Area2D = load("res://scripts/game/shake_drop.gd").new()
-	tree.prompt = "감나무 흔들기"
+	tree.prompt = "사과나무 흔들기"
 	_main.current_place().add_child(tree)
 	tree.global_position = Vector2(_player.global_position.x + 30.0, 810.0)
 	var landed := [false]
@@ -871,11 +872,11 @@ func _check_shake() -> void:
 	await _wait(0.3)
 	await _press(&"interact")
 	await _wait(0.3)
-	_check(tree.fallen != null and tree.fallen.position.y < -100.0, "감나무: E로 흔들면 감이 가지에 달려 있다가")
+	_check(tree.fallen != null and tree.fallen.position.y < -100.0, "사과나무: E로 흔들면 사과가 가지에 달려 있다가")
 	var down := await _wait_until(func(): return landed[0], 2.0)
 	await _wait(0.6)
-	_check(down and is_zero_approx(tree.fallen.position.y) and _player.controls_enabled, "감나무: 땅에 떨어진다(조작은 막지 않는다)")
-	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
+	_check(down and is_zero_approx(tree.fallen.position.y) and _player.controls_enabled, "사과나무: 땅에 떨어진다(조작은 막지 않는다)")
+	_check(not tree.is_offered(), "사과나무: 한 번만 흔든다")
 	tree.queue_free()
 	await _wait(0.2)
 
@@ -981,6 +982,28 @@ func _check_album() -> void:
 	await _wait(0.2)
 	_check(_player.controls_enabled and not is_instance_valid(album), "앨범: 덮고 대사를 넘기면 다시 걷는다")
 	look.queue_free()
+	await _wait(0.2)
+
+
+## 조사하면 손그림 컷신(cutscene_art, #135 1-5 지도): 컷신이 뜨고 그동안 하윤이 멈추며, 컷신 위로 대사가 나오고 걷히면 다시 걷는다.
+func _check_cutscene_look() -> void:
+	var look: Area2D = _add_interactable(PackedStringArray(["하윤: …같이 가자며."]), &"test_cut_seen", 30.0)
+	look.cutscene_art = "cut_map"
+	look.cutscene_seconds = 0.4
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.3)
+	var cut: Node = _main.get_tree().root.find_child("Cutscene", true, false)
+	_check(cut != null and _player.is_locked_by(&"cutscene") and not _state.has_flag(&"test_cut_seen"),
+			"컷신 조사: E로 조사하면 컷신이 뜨고 하윤이 멈춘다(플래그는 아직)")
+	var said := await _wait_until(func(): return _main.dialogue_box().is_open(), 4.0)
+	_check(said and _main.dialogue_box().current_text() == "…같이 가자며." and is_instance_valid(cut),
+			"컷신 조사: 카메라가 다가간 뒤 컷신 위로 대사가 나온다")
+	await _speak_through(_main.dialogue_box())
+	var back := await _wait_until(func(): return _player.controls_enabled, 3.0)
+	_check(back and not is_instance_valid(cut) and _state.has_flag(&"test_cut_seen"), "컷신 조사: 대사를 넘기면 컷신이 걷히고 그때 플래그가 서며 다시 걷는다")
+	look.queue_free()
+	_state.flags.erase(&"test_cut_seen")
 	await _wait(0.2)
 
 

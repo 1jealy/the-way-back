@@ -13,8 +13,8 @@ const PLACES_DIR := "res://scenes/places"
 const TEMPLATE := "place_template.tscn"
 const ART_NODE := "Art"
 const LAYERS := {
-	"sky": "Sky", "far": "Far", "mid": "Mid",
-	"ground": "Ground", "props": "Props", "front": "Front",
+	"sky": "Sky", "horizon": "Horizon", "far": "Far", "hills": "Hills", "mid": "Mid",
+	"near": "Near", "ground": "Ground", "props": "Props", "front": "Front",
 }
 const SCREEN_W := 1920.0
 const SCREEN_H := 1080.0
@@ -31,7 +31,7 @@ var out_of_sync: PackedStringArray = []
 var reimport_needed: PackedStringArray = []
 
 var _name_re := RegEx.create_from_string(
-		"^bg_([a-z0-9]+)_(sky|far|mid|ground|props|front)(?:_(\\d+))?\\.png$")
+		"^bg_([a-z0-9]+)_(sky|horizon|far|hills|mid|near|ground|props|front)(?:_(\\d+))?\\.png$")
 
 
 ## write = true면 씬과 .import를 고쳐 저장한다. false면 보기만 한다(--check).

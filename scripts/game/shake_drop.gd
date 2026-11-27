@@ -2,7 +2,7 @@ class_name ShakeDrop
 extends Interactable
 ## 흔들면 무언가 떨어지는 조사 대상. 장면표 1-6 "감나무를 흔들면 감 하나가 떨어진다(선택)".
 ## 조사 대상(Interactable)을 이은 것이라 [E] 안내·잠금·플래그는 그대로 쓴다. 한 번만(one_shot).
-## 장소 씬에 B가 놓는다(Shake_1-6_Persimmon, 나무 밑동 땅 위). 진행과 상관없다.
+## 장소 씬에 B가 놓는다(Shake_1-6_Apple, 나무 밑동 땅 위). 진행과 상관없다.
 ## 담당: A(조사 반응). (A 세션이 쉬는 동안 B 세션이 만듦)
 
 ## 떨어지는 것이 땅에 닿았다.
@@ -12,9 +12,9 @@ signal dropped
 @export var drop_from: Vector2 = Vector2(60.0, -400.0)
 ## 떨어진 뒤 땅에서 굴러가는 거리(px, 부호는 방향).
 @export var roll: float = 46.0
-@export var art: String = "prop_persimmon"
+@export var art: String = "prop_apple"
 @export var shake_sound: String = "sfx_tree_shake_"
-@export var drop_sound: String = "sfx_persimmon_drop_"
+@export var drop_sound: String = "sfx_fruit_drop_"
 ## 흔들 때 떨어지는 잎 수와 색.
 @export var leaves: int = 9
 @export var leaf_color: Color = Color(0.85, 0.48, 0.18, 1.0)

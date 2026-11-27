@@ -2,28 +2,32 @@
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_sky.png" id="2_dbm2k"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_horizon.png" id="3_6icyn"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_far.png" id="3_pp4pi"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_mid.png" id="4_28arl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_hills.png" id="5_1ull4"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_ground_01.png" id="5_v2r8g"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_ground_02.png" id="6_wrysj"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_props_01.png" id="7_7ppby"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_near_01.png" id="7_ynb0a"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_near_02.png" id="8_igqfc"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_props_02.png" id="8_n1iab"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_01.png" id="9_yj3y7"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/field/bg_field_front_02.png" id="10_tibpu"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="11_pp4pi"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_field.ogg" id="12_28arl"]
 [ext_resource type="Script" path="res://scripts/game/bench_sit.gd" id="13_v2r8g"]
-[ext_resource type="Script" uid="uid://bluqmseo20c52" path="res://scripts/game/memory_scene.gd" id="mem_script"]
 [ext_resource type="Script" path="res://scripts/game/map_chase.gd" id="chase_script"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="gate_script"]
-[ext_resource type="Script" path="res://scripts/game/tractor_pass.gd" id="tractor_script"]
-[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 [ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
 [ext_resource type="Script" path="res://scripts/game/kite_fly.gd" id="kite_script"]
+[ext_resource type="Script" path="res://scripts/game/memory_scene.gd" id="mem_script"]
+[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
+[ext_resource type="Script" path="res://scripts/game/tractor_pass.gd" id="tractor_script"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
-display_name = "억새 들판"
+display_name = "금빛 들판"
 next_place = "res://scenes/places/station.tscn"
 width = 11520.0
 greybox = false
@@ -34,16 +38,39 @@ greybox = false
 texture = ExtResource("2_dbm2k")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Horizon" index="0" unique_id=759966948]
+
+[node name="bg_field_horizon" type="Sprite2D" parent="Layers/Horizon/Art" index="0" unique_id=738990226]
+texture = ExtResource("3_6icyn")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=830495752]
 
 [node name="bg_field_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=486016556]
 texture = ExtResource("3_pp4pi")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Hills" index="0" unique_id=36936421]
+
+[node name="bg_field_hills" type="Sprite2D" parent="Layers/Hills/Art" index="0" unique_id=1956503074]
+texture = ExtResource("5_1ull4")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=2017687686]
 
 [node name="bg_field_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=1981041882]
 texture = ExtResource("4_28arl")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Near" index="0" unique_id=434042064]
+
+[node name="bg_field_near_01" type="Sprite2D" parent="Layers/Near/Art" index="0" unique_id=1607974168]
+texture = ExtResource("7_ynb0a")
+centered = false
+
+[node name="bg_field_near_02" type="Sprite2D" parent="Layers/Near/Art" index="1" unique_id=403057537]
+position = Vector2(4808, 0)
+texture = ExtResource("8_igqfc")
 centered = false
 
 [node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=389236190]
@@ -123,45 +150,46 @@ script = ExtResource("13_v2r8g")
 prompt = "앉기"
 lines = PackedStringArray()
 
-[node name="Memory_2-2" type="Node2D" parent="."]
+[node name="Memory_2-2" type="Node2D" parent="." index="9" unique_id=694224652]
 position = Vector2(3203, 890)
 script = ExtResource("mem_script")
-circle = 1
 art = "mem_wind"
 phrase = "mus_phrase_1"
 
-[node name="MapChase_2-3" type="Node2D" parent="."]
+[node name="MapChase_2-3" type="Node2D" parent="." index="10" unique_id=928732836]
 position = Vector2(4300, 810)
 script = ExtResource("chase_script")
 stops = PackedFloat32Array(1600)
 snag_height = 140.0
 flight_seconds = 2.6
+lines = PackedStringArray("하윤: 어? 기다려!")
 reveal_flag = &"kite_flown"
 
-[node name="Keepsake_2-3_Kite" type="Area2D" parent="."]
+[node name="Keepsake_2-3_Kite" type="Area2D" parent="." index="11" unique_id=1191755309]
 position = Vector2(5300, 810)
 script = ExtResource("keepsake_script")
-item = &"kite"
-prompt = "연 꺼내기"
 art_offset = Vector2(40, -78)
 art_rotation = -18.0
+prompt = "연 꺼내기"
+lines = PackedStringArray()
 
-[node name="KiteFly_2-3" type="Node2D" parent="."]
+[node name="KiteFly_2-3" type="Node2D" parent="." index="12" unique_id=33574952]
 position = Vector2(5300, 810)
 script = ExtResource("kite_script")
 grants_flag = &"kite_flown"
 start_prompt = "연 띄우기"
 
-[node name="Gate_2-3" type="StaticBody2D" parent="."]
+[node name="Gate_2-3" type="StaticBody2D" parent="." index="13" unique_id=289239485]
 position = Vector2(7000, 810)
 script = ExtResource("gate_script")
 opens_on_flag = &"map_caught"
 
-[node name="Tractor_2-4" type="Node2D" parent="."]
+[node name="Tractor_2-4" type="Node2D" parent="." index="14" unique_id=1219689856]
 position = Vector2(7337, 810)
 script = ExtResource("tractor_script")
+lines = PackedStringArray("하윤: 안녕하세요.")
 
-[node name="Moment_2-4_Dragonflies" type="Node2D" parent="."]
+[node name="Moment_2-4_Dragonflies" type="Node2D" parent="." index="15" unique_id=1906928082]
 position = Vector2(8200, 810)
 script = ExtResource("moment_script")
 art = "prop_dragonfly"

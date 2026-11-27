@@ -17,7 +17,7 @@ const PLACES := [
 	[&"bridge", 4, ["6-1", "6-2", "6-3"]],
 	[&"ferry", 2, ["7-1", "7-2", "7-3", "7-4", "7-5", "7-6", "7-7"]],
 ]
-const LAYERS := ["Sky", "Far", "Mid", "Ground", "Props", "Front"]
+const LAYERS := ["Sky", "Horizon", "Far", "Hills", "Mid", "Near", "Ground", "Props", "Front"]
 
 
 func _initialize() -> void:
@@ -344,7 +344,7 @@ func _check_parts() -> void:
 	var portraits := _find_by_script("house", "res://scripts/game/funeral_portraits.gd")
 	var find_art: Callable = load("res://scripts/ui/cutscene_player.gd").find_art
 	var art_ok := true
-	for art in ["cut_accident", "prop_portrait_grandpa", "prop_portrait_hayun"]:
+	for art in ["cut_accident", "prop_portrait_grandpa", "prop_portrait_hayun"]:  # 컷신 0(임시)·영정
 		art_ok = art_ok and not find_art.call(art).is_empty()
 	_check(opening.size() == 1 and portraits.size() == 1 and String(portraits[0][0]) == "Portraits_1-2" and art_ok,
 			"부품: 집에 오프닝(0-1)과 영정사진 두 개(1-2), 그림(컷신 0·영정 2장)이 있다 %s %s" % [opening, portraits])
@@ -365,8 +365,8 @@ func _check_parts() -> void:
 			"부품: 집 1-3 앨범이 펼친 앨범 그림(세 쪽)을 넘긴다 '%s'" % album_art)
 	house_scene.free()
 	var shakes := _find_by_script("house", SHAKE)
-	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
-			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
+	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Apple" and shakes[0][1] < 5300.0,
+			"부품: 집 마당 1-6에 사과나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
 	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 묻히는 덤불이 임시 배경 FIELD_SNAGS 중 하나, 지도 그림이 있다 %s / %s" % [chases, snags])
 	var chain_ok := true
 	for r in required:
@@ -441,7 +441,16 @@ func _check_house_puzzle(main: Node, player: CharacterBody2D) -> void:
 		await _wait(0.6)
 		await _press(&"interact")
 	await _wait(0.3)
+	for i in 30:  # 컷신이 끝날 때까지(대사는 넘긴다). 지도는 컷신이 걷힌 뒤에 얻는다
+		await _wait(0.5)
+		if main.dialogue_box().visible:
+			await _press(&"interact")
+		elif player.controls_enabled:
+			break
 	_check(state.has_flag(&"has_map"), "집: 서랍을 열면 지도를 얻는다(has_map)")
+	var cut_path: String = load("res://scripts/ui/cutscene_player.gd").find_art(String(drawer.get("cutscene_art")))
+	_check(cut_path.begins_with("res://assets/art/cut/") and not cut_path.contains("/placeholder/"),
+			"집: 1-5 서랍을 열면 일러스트 담당의 지도 컷신(cut_map)이 뜬다 %s" % cut_path)
 
 
 ## assets/audio/ 소리 규칙(이름·반복)과 장소 환경음. 지금 장소의 환경음이 실제로 돌고 있는지도 본다.

@@ -438,7 +438,7 @@ def make_steps(rng):
         out[f"sfx_tree_shake_{i + 1:02d}"] = db_rms(x, -26)
     for i in range(2):  # 감이 마당 흙에 툭
         x = one_shot(rng, 0.35, band(60, 900, -5), 0.002, 0.05, ring([(140, 0.5), (230, 0.25)], 0.05))
-        out[f"sfx_persimmon_drop_{i + 1:02d}"] = db_rms(x, -22)
+        out[f"sfx_fruit_drop_{i + 1:02d}"] = db_rms(x, -22)
     # 0-1 오프닝: 밤 빗소리(약 14초, 한 번). 빗방울 톡톡 + 쏴아 하는 바탕. 사이렌·충돌음은 넣지 않는다.
     secs = 14.0
     n = n_samples(secs)
