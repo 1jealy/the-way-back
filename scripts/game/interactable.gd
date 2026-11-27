@@ -33,11 +33,19 @@ signal locked
 ## 주운 물건 그림 이름(assets/art, 확장자 뺀 것, 예: "prop_key"). 조사하면 그 그림이 대상 위로 떠올랐다 사라진다.
 ## 대사 없이 "뭔가 주웠다"를 보여 준다(1-4 액자 뒤 열쇠). 비우면 없음.
 @export var pickup_art: String = ""
+## 손그림 컷신 그림 이름(1-5 `cut_map`). 있으면 조사할 때 컷신(천천히 다가가는 카메라)을 띄우고,
+## 그 위에 lines를 보여 준 뒤 걷힌다. 그동안 하윤은 멈춘다(잠금 cutscene).
+@export var cutscene_art: String = ""
+## 컷신 카메라: 시작·끝 배율, 시작·끝 이동(px), 움직이는 시간(초).
+@export var cutscene_zoom: Vector2 = Vector2(1.0, 1.1)
+@export var cutscene_pan_to: Vector2 = Vector2.ZERO
+@export var cutscene_seconds: float = 5.0
 ## 펼친 앨범 그림 이름(1-3). 있으면 조사할 때 AlbumView로 한 쪽씩 넘겨 보고, 덮은 뒤에 lines가 나온다.
 @export var album_art: String = ""
 ## 앨범 그림의 쪽 수(그림 폭을 이만큼으로 나눈다).
 @export_range(1, 8) var album_pages: int = 3
 
+const CUTSCENE_LOCK := &"cutscene"
 const PICKUP_RISE := 70.0
 const PICKUP_SECONDS := 1.4
 
@@ -129,7 +137,8 @@ func interact() -> void:
 	_play_sound(sound)
 	_busy = true
 	used = true
-	if not grants_flag.is_empty():
+	# 컷신이 있으면 플래그는 컷신이 걷힌 뒤에 세운다(1-5: [M] 지도 안내가 컷신 위에 겹치지 않게)
+	if not grants_flag.is_empty() and cutscene_art.is_empty():
 		GameState.set_flag(grants_flag)
 	_show_pickup()
 	interacted.emit()
@@ -157,7 +166,22 @@ func interact() -> void:
 				_busy = false  # 다섯 번을 튀겼으면 "…다섯 번은 어렵다."를 띄우지 않는다(#115)
 				finished.emit()
 				return
-	if not lines.is_empty():
+	if not cutscene_art.is_empty():
+		var player := get_tree().get_first_node_in_group("player") as Player
+		if player:
+			player.lock(CUTSCENE_LOCK)
+		var cut := CutscenePlayer.new()
+		cut.name = "Cutscene"
+		var host: Node = get_tree().current_scene if get_tree().current_scene else get_tree().root
+		host.add_child(cut)
+		cut.play({"art": cutscene_art, "seconds": cutscene_seconds, "zoom": cutscene_zoom,
+				"pan": [Vector2.ZERO, cutscene_pan_to], "lines": lines})
+		await cut.finished
+		if not grants_flag.is_empty():
+			GameState.set_flag(grants_flag)
+		if player and is_instance_valid(player):
+			player.unlock(CUTSCENE_LOCK)
+	elif not lines.is_empty():
 		var box := get_tree().get_first_node_in_group("dialogue_box") as DialogueBox
 		if box:
 			box.play(lines)

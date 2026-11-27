@@ -615,6 +615,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_cutscene_look()
 	await _check_clearing()
 	await _check_map_closeup()
 	await _check_album()
@@ -977,6 +978,28 @@ func _check_album() -> void:
 	await _wait(0.2)
 	_check(_player.controls_enabled and not is_instance_valid(album), "앨범: 덮고 대사를 넘기면 다시 걷는다")
 	look.queue_free()
+	await _wait(0.2)
+
+
+## 조사하면 손그림 컷신(cutscene_art, #135 1-5 지도): 컷신이 뜨고 그동안 하윤이 멈추며, 컷신 위로 대사가 나오고 걷히면 다시 걷는다.
+func _check_cutscene_look() -> void:
+	var look: Area2D = _add_interactable(PackedStringArray(["하윤: …같이 가자며."]), &"test_cut_seen", 30.0)
+	look.cutscene_art = "cut_map"
+	look.cutscene_seconds = 0.4
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.3)
+	var cut: Node = _main.get_tree().root.find_child("Cutscene", true, false)
+	_check(cut != null and _player.is_locked_by(&"cutscene") and not _state.has_flag(&"test_cut_seen"),
+			"컷신 조사: E로 조사하면 컷신이 뜨고 하윤이 멈춘다(플래그는 아직)")
+	var said := await _wait_until(func(): return _main.dialogue_box().is_open(), 4.0)
+	_check(said and _main.dialogue_box().current_text() == "…같이 가자며." and is_instance_valid(cut),
+			"컷신 조사: 카메라가 다가간 뒤 컷신 위로 대사가 나온다")
+	await _speak_through(_main.dialogue_box())
+	var back := await _wait_until(func(): return _player.controls_enabled, 3.0)
+	_check(back and not is_instance_valid(cut) and _state.has_flag(&"test_cut_seen"), "컷신 조사: 대사를 넘기면 컷신이 걷히고 그때 플래그가 서며 다시 걷는다")
+	look.queue_free()
+	_state.flags.erase(&"test_cut_seen")
 	await _wait(0.2)
 
 
