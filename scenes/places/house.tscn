@@ -128,10 +128,10 @@ position = Vector2(5300, 810)
 script = ExtResource("11_bdaxg")
 opens_on_flag = &"has_map"
 
-[node name="Shake_1-6_Persimmon" type="Area2D" parent="."]
+[node name="Shake_1-6_Apple" type="Area2D" parent="."]
 position = Vector2(5070, 810)
 script = ExtResource("shake_script")
-prompt = "감나무 흔들기"
+prompt = "사과나무 흔들기"
 
 [node name="Opening_0-1" type="Node" parent="."]
 script = ExtResource("opening_script")
