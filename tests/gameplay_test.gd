@@ -589,6 +589,7 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_grass()
 	await _check_cutscene_look()
 	await _check_clearing()
 	await _check_map_closeup()
@@ -848,6 +849,39 @@ func _check_shake() -> void:
 	_check(not tree.is_offered(), "사과나무: 한 번만 흔든다")
 	tree.queue_free()
 	await _wait(0.2)
+
+
+## 풀숲(GrassField, #142): 풀잎이 두 겹으로 생기고, 앞 겹은 비우는 자리를 비우고, 하윤 자리를 셰이더에 넘기고,
+## 센 바람(blow)에 gust가 올랐다 내려온다.
+func _check_grass() -> void:
+	var grass: Node2D = load("res://scripts/game/grass_field.gd").new()
+	grass.length = 600.0
+	grass.density = 50.0
+	grass.front_ratio = 0.5
+	grass.taper = 0.0
+	var x0 := _player.global_position.x - 300.0
+	grass.position = Vector2(x0, 810.0)
+	grass.clear_spots = PackedFloat32Array([x0 + 300.0])
+	grass.clear_half = 100.0
+	_main.current_place().add_child(grass)
+	await _wait(0.2)
+	var nb: int = grass.back.multimesh.instance_count
+	var nf: int = grass.front.multimesh.instance_count
+	var cleared := true
+	for i in nf:
+		var gx: float = x0 + grass.front.multimesh.get_instance_transform_2d(i).origin.x
+		cleared = cleared and absf(gx - (x0 + 300.0)) >= 100.0
+	_check(nb == 150 and nf > 60 and nf <= 150 and cleared, "풀숲: 뒤·앞 두 겹, 앞 겹은 비우는 자리를 비운다 (%d, %d)" % [nb, nf])
+	_check(grass.back.z_index < 0 and grass.front.z_index > 0, "풀숲: 뒤 겹은 하윤 뒤, 앞 겹은 하윤 앞")
+	var pos: Vector2 = grass.back.material.get_shader_parameter("player_pos")
+	_check(pos.distance_to(_player.global_position) < 1.0, "풀숲: 하윤 자리를 셰이더에 넘긴다(헤치기)")
+	grass.blow()
+	await _wait(0.5)
+	var high: float = grass.gust
+	await _wait(2.6)
+	_check(high > 0.8 and grass.gust < 0.05, "풀숲: 센 바람에 크게 눕었다가 일어난다 (%.2f → %.2f)" % [high, grass.gust])
+	grass.queue_free()
+	await _wait(0.1)
 
 
 ## 4-3 빈터(ClearingLight): 바닥에 앉으면 빛이 쏟아지고, 하늘이가 한쪽을 보며 꼬리를 흔든다. 일어나면 돌아온다.

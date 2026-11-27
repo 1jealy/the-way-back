@@ -24,10 +24,15 @@
 [ext_resource type="Script" path="res://scripts/game/memory_scene.gd" id="mem_script"]
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 [ext_resource type="Script" path="res://scripts/game/tractor_pass.gd" id="tractor_script"]
+[ext_resource type="Script" path="res://scripts/game/grass_field.gd" id="grass_script"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
 display_name = "금빛 들판"
+footstep_changes = {
+3900.0: &"grass",
+7250.0: &"dirt"
+}
 next_place = "res://scenes/places/station.tscn"
 width = 11520.0
 greybox = false
@@ -199,3 +204,35 @@ art_seconds = 4.5
 art_z = 5
 art_count = 4
 art_bob = 30.0
+
+[node name="Grass_2-1_Verge" type="Node2D" parent="."]
+position = Vector2(0, 810)
+script = ExtResource("grass_script")
+length = 11520.0
+density = 55.0
+back_z = -4
+back_root = Vector2(-22, -14)
+height = Vector2(26, 70)
+blade_width = Vector2(3.5, 6)
+taper = 120.0
+seed_text = "verge"
+
+[node name="Grass_2-3_Tall" type="Node2D" parent="."]
+position = Vector2(3900, 810)
+script = ExtResource("grass_script")
+length = 3350.0
+density = 120.0
+front_ratio = 0.4
+back_z = -1
+front_z = 3
+back_root = Vector2(-14, 4)
+front_root = Vector2(70, 210)
+height = Vector2(130, 250)
+blade_width = Vector2(6, 11)
+taper = 450.0
+clear_spots = PackedFloat32Array(5340)
+clear_half = 100.0
+sway_px = 12.0
+push_radius = 130.0
+push_px = 85.0
+seed_text = "tall"
