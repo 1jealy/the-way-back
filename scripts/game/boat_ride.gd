@@ -16,7 +16,7 @@ const GHOST_SHADER := preload("res://shaders/ghost.gdshader")
 
 ## 배가 흘러가는 거리(px)와 시간(초). 장면표 7-6: 1:10.
 @export var distance: float = 5400.0
-@export var ride_seconds: float = 70.0
+@export var ride_seconds: float = 42.0
 ## 지나온 장소가 비치는 자리: 강 건너편(그림 아래 끝이 이 y, 장소 좌표)과 크기.
 @export var ghost_bottom_y: float = 650.0
 @export var ghost_scale: float = 0.42
