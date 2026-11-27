@@ -22,6 +22,8 @@ const FLOAT_SECONDS := 1.2
 ## 땅에 놓인 그림의 자리(원점 기준)와 기울기(도). 그림은 ITEMS에서 고른다.
 @export var art_offset: Vector2 = Vector2(0.0, -60.0)
 @export var art_rotation: float = 0.0
+## 놓인 그림의 z(하윤 0 기준). 기본은 하윤 뒤 땅 위. 들판 연처럼 풀숲 끝에 걸쳐 놓으면 풀 사이(뒤 겹보다 위)로 올린다(#142).
+@export var art_z: int = -2
 
 ## 물건이 떠올라 사라졌을 때.
 signal taken
@@ -55,7 +57,7 @@ func _ready() -> void:
 		_art.texture = load(path)
 		_art.position = art_offset
 		_art.rotation_degrees = art_rotation
-		_art.z_index = -2  # 하윤 뒤, 땅 위
+		_art.z_index = art_z
 		add_child(_art)
 	if GameState.has_flag(grants_flag):
 		used = true

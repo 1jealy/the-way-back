@@ -137,7 +137,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - 하윤이 원점 - `trigger_before`를 지나면 한 번 일어난다. 처음 알아챘을 때 이미 원점 + `trigger_window`(600px)보다 멀리 가 있으면(옮겨 가기·순간이동) 일어나지 않고 지나간 것으로 친다. 플래그를 세우지 않는다(진행과 상관없고, 이어하기 뒤엔 다시 일어난다).
 - 필요한 것만 채운다: 하늘이 `dog_to`(원점 기준 x)·`dog_hold`·`dog_look`(합류 전이거나 부탁 중이면 건너뜀) / 하윤 `player_pause`·`player_look`(잠금 이유 `moment`) / 그림 `art`가 `art_from` → `art_to`로 `art_seconds` 동안 지나간다(`art_z`, `art_scale`, `art_count`, `art_bob`). 그림은 오른쪽을 보고 그리고, 왼쪽으로 가면 뒤집힌다.
 - 하늘이 연출은 `dog.script_move_to` → `dog.look(dir)` → `dog.release_script`. 짖기는 `dog.bark()`.
-- 이름 `Moment_<장면>_<내용>`. 지금 놓인 것: 들판 `Moment_2-4_Dragonflies`, 간이역 `Moment_3-6_Sniff`·`Moment_3-6_Lead`, 숲 `Moment_4-1_Deer`, 강가 `Moment_5-2_Paw`(물그림자 `Reflection_5-2` 안: 비친 하윤 옆에 비치지 않는 하늘이)·`Moment_5-4_Heron`, 철교 `Moment_6-1_Creak`·`Moment_6-3_LookBack`.
+- 이름 `Moment_<장면>_<내용>`. 지금 놓인 것: 들판 `Moment_2-4_Dragonflies`, 간이역 `Moment_3-6_Sniff`·`Moment_3-6_Lead`, 숲 `Moment_4-1_Deer`, 강가 `Moment_5-2_Paw`(물그림자 `Reflection_5-2` 안: 비친 하윤 옆에 비치지 않는 하늘이)·`Moment_5-4_Heron`, 철교 `Moment_6-1_Creak`·`Moment_6-3_LookBack`. 하윤을 세우는 `player_pause`는 지금 쓰지 않는다(#118 — 걷는 흐름을 끊었다).
 
 ## 날아간 지도 (MapChase, 장면표 2-3 퍼즐 2)
 
@@ -169,7 +169,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 - 하윤이 원점 - `trigger_before`(250px)를 지나면 오른쪽 멀리서 트랙터(`prop_tractor`, 하윤 뒤 길가 z -3)가 다가오고 엔진 소리(`sfx_tractor_`, 트랙터에 붙은 `AudioStreamPlayer2D`라 멀어지면 작아진다).
 - 하윤은 멈춰(잠금 `tractor`) 몇 걸음 비켜서서 트랙터 쪽을 본다(`player.face`). 가까이 오면 "하윤: 안녕하세요." 농부는 돌아보지 않고 지나간다.
-- 대사를 넘기고 트랙터가 하윤을 지나가야 풀린다(신호 `passed` → `finished`). `done_flag`(`tractor_passed`)를 세워 다시 오지 않는다.
+- 인사 대사를 넘기면 바로 풀린다(#118, 예전에는 트랙터가 다 지나갈 때까지 약 10초 서 있었다). 트랙터(`speed` 240)는 하윤 뒤 길가로 마저 지나간다(신호 `passed`). `done_flag`(`tractor_passed`)를 세워 다시 오지 않는다.
 
 ## 흔들면 떨어지는 것 (ShakeDrop, 장면표 1-6 사과나무)
 
@@ -195,6 +195,16 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - **있으면 선택 미니게임**(잠금 `minigame`): 물 위에 할아버지 물결 다섯 자리(`Ghost0~4`, 희미한 타원)가 남는다. E를 누르고 있으면 하윤이 몸을 낮춰 팔을 젖히고(`set_motion`), 손에서 나간 점선 궤적(`Aim`, 점 무늬를 되풀이한 Line2D)이 각도 -2~46도로 오르내린다(20도 ±6이면 금빛). 떼면 던진다: `skips_for(각도)` — 20도 ±4 → 다섯, ±8 → 넷, ±13 → 셋, ±19 → 둘, ±26 → 하나, 그 밖은 바로 가라앉는다. 튄 자리마다 물결 자리가 채워진다(물은 `hop_lengths` 다섯 칸). 발밑 돌무더기(`stones` 다섯)가 남은 돌이고, 다 쓰면 하늘이가 물가에 갔다 와서 다시 채운다. 튈 때 카메라가 돌을 살짝 따라가고(`pan_camera`), 튈수록 물결이 커지고 셋째부터 물방울이 튀며 소리가 높아진다(#119). 셋 미만이면 한 번 어긋남 → 세 번이면 각도가 0.55배로 느려진다. ← →로 그만둔다. 다섯 번을 튀기면 `five_flag`(`skip_five`), 하늘이가 짖고(`DogRig.bark`) 물결 자리가 금빛으로 환해지며 기억 장면이 한 번 더 나오고 끝난다 — 그때는 "…다섯 번은 어렵다."를 띄우지 않는다(`Interactable`이 `skip.best >= 5`를 본다).
 - 물수제비는 물과 약 20도로 낮게 닿아야 잘 튄다(Clanet 외, Nature 2004). 돌은 손 자리(`player.hand_point()`)에서 낮고 평평하게(높이 18px) 날아간다.
 
+## 풀숲 (GrassField, #142)
+
+`Node2D` + `scripts/game/grass_field.gd` + `shaders/grass.gdshader`. 풀잎을 한 장씩 MultiMesh로 그린다(풀잎 메시는 키 1·폭 1, 인스턴스 변환으로 늘인다. 셰이더의 VERTEX는 늘이기 전 좌표라 픽셀 휨을 폭으로 나눠 더한다).
+
+- 바람: 끝이 늘 왼쪽으로 기울고 흔들리며, 물결(`wave_len` 1100px)이 왼쪽으로 지나간다. 날아간 지도(MapChase `blown_away`)에 `blow()` — 풀이 크게 눕었다가(`gust`) 일어난다.
+- 헤치기: 뿌리가 하윤 발 가까이(`push_radius`) 있는 풀잎은 하윤에게서 비켜 눕는다(가우스 — 가운데가 비어 구멍처럼 보이지 않게, 휘기만). 걷는 동안 지나간 자리는 출렁이며 돌아온다(`player_vel`). 끝이 옆으로 간 만큼 내려와 늘어나지 않고 휜다.
+- 모양: 고르게 깔지 않고 포기(`clump`)로 모아 부채꼴로 벌어지게 심고, 이삭 줄기(`stalk_ratio`)를 섞는다. 끝은 해빛에 밝다. 앞 겹은 어둡고 성긴 실루엣(`front_tint`, `front_sparse`) — 배경의 흐린 앞 층 들풀과 같게.
+- 두 겹: 뒤 겹(`back_z`, 하윤 뒤)과 앞 겹(`front_ratio`만큼, `front_z`, 하윤 앞, `front_root`로 길 아래에 뿌리). 뿌리는 투명하게 땅에 녹는다. 앞 겹은 `clear_spots`(전역 x) ± `clear_half`를 비운다 — 땅에 놓인 물건이 가려지지 않게.
+- 지금 놓인 것: 들판 `Grass_2-1_Verge`(길 뒤 낮은 풀, 들판 전체, z -4), `Grass_2-1_Tall`(x 250~8850)·`Grass_2-6_Tall`(x 9800~11300) 키 큰 들풀(들판 전체, 정류장 2-5 벤치·시간표 앞만 비움 — 하윤이 허리까지 파묻히고 길은 안 보인다. 앞 겹은 뿌리가 아래일수록 길어 끝이 허리께에 모인다. 마름모 연은 풀 끝에 걸쳐 있다 — `Keepsake.art_z` -1, 뒤 겹(-2)보다 위·하윤보다 뒤. 풀잎 사이로 길이 비치지 않게 앞 겹 뒤에 풀빛 띠 `cover_band`), `Grass_2-3_Deep`(x 6080~6900, 하윤 키보다 높은 풀이 하윤을 통째로 덮는다 — 풀이 갈라지고 출렁이는 것으로만 어디 있는지 보인다. 묻힌 지도(5900)와 `Gate_2-3`(7000) 사이라 조사·줍기 자리를 덮지 않는다). 풀숲 안 발소리는 `grass`(`footstep_changes`).
+
 ## 빛 알갱이 (LightMotes, 장면표 4-1·4-2)
 
 `Node2D` + `scripts/game/light_motes.gd`. 숲 입구 `Motes_4-1`(땅 위 x 891).
@@ -206,7 +216,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 `Area2D` + `scripts/game/bench_sit.gd`(조사 대상을 이은 것). 이름 `Sit_<장면>`, 벤치 가운데 땅 위.
 
-- `auto_sit = true`(3-3): 하윤이 들어오면 저절로 `sit_seconds`(6초, 15초에서 #118로 줄임) 앉는다. 앉고 1.2초(`WRIST_AT`) 뒤 손목을 만진다(복선). 그동안 장소 층이 `tint`로 물들고 환경음이 `ambience_duck_db`만큼 줄고, 끝 무렵 `end_sound`. 다 앉으면 `grants_flag`(`station_sat`)를 세우고 일어난다. 안내 글 없음.
+- `auto_sit = true`(3-3): 하윤이 들어오면 저절로 `sit_seconds`(6초, 15초에서 #118로 줄임) 앉는다. 앉고 1.2초(`WRIST_AT`) 뒤 손목을 만진다(복선). 끝 무렵 `end_sound`(개 짖는 소리) 뒤에는 방향키로 먼저 일어날 수 있다(`can_stand_early`). 그동안 장소 층이 `tint`로 물들고 환경음이 `ambience_duck_db`만큼 줄고, 끝 무렵 `end_sound`. 다 앉으면 `grants_flag`(`station_sat`)를 세우고 일어난다. 안내 글 없음.
 - `auto_sit = false`(2-5): "[E] 앉기" → 방향키나 E로 일어난다. 조작 잠금 이유 `sit`.
 - 하늘이 만남은 `appears_on_flag`(`station_sat`)가 서야 하늘이가 나타난다. 그래서 3-3 벤치는 만남 자리보다 왼쪽, 알아채는 거리(360px) 밖에 둔다.
 
@@ -233,7 +243,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - **엔딩 연출** `scripts/game/ending.gd`(`EndingDirector`): 할아버지 옆에 놓는다(`Ending_7-3`). `start_flag`(나루터 씬에서는 `grandpa_called`) 뒤 하윤이 `trigger_distance`(380px) 안으로 오면 시작하고 끝까지 조작을 막는다(잠금 이유 `ending`).
   하윤이 달려가다 멈춤(`player.auto_move_to`) → 하늘이가 먼저 할아버지에게(`dog.script_move_to`) → "할아버지: 왔니." → 컷신 1(팔찌) → 하늘이가 발치에 앉고 셔터(`ending_photo`) → 강 위 구간으로(`crossing_scene`).
 - **7-1 안개** `scripts/game/mist_reveal.gd`(`MistReveal`, 나루터 `Mist_7-1`): 들어서면 하얀 안개가 걷히고 휘파람 선율이 작게 시작된다.
-- **7-6 강 위 구간** `scenes/places/crossing.tscn`(place_id `crossing`, 지도에는 없음) + `scripts/game/boat_ride.gd`(`BoatRide_7-6`): 셋이 탄 배가 `ride_seconds`(70초) 동안 저절로 흘러간다(조작 없음, 잠금 `ending`). 강 건너 안개에 지나온 장소 다섯이 차례로 비친다(각 장소의 `bg_<장소>_mid` 그림을 `shaders/ghost.gdshader`로 바래게 — 진짜 그림이 오면 그것이 비친다). 물에 비친 셋은 또렷하다(모습을 뒤집어 복사). 하윤이 물을 한 번 만진다. 휘파람 선율을 처음부터 끝까지(`restart`) → 컷신 2(`cut_boat`, 하얗게 번짐) → 제목 → `ending_seen` → 타이틀로(`return_to_title`, 검사는 끈다).
+- **7-6 강 위 구간** `scenes/places/crossing.tscn`(place_id `crossing`, 지도에는 없음) + `scripts/game/boat_ride.gd`(`BoatRide_7-6`): 셋이 탄 배가 `ride_seconds`(42초, #118에서 70 → 42) 동안 저절로 흘러간다(조작 없음, 잠금 `ending`). 강 건너 안개에 지나온 장소 다섯이 차례로 비친다(각 장소의 `bg_<장소>_mid` 그림을 `shaders/ghost.gdshader`로 바래게 — 진짜 그림이 오면 그것이 비친다). 물에 비친 셋은 또렷하다(모습을 뒤집어 복사). 하윤이 물을 한 번 만진다. 휘파람 선율을 처음부터 끝까지(`restart`) → 컷신 2(`cut_boat`, 하얗게 번짐) → 제목 → `ending_seen` → 타이틀로(`return_to_title`, 검사는 끈다).
 - **음악**: `main.play_music(이름, dB, 페이드, restart)` / `fade_music` / `stop_music`. 장소를 옮겨도 끊기지 않는다(`Music` 버스).
 - **컷신 재생** `scripts/ui/cutscene_player.gd`(`CutscenePlayer`, B): 한 장짜리 그림에 천천히 확대·이동, 글자는 글꼴로 얹는다(팔찌 "이하윤 / 9세"). 그림은 이름(`cut_bracelet`)으로 `assets/art` 아래에서 찾고 진짜 그림 → SVG 소품 → placeholder 순이다. 대사 상자보다 아래 층(5)이라 컷신 위로 대사가 보인다.
 - 나루터 `Gate_7-3`(`map_circle_5`): 다섯째 동그라미 전에는 할아버지 쪽으로 못 간다. 할아버지가 나타나고 엔딩이 시작되는 것은 `grandpa_called`(FerryCall, #147)다.
@@ -271,7 +281,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 - **동그라미 모양**: 손으로 휙 그린 타원 — 옆으로 조금 길고 비스듬하며(동그라미마다 기울기·찌그러짐이 다르다) 한 바퀴 넘게 돌아 두 끝이 엇갈리고, 시작·끝은 가늘고 옅게 빠진다(`_draw_circle_mark`).
 - **색연필 질감**: 코드가 긋는 선(길·동그라미·체크·지나온 길, 굵기 `LINE_W` 6 · `TRAIL_W` 8 · `CHECK_W` 9)에는 `shaders/pencil.gdshader`가 걸린다(종이 결에 걸려 군데군데 비고 한 방향으로 긁힌 결, 결은 지도 좌표에 붙는다). 그래서 지도 그림은 `_draw`가 아니라 뒤에 깐 자식 `Paper`(TextureRect, `show_behind_parent`)가 그리고, 글(Label 자식)에는 질감이 안 걸린다.
 - **지도 글씨**: 맨 위 메모·장소 이름·메모 1~4는 할아버지 글씨(`grandpa_hand_subset.ttf`, Nanum Pen Script), 다섯째 메모만 하윤 글씨(`hayun_hand_subset.ttf`, Gamja Flower)다(반전 복선). 둘 다 지도 문구 글자만 든 서브셋이라, 지도 문구를 고치면 `python3 tools/font_subset.py`로 세 글꼴을 다시 만든다(CI가 `--check`로 본다). 없는 글자는 본문 글꼴로 그린다(`map_canvas.gd`의 fallback).
-- **기억 장면**(동그라미 1~4, `scripts/game/memory_scene.gd` `MemoryScene`): B가 그 동그라미 조사 대상 오른쪽에 놓는다(`Memory_2-2`, 원점은 그림 아래 가운데, y 890이면 그림의 땅 선이 땅에 맞는다). `circle`이 같은 조사 대상이 지도를 접은 뒤 `play()`를 기다리고 나서 글을 띄운다. 단색 선 스케치(`art`, 예: `mem_wind`)를 `shaders/memory.gdshader`로 빛처럼 희미하게 겹치고, 그동안 휘파람 한 소절(`phrase` = `mus_phrase_N`, 한 번만)이 나고 환경음이 줄고 하윤 조작이 멈춘다(잠금 이유 `memory`). 대사 없음.
+- **기억 장면**(동그라미 1~4, `scripts/game/memory_scene.gd` `MemoryScene`): B가 그 동그라미 조사 대상 오른쪽에 놓는다(`Memory_2-2`, 원점은 그림 아래 가운데, y 890이면 그림의 땅 선이 땅에 맞는다). `circle`이 같은 조사 대상이 지도를 접은 뒤 `play()`를 기다리고 나서 글을 띄운다. 단색 선 스케치(`art`, 예: `mem_wind`)를 `shaders/memory.gdshader`로 빛처럼 희미하게 겹치고, 그동안 휘파람 한 소절(`phrase` = `mus_phrase_N`, 한 번만)이 나고 환경음이 줄고 하윤은 천천히(`walk_speed_scale` 0.55) 걸을 수 있다(#118). 뒤에 바로 연출이 이어지는 기억(5-4 물수제비)은 `walk_while_playing = false`로 예전처럼 세운다(잠금 이유 `memory`). 대사 없음.
 - 지금 그림(`map_paper.jpg`, 1080×608 JPEG)이 일러스트 담당의 **최종본**이다. 좌표는 이 그림에 맞춰져 있다.
 
 ## 저장·타이틀

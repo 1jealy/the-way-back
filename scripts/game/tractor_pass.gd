@@ -17,7 +17,7 @@ const LOCK := &"tractor"
 @export var spawn_ahead: float = 1300.0
 @export var vanish_behind: float = 1500.0
 ## 경운기 빠르기(px/초). 하윤 걷기(250)보다 느리다.
-@export var speed: float = 170.0
+@export var speed: float = 240.0
 ## 이만큼 다가오면 인사한다.
 @export var greet_distance: float = 300.0
 ## 하윤이 비켜서는 거리(왼쪽으로, px).
@@ -102,8 +102,7 @@ func _greet() -> void:
 	if box and not lines.is_empty():
 		box.play(lines)
 		await box.finished
-	if not has_passed:
-		await passed
+	# 인사가 끝나면 바로 걷게 한다(#118). 경운기는 하윤 뒤 길가로 마저 지나간다.
 	if not done_flag.is_empty():
 		GameState.set_flag(done_flag)
 	var player := get_tree().get_first_node_in_group("player") as Player

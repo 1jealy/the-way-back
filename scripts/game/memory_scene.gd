@@ -27,6 +27,10 @@ const SHADER := preload("res://shaders/memory.gdshader")
 @export var phrase_db: float = -6.0
 ## 기억이 떠 있는 동안 장소 환경음을 이만큼 줄인다(dB).
 @export var ambience_duck_db: float = -8.0
+## 떠 있는 동안 하윤이 천천히 걸을 수 있다(#118 — 동그라미마다 8초씩 멈춰 있었다).
+## 기억 뒤에 바로 이어지는 연출이 있으면(5-4 물수제비) 끄고 예전처럼 세운다.
+@export var walk_while_playing: bool = true
+@export var walk_speed_scale: float = 0.55
 
 var playing: bool = false
 var _sprite: Sprite2D
@@ -52,8 +56,13 @@ func play() -> void:
 		return
 	playing = true
 	var player := get_tree().get_first_node_in_group("player") as Player
+	var speed_before := 0.0
 	if player:
-		player.lock(LOCK)
+		if walk_while_playing:
+			speed_before = player.walk_speed
+			player.walk_speed *= walk_speed_scale
+		else:
+			player.lock(LOCK)
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sketch"
 	_sprite.texture = load(path)
@@ -91,8 +100,11 @@ func play() -> void:
 		create_tween().tween_property(amb, "volume_db", amb_db, 2.0)
 	_sprite.queue_free()
 	_sprite = null
-	if player:
-		player.unlock(LOCK)
+	if player and is_instance_valid(player):
+		if walk_while_playing:
+			player.walk_speed = speed_before
+		else:
+			player.unlock(LOCK)
 	playing = false
 	ended.emit()
 

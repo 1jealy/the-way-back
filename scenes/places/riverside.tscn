@@ -135,6 +135,7 @@ script = ExtResource("mem_script")
 circle = 4
 art = "mem_skip"
 phrase = "mus_phrase_4"
+walk_while_playing = false
 
 [node name="Reflection_5-2" type="Node2D" parent="." index="10" unique_id=853356113]
 position = Vector2(2040, 810)
@@ -146,7 +147,6 @@ position = Vector2(1950, 810)
 script = ExtResource("moment_script")
 dog_to = 110.0
 dog_hold = 2.2
-player_pause = 1.6
 
 [node name="Moment_5-4_Heron" type="Node2D" parent="." index="12" unique_id=1969741985]
 position = Vector2(5600, 810)

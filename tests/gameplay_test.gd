@@ -531,17 +531,35 @@ func _run() -> void:
 	await _wait_until(func(): return map.is_open(), 2.0)
 	await _wait(1.5)
 	await _press(&"interact")
+	var speed_was: float = _player.walk_speed
 	var mem_on := await _wait_until(func(): return memory.playing, 2.0)
-	_check(mem_on and not box.is_open() and _player.is_locked_by(&"memory") and memory.get_node_or_null("Sketch") != null,
-			"기억 장면: 지도를 접으면 기억이 겹쳐 뜨고, 그동안 하윤이 멈추고 글은 아직 안 나온다")
+	_check(mem_on and not box.is_open() and not _player.is_locked_by(&"memory") and _player.walk_speed < speed_was
+			and memory.get_node_or_null("Sketch") != null,
+			"기억 장면: 지도를 접으면 기억이 겹쳐 뜨고, 그동안 하윤은 천천히 걸을 수 있고(#118) 글은 아직 안 나온다")
 	var mem_done := await _wait_until(func(): return not memory.playing, 3.0)
 	var talked3 := await _wait_until(func(): return box.is_open(), 2.0)
 	_check(mem_done and talked3 and box.current_text() == "여기도." and memory.get_node_or_null("Sketch") == null,
 			"기억 장면: 사라진 뒤 그 자리의 글이 나온다")
 	await _speak_through(box)
-	_check(not _player.is_locked_by(&"memory"), "기억 장면: 끝나면 잠금이 풀린다")
+	_check(is_equal_approx(_player.walk_speed, speed_was), "기억 장면: 끝나면 걷는 속도가 돌아온다")
 	spot3.queue_free()
 	memory.queue_free()
+	await _wait(0.2)
+	# 뒤에 바로 연출이 이어지는 기억(5-4)은 예전처럼 세운다
+	var still: Node2D = load("res://scripts/game/memory_scene.gd").new()
+	still.circle = 3
+	still.art = "mem_pup"
+	still.fade_in = 0.2
+	still.hold_seconds = 0.3
+	still.fade_out = 0.2
+	still.walk_while_playing = false
+	_main.current_place().add_child(still)
+	still.play()
+	await _wait(0.1)
+	var held_still: bool = _player.is_locked_by(&"memory")
+	await _wait_until(func(): return not still.playing, 2.0)
+	_check(held_still and not _player.is_locked_by(&"memory"), "기억 장면: walk_while_playing을 끄면 그동안 멈추고 끝나면 풀린다")
+	still.queue_free()
 	await _wait(0.2)
 
 	# 물수제비(5-4): 지도를 접고 나면 하윤이 돌을 던져 두 번 튀고 가라앉은 뒤에 글이 나온다(#32)
@@ -615,6 +633,8 @@ func _run() -> void:
 	await _check_map_chase()
 	await _check_tractor()
 	await _check_shake()
+	await _check_bench_early()
+	await _check_grass()
 	await _check_cutscene_look()
 	await _check_clearing()
 	await _check_map_closeup()
@@ -663,7 +683,10 @@ func _check_sound() -> void:
 	get_root().get_tree().process_frame.connect(watch)
 	await _hold(&"move_left", 1.2)
 	await _hold(&"move_right", 1.2)
-	_check(String(heard["step"]).begins_with("step_dirt_"), "소리: 들판을 걸으면 흙길 발소리 (%s)" % heard["step"])
+	# 들판은 억새 속(grass), 정류장 앞만 흙길(dirt) — #142. 서 있는 자리의 바닥 소리가 나야 한다.
+	var want_surface: StringName = _main.current_place().surface_at(_player.global_position.x)
+	_check(String(heard["step"]).begins_with("step_%s_" % want_surface) and want_surface in [&"grass", &"dirt"],
+			"소리: 들판을 걸으면 그 자리 바닥 발소리 (%s, %s)" % [want_surface, heard["step"]])
 	_check(not heard["claw"], "소리: 들판에서는 하늘이 발톱 소리가 없다")
 	var real_place: StringName = _state.current_place
 	_state.current_place = &"station"
@@ -881,6 +904,39 @@ func _check_shake() -> void:
 	await _wait(0.2)
 
 
+## 풀숲(GrassField, #142): 풀잎이 두 겹으로 생기고, 앞 겹은 비우는 자리를 비우고, 하윤 자리를 셰이더에 넘기고,
+## 센 바람(blow)에 gust가 올랐다 내려온다.
+func _check_grass() -> void:
+	var grass: Node2D = load("res://scripts/game/grass_field.gd").new()
+	grass.length = 600.0
+	grass.density = 50.0
+	grass.front_ratio = 0.5
+	grass.taper = 0.0
+	var x0 := _player.global_position.x - 300.0
+	grass.position = Vector2(x0, 810.0)
+	grass.clear_spots = PackedFloat32Array([x0 + 300.0])
+	grass.clear_half = 100.0
+	_main.current_place().add_child(grass)
+	await _wait(0.2)
+	var nb: int = grass.back.multimesh.instance_count
+	var nf: int = grass.front.multimesh.instance_count
+	var cleared := true
+	for i in nf:
+		var gx: float = x0 + grass.front.multimesh.get_instance_transform_2d(i).origin.x
+		cleared = cleared and absf(gx - (x0 + 300.0)) >= 100.0
+	_check(nb == 150 and nf > 60 and nf <= 150 and cleared, "풀숲: 뒤·앞 두 겹, 앞 겹은 비우는 자리를 비운다 (%d, %d)" % [nb, nf])
+	_check(grass.back.z_index < 0 and grass.front.z_index > 0, "풀숲: 뒤 겹은 하윤 뒤, 앞 겹은 하윤 앞")
+	var pos: Vector2 = grass.back.material.get_shader_parameter("player_pos")
+	_check(pos.distance_to(_player.global_position) < 1.0, "풀숲: 하윤 자리를 셰이더에 넘긴다(헤치기)")
+	grass.blow()
+	await _wait(0.5)
+	var high: float = grass.gust
+	await _wait(2.6)
+	_check(high > 0.8 and grass.gust < 0.05, "풀숲: 센 바람에 크게 눕었다가 일어난다 (%.2f → %.2f)" % [high, grass.gust])
+	grass.queue_free()
+	await _wait(0.1)
+
+
 ## 4-3 빈터(ClearingLight): 바닥에 앉으면 빛이 쏟아지고, 하늘이가 한쪽을 보며 꼬리를 흔든다. 일어나면 돌아온다.
 func _check_clearing() -> void:
 	var sit: Area2D = load("res://scripts/game/bench_sit.gd").new()
@@ -983,6 +1039,29 @@ func _check_album() -> void:
 	_check(_player.controls_enabled and not is_instance_valid(album), "앨범: 덮고 대사를 넘기면 다시 걷는다")
 	look.queue_free()
 	await _wait(0.2)
+
+
+## 3-3 자동 앉기(#118): 끝 무렵(개 짖는 소리 뒤)에는 방향키로 먼저 일어날 수 있고, 그래도 플래그가 선다.
+func _check_bench_early() -> void:
+	var bench: Area2D = load("res://scripts/game/bench_sit.gd").new()
+	bench.auto_sit = true
+	bench.sit_seconds = 2.0
+	bench.grants_flag = &"test_sat"
+	_main.current_place().add_child(bench)
+	bench.global_position = Vector2(_player.global_position.x + 600.0, 810.0)
+	await _wait(0.1)
+	_player.global_position.x = bench.global_position.x
+	var sat := await _wait_until(func(): return bench.sitting, 1.0)
+	await _press(&"move_right")
+	await _wait(0.1)
+	var early_ignored: bool = bench.sitting
+	var can := await _wait_until(func(): return bench.can_stand_early, 2.0)
+	await _press(&"move_right")
+	var up := await _wait_until(func(): return not bench.sitting, 0.3)
+	_check(sat and early_ignored and can and up and _state.has_flag(&"test_sat") and _player.controls_enabled,
+			"벤치(자동): 처음에는 못 일어나고, 끝 무렵엔 방향키로 먼저 일어나며 플래그가 선다")
+	bench.queue_free()
+	_state.flags.erase(&"test_sat")
 
 
 ## 조사하면 손그림 컷신(cutscene_art, #135 1-5 지도): 컷신이 뜨고 그동안 하윤이 멈추며, 컷신 위로 대사가 나오고 걷히면 다시 걷는다.
