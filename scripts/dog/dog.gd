@@ -501,6 +501,11 @@ func _rig_pose(sitting: bool) -> StringName:
 	return &"sit" if sitting else &"stand"
 
 
+## 짖는다(소리 + 고개 젖히기). 미니게임 도움(#145)에서 다음 음 쪽을 알려 줄 때.
+func bark() -> void:
+	_bark()
+
+
 func _bark() -> void:
 	if _rig:
 		_rig.bark()

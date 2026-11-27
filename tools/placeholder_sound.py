@@ -25,6 +25,9 @@ import tempfile
 import wave
 from pathlib import Path
 
+import json
+import re
+
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -209,8 +212,7 @@ def pos_house_radio(rng):
     # 라디오에서 희미하게 흐르는 휘파람(1-1). 진짜 주제 선율이 오기 전 임시 선율(오음계).
     seconds = 16.0
     out = np.zeros(n_samples(seconds))
-    melody = [(67, 0.6), (69, 0.6), (72, 0.9), (74, 0.6), (76, 1.2), (74, 0.6), (72, 0.6), (69, 1.5),
-              (0, 0.8), (67, 0.6), (72, 0.6), (69, 0.9), (67, 0.6), (64, 1.2), (67, 2.0)]
+    melody = THEME_FULL
     pos = 0.6
     for note, dur in melody:
         if note:
@@ -263,19 +265,13 @@ def whistle(rng, melody, tempo: float, start: float, out: np.ndarray) -> float:
 
 def mus_theme_full(rng):
     # 할아버지의 휘파람 주제 선율, 처음부터 끝까지(7-6). 진짜 곡이 오기 전 임시.
-    # A는 집 라디오에서 희미하게 들리던 그 선율(pos_house_radio)과 같다.
+    # 집 라디오에서 희미하게 들리던 그 선율(pos_house_radio)과 같다. 선율은 whistle_tune.gd(#145).
     seconds = 72.0
     out = np.zeros(n_samples(seconds))
-    A = [(67, .6), (69, .6), (72, .9), (74, .6), (76, 1.2), (74, .6), (72, .6), (69, 1.5),
-         (0, .8), (67, .6), (72, .6), (69, .9), (67, .6), (64, 1.2), (67, 2.0)]
-    B = [(74, .8), (76, .8), (79, 1.2), (76, .8), (74, .8), (72, 1.2), (0, .6),
-         (72, .8), (74, .8), (76, 1.6), (74, .8), (69, 2.0)]
-    CODA = [(67, 1.2), (69, 1.2), (72, 1.6), (69, 1.2), (67, 3.2)]
     pos = 1.5
-    pos = whistle(rng, A, 1.35, pos, out) + 1.5
-    pos = whistle(rng, B, 1.35, pos, out) + 1.5
-    pos = whistle(rng, A, 1.35, pos, out) + 1.2
-    pos = whistle(rng, CODA, 1.5, pos, out)
+    pos = whistle(rng, THEME_FULL, 1.35, pos, out) + 2.0
+    pos = whistle(rng, THEME_FULL, 1.35, pos, out) + 2.0
+    pos = whistle(rng, THEME_FULL + [(67, 1.4)], 1.7, pos, out)
     melody = db_rms(out, -22)
     t = np.arange(len(out)) / RATE
     pad = (np.sin(2 * np.pi * 98.0 * t) + 0.6 * np.sin(2 * np.pi * 146.8 * t) + 0.3 * np.sin(2 * np.pi * 196.0 * t))
@@ -294,10 +290,17 @@ def phrase(melody, tempo: float = 1.35):
     return f
 
 
-THEME_A1 = [(67, .6), (69, .6), (72, .9), (74, .6), (76, 1.2)]
-THEME_A2 = [(74, .6), (72, .6), (69, 1.5)]
-THEME_A3 = [(67, .6), (72, .6), (69, .9), (67, .6), (64, 1.2), (67, 2.0)]
-THEME_B1 = [(74, .8), (76, .8), (79, 1.2), (76, .8), (74, .8), (72, 1.2)]
+def load_tune() -> dict:
+    """할아버지 휘파람 선율(#145)은 scripts/game/whistle_tune.gd 한 곳에 있다. TUNE BEGIN ~ END 사이를 JSON으로 읽는다."""
+    src = (ROOT / "scripts/game/whistle_tune.gd").read_text(encoding="utf-8")
+    body = src.split("# TUNE BEGIN", 1)[1].split("# TUNE END", 1)[0]
+    body = re.sub(r"^\s*const PHRASES := ", "", body.strip())
+    return {k: [(int(n), float(b)) for n, b in v] for k, v in json.loads(body).items()}
+
+
+TUNE = load_tune()
+# 배 위 전체 선율 = 숲 + 강가 + 철교(들판 소절은 숲 소절의 앞 세 음). whistle_tune.gd의 FULL과 같다.
+THEME_FULL = TUNE["forest"] + [(0, .6)] + TUNE["riverside"] + [(0, .6)] + TUNE["bridge"]
 
 
 # ---------------------------------------------------------------- 발소리·효과음(한 번)
@@ -466,8 +469,9 @@ AMBIENCE = {
     "amb_riverside": amb_riverside, "amb_bridge": amb_bridge, "amb_ferry": amb_ferry,
     "pos_house_radio": pos_house_radio, "pos_forest_water": pos_forest_water,
     "amb_crossing": amb_crossing, "mus_theme_full": mus_theme_full,
-    "mus_phrase_1": phrase(THEME_A1), "mus_phrase_2": phrase(THEME_A1 + THEME_A2),
-    "mus_phrase_3": phrase(THEME_B1), "mus_phrase_4": phrase(THEME_A3),
+    # 기억 장면(동그라미 1~4)의 한 소절. 할아버지가 먼저 불어 주는 것이라 그 장소에서 따라 할 소절보다 앞서 나온다.
+    "mus_phrase_1": phrase(TUNE["field"]), "mus_phrase_2": phrase(TUNE["forest"]),
+    "mus_phrase_3": phrase(TUNE["riverside"]), "mus_phrase_4": phrase(TUNE["bridge"]),
 }
 
 
@@ -490,10 +494,14 @@ def save_ogg(name: str, x: np.ndarray) -> None:
 
 
 def main() -> int:
+    """인자를 주면 그 이름 앞머리로 시작하는 소리만 만든다(예: mus_ pos_house_radio)."""
+    only = sys.argv[1:]
     OUT.mkdir(parents=True, exist_ok=True)
     for name, fn in AMBIENCE.items():
+        if only and not any(name.startswith(o) for o in only):
+            continue
         save_ogg(name, fn(np.random.default_rng(sum(map(ord, name)))))
-    for name, x in make_steps(np.random.default_rng(7)).items():
+    for name, x in ({} if only else make_steps(np.random.default_rng(7))).items():
         save_ogg(name, x)
     return 0
 

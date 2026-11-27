@@ -1,55 +1,34 @@
 class_name FluteEcho
-extends MiniGame
-## 숲 4-2 둘째 갈림길 선율 따라 불기(#111, 기획서 "미니게임"). [E] 피리 불기로 시작(#119), 앞 세 음 → 네 음 두 소절. 첫 갈림길을 지나 주운 할아버지 버들피리로 한다.
-## 둘째 갈림길에서는 하늘이도 냄새를 못 맡는다. 맞는 입구에서 할아버지 휘파람 네 음이 메아리로 들리고,
+extends PhraseGame
+## 숲 4-2 둘째 갈림길: 할아버지 휘파람을 버들피리로 따라 불기(#111 → #145에서 PhraseGame 위로 옮김).
+## [E] 피리 불기로 시작(#119). 소절은 WhistleTune "forest" — 앞 세 음은 들판에서 연으로 따라 한 그 소절이고,
+## 맞추면 한 음 더 긴 숲 소절 전부가 메아리친다.
+## 둘째 갈림길에서는 하늘이도 냄새를 못 맡는다. 맞는 입구에서 할아버지 휘파람이 메아리로 들리고,
 ## 빛 알갱이가 그 음의 높낮이를 그리며 하윤 쪽으로 흘러와 공중에 줄지어 선다. 하윤이 피리로 같은 음을 분다.
-## 조작: ← 낮게 · E 가운데 · → 높게. 맞으면 하윤의 알갱이가 그 자리에 겹쳐 흰 테가 생긴다.
-## 틀리면 피리가 헛바람 소리를 내고 알갱이가 흩어진 뒤 메아리가 다시 들린다(한 번 어긋남).
-## 다 맞으면 입구가 환해지고 하늘이가 그 입구 앞으로 달려가 앉는다. grants_flag(flute_echo_done)가 서야
-## 맞는 입구(Passage.fallback_until_flag)가 다음으로 이어진다.
-## 도움(세 번 어긋나면): 메아리가 두 배로 크고 느려지고, 공중의 알갱이가 흐려지지 않는다.
-## 장소 씬에 B가 놓는다(FluteEcho_4-2). 원점은 땅 위, 하윤이 피리를 가진 채 원점을 지나면 시작한다.
+## 맞으면 하윤의 알갱이가 그 자리에 겹쳐 흰 테가 생긴다. 틀리면 헛바람 소리, 알갱이가 흩어진 뒤 메아리가 다시 들린다.
+## 다 맞으면 할아버지 휘파람이 받아 불고, 입구가 환해지고 하늘이가 그 입구 앞으로 달려가 앉는다.
+## grants_flag(flute_echo_done)가 서야 맞는 입구(Passage.fallback_until_flag)가 다음으로 이어진다.
+## 도움(세 번 어긋나면): 메아리가 크고 느려지고, 공중의 알갱이가 흐려지지 않고, 하늘이가 다음 음마다 짖는다.
 
-const NOTE_HZ := [523.25, 659.25, 783.99]  # 낮음·가운데·높음 (도·미·솔)
-const NOTE_Y := [650.0, 585.0, 520.0]      # 알갱이 높이(y)
-const MIX_RATE := 22050
+const NOTE_Y := [650.0, 585.0, 520.0]      # 알갱이 높이(y): 낮음·가운데·높음
 
-## 이 플래그(물건)가 서 있어야 시작한다.
-@export var trigger_flag: StringName = &"item_willow_flute"
 ## 맞는 입구의 자리(x, 장소 좌표). 메아리가 여기서 온다.
 @export var entrance_x: float = 5600.0
-## 할아버지 휘파람의 앞 네 음(0 낮음 · 1 가운데 · 2 높음). 나루터 배 위 휘파람의 첫 소절.
-@export var melody: PackedInt32Array = PackedInt32Array([1, 2, 1, 0])
-## 메아리 음 사이 간격(초).
-@export var echo_gap: float = 0.75
 
-## 지금까지 맞게 분 음 수.
-var played: int = 0
-## 몇째 소절인가(#119): 0은 앞 세 음, 1은 네 음 전부. 짧게 한 번 맞추고 늘려 가며 호응을 쌓는다.
-var round_index: int = 0
-## 첫 소절의 음 수.
-@export var first_round_notes: int = 3
-## listen(메아리가 들린다) / play(하윤 차례) / done
-var phase: StringName = &"idle"
-
-var _tones: Array[AudioStreamWAV] = []
-var _breath: AudioStreamWAV
-var _echo_player: AudioStreamPlayer2D
-var _note_player: AudioStreamPlayer
 var _glow: Sprite2D
 var _slots: Array[Sprite2D] = []
 var _rings: Array[Line2D] = []
 var _flute: Sprite2D
-var _gen: int = 0
 var _t: float = 0.0
 ## 음을 불 때 몸이 살짝 앞으로 밀리는 것(1 → 0), 틀렸을 때 어깨가 처지는 것.
 var _kick: float = 0.0
 var _slump: float = 0.0
 
 
-func _ready() -> void:
-	super._ready()
-	setup_start(trigger_flag)
+func _init() -> void:
+	trigger_flag = &"item_willow_flute"
+	phrase_id = &"forest"
+	first_round_notes = 3
 
 
 func _process(delta: float) -> void:
@@ -60,25 +39,14 @@ func _process(delta: float) -> void:
 	super._process(delta)
 
 
-## 이번 소절에 불 음 수.
-func round_length() -> int:
-	return melody.size() if round_index > 0 else mini(first_round_notes, melody.size())
+func echo_position() -> Vector2:
+	return Vector2(entrance_x, 600.0)
 
 
-func _begin() -> void:
-	round_index = 0
-	if _tones.is_empty():
-		for hz in NOTE_HZ:
-			_tones.append(_make_tone(hz, 0.45))
-		_breath = _make_breath(0.35)
+func _setup() -> void:
 	if _player:
 		_player.face(1)
 		_player.set_pose(&"flute")
-	_build()
-	_listen()
-
-
-func _build() -> void:
 	var mote := CutscenePlayer.find_art("fx_light_mote")
 	var tex: Texture2D = load(mote) if not mote.is_empty() else null
 	if _glow == null:
@@ -91,16 +59,6 @@ func _build() -> void:
 		_glow.modulate.a = 0.0
 		add_child(_glow)
 		_glow.global_position = Vector2(entrance_x, 640.0)
-	_echo_player = AudioStreamPlayer2D.new()
-	_echo_player.name = "Echo"
-	_echo_player.bus = SoundBank.BUS_SFX
-	_echo_player.max_distance = 3000.0
-	add_child(_echo_player)
-	_echo_player.global_position = Vector2(entrance_x, 600.0)
-	_note_player = AudioStreamPlayer.new()
-	_note_player.name = "Flute"
-	_note_player.bus = SoundBank.BUS_SFX
-	add_child(_note_player)
 	_slots.clear()
 	_rings.clear()
 	for i in melody.size():
@@ -145,102 +103,46 @@ func slot_position(i: int) -> Vector2:
 	return Vector2(lerpf(x0, x1, u), NOTE_Y[melody[i]])
 
 
-## 메아리가 들린다: 입구에서 알갱이가 하나씩 날아와 자리에 선다.
-func _listen(retry: bool = false) -> void:
-	_gen += 1
-	var gen := _gen
-	phase = &"listen"
-	played = 0
-	hide_key_hint()
-	var tw := create_tween()
-	tw.tween_property(_glow, "modulate:a", 0.75 if help else 0.4, 0.6)
+func _on_listen(_retry: bool) -> void:
+	create_tween().tween_property(_glow, "modulate:a", 0.75 if help else 0.4, 0.6)
 	for i in _slots.size():
 		_slots[i].modulate.a = 0.0
 		_rings[i].default_color.a = 0.0
-	# 틀린 뒤 다시 들을 때는 바로 시작한다(#119: 다시 듣는 대기가 길었다)
-	await _wait(0.25 if retry else 0.6)
-	var gap := echo_gap * (1.5 if help else 1.0)
-	for i in round_length():
-		if gen != _gen or not running:
-			return
-		_echo(melody[i])
-		var s := _slots[i]
-		s.global_position = Vector2(entrance_x, 620.0)
-		var t := create_tween().set_parallel()
-		t.tween_property(s, "global_position", slot_position(i), gap * 1.4) \
-				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		t.tween_property(s, "modulate:a", 1.0, gap * 0.5)
-		await _wait(gap)
-	await _wait(gap * 0.8)
-	if gen != _gen or not running:
-		return
-	# 하윤 차례. 도움 전에는 알갱이가 조금 흐려진다(외워서 따라 불기).
+
+
+## 메아리 한 음: 입구에서 알갱이가 날아와 자리에 선다.
+func _on_echo(i: int, _level: int, gap: float) -> void:
+	var s := _slots[i]
+	s.global_position = Vector2(entrance_x, 620.0)
+	var t := create_tween().set_parallel()
+	t.tween_property(s, "global_position", slot_position(i), gap * 1.4) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	t.tween_property(s, "modulate:a", 1.0, gap * 0.5)
+
+
+## 하윤 차례. 도움 전에는 알갱이가 조금 흐려진다(외워서 따라 불기).
+func _on_play() -> void:
 	if not help:
 		for s in _slots:
 			create_tween().tween_property(s, "modulate:a", 0.35, 0.8)
-	phase = &"play"
-	show_key_hint(["←", "E", "→"], "낮게 · 가운데 · 높게")
 
 
-func _echo(note: int) -> void:
-	dog_react(0.5 + 0.25 * note)  # 메아리에 귀를 쫑긋(#120)
-	_echo_player.stream = _tones[note]
-	_echo_player.volume_db = 0.0 if help else -6.0
-	_echo_player.play()
-
-
-func _tick(delta: float) -> void:
-	_t += delta
-	_kick = move_toward(_kick, 0.0, delta * 3.5)
-	_slump = move_toward(_slump, 0.0, delta * 1.2)
-	_pose_player()
-	_place_flute()
-	_place_hint()
-	if phase != &"play":
-		return
-	var note := -1
-	if MiniGame.autoplay:
-		note = melody[played]
-	elif Input.is_action_just_pressed("move_left"):
-		note = 0
-	elif Input.is_action_just_pressed("interact"):
-		note = 1
-	elif Input.is_action_just_pressed("move_right"):
-		note = 2
-	if note >= 0:
-		hide_key_hint()
-		_blow(note)
-
-
-func _blow(note: int) -> void:
-	var i := played
+func _on_note(i: int, _level: int, correct: bool) -> void:
 	var mote := _slots[i].duplicate() as Sprite2D
 	mote.name = "Blown"
 	add_child(mote)
 	mote.global_position = _flute.global_position
 	mote.modulate.a = 1.0
 	_kick = 1.0
-	if note == melody[i]:
-		_note_player.stream = _tones[note]
-		_note_player.play()
-		dog_react(0.6)
-		played += 1
+	if correct:
 		var t := create_tween().set_parallel()
 		t.tween_property(mote, "global_position", slot_position(i), 0.4).set_trans(Tween.TRANS_SINE)
 		t.chain().tween_callback(mote.queue_free)
 		_slots[i].modulate.a = 1.0
 		_rings[i].global_position = slot_position(i)
 		create_tween().tween_property(_rings[i], "default_color:a", 0.95, 0.3)
-		if played >= round_length():
-			if round_length() < melody.size():
-				_next_round()
-			else:
-				_finish()
 	else:
-		_note_player.stream = _breath
-		_note_player.play()
 		_slump = 1.0
-		phase = &"listen"
 		var t := create_tween().set_parallel()
 		t.tween_property(mote, "global_position", _flute.global_position + Vector2(randf_range(40, 120), randf_range(-140, -60)), 0.6)
 		t.tween_property(mote, "modulate:a", 0.0, 0.6)
@@ -248,35 +150,21 @@ func _blow(note: int) -> void:
 		for k in _slots.size():
 			create_tween().tween_property(_slots[k], "modulate:a", 0.0, 0.5)
 			create_tween().tween_property(_rings[k], "default_color:a", 0.0, 0.5)
-		miss()
-		await _wait(0.5)
-		if running:
-			_listen(true)
 
 
-## 첫 소절을 맞췄다: 흰 테가 한 번 환해지고, 이어서 한 음 더 긴 소절이 메아리친다(#119).
-func _next_round() -> void:
-	phase = &"listen"
-	_gen += 1
-	hide_key_hint()
+## 첫 소절을 맞췄다: 흰 테가 한 번 환해진다(#119).
+func _on_round() -> void:
 	for k in round_length():
 		var t := create_tween()
 		t.tween_property(_rings[k], "default_color:a", 1.0, 0.15)
 		t.tween_property(_rings[k], "scale", Vector2(1.5, 1.5), 0.35)
 		t.parallel().tween_property(_rings[k], "default_color:a", 0.0, 0.35)
 		t.tween_property(_rings[k], "scale", Vector2.ONE, 0.0)
-	await _wait(0.7)
-	round_index = 1
-	if running:
-		_listen()
+	await _wait(0.3)
 
 
-## 다 맞았다: 입구가 환해지고 하늘이가 그 입구 앞으로 달려가 앉는다.
-func _finish() -> void:
-	phase = &"done"
-	_gen += 1
-	hide_key_hint()
-	await _wait(0.5)
+## 다 맞았다(할아버지가 받아 분 뒤): 입구가 환해지고 하늘이가 그 입구 앞으로 달려가 앉는다.
+func _on_finish() -> void:
 	var t := create_tween().set_parallel()
 	t.tween_property(_glow, "modulate:a", 0.95, 0.8)
 	t.tween_property(_glow, "scale", Vector2(8.5, 11.0), 0.8)
@@ -301,6 +189,15 @@ func _finish() -> void:
 		dog.release_script()
 
 
+func _update(delta: float) -> void:
+	_t += delta
+	_kick = move_toward(_kick, 0.0, delta * 3.5)
+	_slump = move_toward(_slump, 0.0, delta * 1.2)
+	_pose_player()
+	_place_flute()
+	_place_hint()
+
+
 ## 피리 부는 몸(#114): 숨 쉬듯 천천히 오르내리고, 들을 때는 입구 쪽으로 고개를 기울인다.
 ## 음을 불 때마다 몸이 살짝 앞으로 밀리고(높은 음일수록 고개를 든다), 틀리면 어깨가 처진다.
 func _pose_player() -> void:
@@ -315,7 +212,7 @@ func _pose_player() -> void:
 		"elbow": -_kick * 5.0,
 		"far_elbow": -_kick * 5.0,
 	}
-	if phase == &"listen":
+	if phase == &"listen" or phase == &"answer":
 		m["head"] = float(m["head"]) - 7.0  # 메아리 쪽으로 귀를 기울인다
 		m["torso"] = float(m["torso"]) - 2.0
 	elif phase == &"play" and played < melody.size() and _kick > 0.0:
@@ -327,39 +224,3 @@ func _place_flute() -> void:
 	if _flute and _player:
 		_flute.global_position = _player.hand_point() + Vector2(10.0, -10.0)
 		_flute.rotation = -0.35
-
-
-## 피리 소리: 사인파 + 약한 배음, 살짝 떨림, 부드러운 들어가기·끝.
-func _make_tone(hz: float, seconds: float) -> AudioStreamWAV:
-	var n := int(MIX_RATE * seconds)
-	var data := PackedByteArray()
-	data.resize(n * 2)
-	for k in n:
-		var t := float(k) / MIX_RATE
-		var env := minf(1.0, t / 0.04) * clampf((seconds - t) / 0.18, 0.0, 1.0)
-		var f := hz * (1.0 + 0.006 * sin(TAU * 5.5 * t))
-		var v := sin(TAU * f * t) + 0.18 * sin(TAU * 2.0 * f * t) + 0.04 * (randf() - 0.5)
-		data.encode_s16(k * 2, int(clampf(v * env * 0.45, -1.0, 1.0) * 32767.0))
-	var w := AudioStreamWAV.new()
-	w.format = AudioStreamWAV.FORMAT_16_BITS
-	w.mix_rate = MIX_RATE
-	w.data = data
-	return w
-
-
-## 헛바람: 거른 잡음.
-func _make_breath(seconds: float) -> AudioStreamWAV:
-	var n := int(MIX_RATE * seconds)
-	var data := PackedByteArray()
-	data.resize(n * 2)
-	var y := 0.0
-	for k in n:
-		var t := float(k) / MIX_RATE
-		var env := minf(1.0, t / 0.03) * clampf((seconds - t) / 0.2, 0.0, 1.0)
-		y = lerpf(y, randf() * 2.0 - 1.0, 0.25)
-		data.encode_s16(k * 2, int(clampf(y * env * 0.5, -1.0, 1.0) * 32767.0))
-	var w := AudioStreamWAV.new()
-	w.format = AudioStreamWAV.FORMAT_16_BITS
-	w.mix_rate = MIX_RATE
-	w.data = data
-	return w
