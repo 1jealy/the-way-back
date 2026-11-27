@@ -107,6 +107,8 @@ grants_flag = &"has_map"
 requires_flag = &"house_drawer_key"
 one_shot = true
 show_locked = true
+cutscene_art = "cut_map"
+cutscene_pan_to = Vector2(90, 30)
 
 [node name="Sound" type="Node2D" parent="." index="8" unique_id=1232819768]
 

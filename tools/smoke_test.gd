@@ -344,7 +344,7 @@ func _check_parts() -> void:
 	var portraits := _find_by_script("house", "res://scripts/game/funeral_portraits.gd")
 	var find_art: Callable = load("res://scripts/ui/cutscene_player.gd").find_art
 	var art_ok := true
-	for art in ["cut_accident", "prop_portrait_grandpa", "prop_portrait_hayun"]:
+	for art in ["cut_accident", "prop_portrait_grandpa", "prop_portrait_hayun"]:  # 컷신 0(임시)·영정
 		art_ok = art_ok and not find_art.call(art).is_empty()
 	_check(opening.size() == 1 and portraits.size() == 1 and String(portraits[0][0]) == "Portraits_1-2" and art_ok,
 			"부품: 집에 오프닝(0-1)과 영정사진 두 개(1-2), 그림(컷신 0·영정 2장)이 있다 %s %s" % [opening, portraits])
@@ -441,7 +441,16 @@ func _check_house_puzzle(main: Node, player: CharacterBody2D) -> void:
 		await _wait(0.6)
 		await _press(&"interact")
 	await _wait(0.3)
+	for i in 30:  # 컷신이 끝날 때까지(대사는 넘긴다). 지도는 컷신이 걷힌 뒤에 얻는다
+		await _wait(0.5)
+		if main.dialogue_box().visible:
+			await _press(&"interact")
+		elif player.controls_enabled:
+			break
 	_check(state.has_flag(&"has_map"), "집: 서랍을 열면 지도를 얻는다(has_map)")
+	var cut_path: String = load("res://scripts/ui/cutscene_player.gd").find_art(String(drawer.get("cutscene_art")))
+	_check(cut_path.begins_with("res://assets/art/cut/") and not cut_path.contains("/placeholder/"),
+			"집: 1-5 서랍을 열면 일러스트 담당의 지도 컷신(cut_map)이 뜬다 %s" % cut_path)
 
 
 ## assets/audio/ 소리 규칙(이름·반복)과 장소 환경음. 지금 장소의 환경음이 실제로 돌고 있는지도 본다.
