@@ -2,10 +2,12 @@
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_sky.png" id="2_0t58y"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_horizon.png" id="3_dl26w"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_far.png" id="3_qn10e"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_mid.png" id="4_r1owm"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_ground.png" id="5_4cyny"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_props.png" id="6_0tiiu"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_near.png" id="6_1ps8m"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/ferry/bg_ferry_front.png" id="7_34ljx"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="8_qn10e"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_ferry.ogg" id="9_r1owm"]
@@ -30,6 +32,12 @@ footstep_changes = {
 texture = ExtResource("2_0t58y")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Horizon" index="0" unique_id=235896614]
+
+[node name="bg_ferry_horizon" type="Sprite2D" parent="Layers/Horizon/Art" index="0" unique_id=530166809]
+texture = ExtResource("3_dl26w")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=808451845]
 
 [node name="bg_ferry_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=592987691]
@@ -40,6 +48,12 @@ centered = false
 
 [node name="bg_ferry_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=14742131]
 texture = ExtResource("4_r1owm")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Near" index="0" unique_id=2101950158]
+
+[node name="bg_ferry_near" type="Sprite2D" parent="Layers/Near/Art" index="0" unique_id=2027866647]
+texture = ExtResource("6_1ps8m")
 centered = false
 
 [node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1352217790]
