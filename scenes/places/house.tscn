@@ -2,19 +2,22 @@
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_sky.png" id="2_tpxrr"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_horizon.png" id="3_joh11"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_far.png" id="3_sauk6"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_mid.png" id="4_idm51"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_hills.png" id="5_mg76m"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_ground.png" id="5_mxv64"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_props.png" id="6_bdaxg"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_front.png" id="7_i8y7p"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_near.png" id="7_mw18l"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="8_sauk6"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_house.ogg" id="9_idm51"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/pos_house_radio.ogg" id="10_mxv64"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_bdaxg"]
-[ext_resource type="Script" path="res://scripts/game/shake_drop.gd" id="shake_script"]
+[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
 [ext_resource type="Script" path="res://scripts/game/opening.gd" id="opening_script"]
 [ext_resource type="Script" path="res://scripts/game/funeral_portraits.gd" id="portraits_script"]
-[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
+[ext_resource type="Script" path="res://scripts/game/shake_drop.gd" id="shake_script"]
 
 [node name="House" unique_id=721323629 instance=ExtResource("1_tpl")]
 place_id = &"house"
@@ -33,16 +36,34 @@ footstep_changes = {
 texture = ExtResource("2_tpxrr")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Horizon" index="0" unique_id=488628234]
+
+[node name="bg_house_horizon" type="Sprite2D" parent="Layers/Horizon/Art" index="0" unique_id=246280604]
+texture = ExtResource("3_joh11")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=1027695111]
 
 [node name="bg_house_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=1754682031]
 texture = ExtResource("3_sauk6")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Hills" index="0" unique_id=214866439]
+
+[node name="bg_house_hills" type="Sprite2D" parent="Layers/Hills/Art" index="0" unique_id=357132388]
+texture = ExtResource("5_mg76m")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=1509311108]
 
 [node name="bg_house_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=1119011327]
 texture = ExtResource("4_idm51")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Near" index="0" unique_id=228136315]
+
+[node name="bg_house_near" type="Sprite2D" parent="Layers/Near/Art" index="0" unique_id=812034308]
+texture = ExtResource("7_mw18l")
 centered = false
 
 [node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1636320466]
@@ -128,22 +149,24 @@ position = Vector2(5300, 810)
 script = ExtResource("11_bdaxg")
 opens_on_flag = &"has_map"
 
-[node name="Shake_1-6_Apple" type="Area2D" parent="."]
+[node name="Shake_1-6_Apple" type="Area2D" parent="." index="10" unique_id=125121853]
 position = Vector2(5070, 810)
 script = ExtResource("shake_script")
 prompt = "사과나무 흔들기"
+lines = PackedStringArray()
 
-[node name="Opening_0-1" type="Node" parent="."]
+[node name="Opening_0-1" type="Node" parent="." index="11" unique_id=1491119848]
 script = ExtResource("opening_script")
 
-[node name="Portraits_1-2" type="Node2D" parent="."]
+[node name="Portraits_1-2" type="Node2D" parent="." index="12" unique_id=1776216442]
 position = Vector2(1340, 810)
 script = ExtResource("portraits_script")
 
-[node name="Keepsake_1-6_Flashlight" type="Area2D" parent="."]
+[node name="Keepsake_1-6_Flashlight" type="Area2D" parent="." index="13" unique_id=1354109141]
 position = Vector2(4900, 810)
 script = ExtResource("keepsake_script")
 item = &"flashlight"
-prompt = "손전등 줍기"
 art_offset = Vector2(0, -22)
 art_rotation = -8.0
+prompt = "손전등 줍기"
+lines = PackedStringArray()
