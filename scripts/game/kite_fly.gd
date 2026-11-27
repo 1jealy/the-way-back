@@ -314,6 +314,7 @@ func _dropped() -> void:
 
 
 func _held_gust() -> void:
+	dog_react(1.0, 1.2)  # 버티면 하늘이가 쫑긋하고 꼬리를 흔든다(#120)
 	_ribbon_held[gusts_held] = 1.0
 	gusts_held += 1
 	if gusts_held >= gusts:

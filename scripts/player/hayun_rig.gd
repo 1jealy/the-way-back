@@ -159,11 +159,12 @@ const WRIST_SIT_KEYS := [
 const PICKUP_KEYS := [
 	[0.0, {}],
 	[0.4, {"torso": 50.0, "hip": -40.0, "knee": 66.0, "ankle": -26.0, "far_hip": -34.0, "far_knee": 62.0,
-			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -34.0, "elbow": -4.0,
-			"far_shoulder": -22.0, "far_elbow": -10.0, "head": 0.0, "ponytail": -34.0}],
+			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -50.0, "elbow": -4.0,
+			"far_shoulder": -38.0, "far_elbow": -10.0, "head": 2.0, "ponytail": -34.0}],
+	# 손이 땅의 물건까지 닿는다(#120 모션 손질: 손이 무릎께에서 멈춰 집는 것 같지 않았다)
 	[0.58, {"torso": 52.0, "hip": -42.0, "knee": 68.0, "ankle": -26.0, "far_hip": -36.0, "far_knee": 64.0,
-			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -28.0, "elbow": -18.0,
-			"far_shoulder": -20.0, "far_elbow": -14.0, "head": -2.0, "ponytail": -36.0}],
+			"far_ankle": -26.0, "skirt": -16.0, "far_skirt": -14.0, "shoulder": -62.0, "elbow": -6.0,
+			"far_shoulder": -48.0, "far_elbow": -10.0, "head": 4.0, "ponytail": -36.0}],
 	[1.05, {"shoulder": -24.0, "elbow": -40.0, "head": -4.0, "ponytail": -6.0}],
 	[1.35, {}],
 ]

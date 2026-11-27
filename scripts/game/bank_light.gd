@@ -307,6 +307,7 @@ func _check(delta: float) -> void:
 
 
 func _light(i: int) -> void:
+	dog_react(0.9, 0.9 if i == stones.size() - 1 else 0.0)  # 돌이 켜지면 쫑긋, 마지막엔 꼬리(#120)
 	_hold = 0.0
 	found += 1
 	_hinted = false
