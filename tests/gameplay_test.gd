@@ -693,6 +693,23 @@ func _check_bench() -> void:
 	_check(not bench.sitting and _player.controls_enabled, "벤치: 방향키로 일어난다")
 	bench.queue_free()
 	await _wait(0.2)
+	# 자동 앉기(3-3, #118): 기본 6초, 앉자마자 손목을 만지고, 끝나면 일어나 플래그
+	var auto: Area2D = load("res://scripts/game/bench_sit.gd").new()
+	auto.auto_sit = true
+	auto.grants_flag = &"bench_test_sat"
+	_check(auto.sit_seconds <= 8.0, "벤치: 자동 앉기는 짧다(15초에서 줄임) %.1f" % auto.sit_seconds)
+	var touched := [false]
+	_player.wrist_touched.connect(func(): touched[0] = true, CONNECT_ONE_SHOT)
+	_main.current_place().add_child(auto)
+	auto.global_position = Vector2(_player.global_position.x + 20.0, 810.0)
+	_check(await _wait_until(func(): return auto.sitting, 1.0), "벤치: 들어서면 저절로 앉는다")
+	await _wait(2.0)
+	_check(touched[0], "벤치: 앉고 곧 손목을 만진다(3-3 복선)")
+	_check(await _wait_until(func(): return _state.has_flag(&"bench_test_sat") and _player.controls_enabled, auto.sit_seconds + 1.0),
+			"벤치: 다 앉으면 일어나 grants_flag")
+	auto.queue_free()
+	_player.global_position.x -= 300.0
+	await _wait(0.2)
 
 
 ## 2-3 날아간 지도(MapChase): 지나가면 바람 → 덤불 셋에 걸렸다 날아간다 → 마지막 덤불에서 줍는다.
@@ -758,8 +775,12 @@ func _check_kite_fly(place: Node2D, chase: Node2D) -> void:
 	game.calm_seconds = 0.4
 	game.warn_seconds = 0.2
 	game.gust_seconds = 0.6
-	_check(await _wait_until(func(): return game.running, 3.0), "연: 주우면 그 자리에서 연 날리기가 시작된다")
 	_check(await _wait_until(func(): return not item.get_node("Art").visible, 4.0), "연: 주운 방패연 그림은 떠올라 사라진다")
+	await _wait_until(func(): return _player.controls_enabled, 3.0)
+	await _wait(0.3)
+	_check(not game.running, "연: 줍기만 해서는 시작하지 않는다(#119, 직접 시작)")
+	await _press(&"interact")
+	_check(await _wait_until(func(): return game.running, 2.0), "연: [E] 연 띄우기로 그 자리에서 시작한다")
 	_check(_player.is_locked_by(&"minigame") and _player.pose == &"kite", "연: 하윤이 멈추고 두 손으로 연줄을 잡는다")
 	_check(game.has_key_hint(), "연: 처음에는 손 옆에 [E] 꾹 누르면 감기")
 	var half: float = game.zone_high() - game.zone_low()
@@ -994,6 +1015,7 @@ func _check_bank_light() -> void:
 	game.trigger_flag = &"item_test_torch"
 	game.grants_flag = &"bank_test_path"
 	game.dwell = 0.3
+	game.start_prompt = "강둑 비추기"
 	place.add_child(game)
 	game.ask_spot = game.get_path_to(spot)
 	game.global_position = Vector2(px + 60.0, 810.0)
@@ -1008,7 +1030,10 @@ func _check_bank_light() -> void:
 	_state.set_flag(&"item_test_torch")
 	await _wait(0.1)
 	_check(spot.used, "강둑 비추기: 손전등이 있으면 냄새 부탁 자리를 닫는다")
-	_check(await _wait_until(func(): return game.running, 2.0), "강둑 비추기: 손전등을 가진 채 끊긴 끝을 지나면 시작한다")
+	await _wait(0.3)
+	_check(not game.running, "강둑 비추기: 손전등이 있어도 저절로 시작하지 않는다(#119)")
+	await _press(&"interact")
+	_check(await _wait_until(func(): return game.running, 2.0), "강둑 비추기: [E] 강둑 비추기로 시작한다")
 	_check(_player.is_locked_by(&"minigame") and _player.pose == &"flashlight" and game.has_key_hint(),
 			"강둑 비추기: 하윤이 멈춰 손전등을 아래로 비추고, 손 옆에 [← →] 비추기")
 	var start_aim: float = game.aim
@@ -1020,9 +1045,16 @@ func _check_bank_light() -> void:
 		await _wait(game.dwell + 0.5)
 	_check(game.misses >= 3 and game.help and game.found == 0, "강둑 비추기: 물그림자를 오래 비추면 흩어지고(어긋남), 세 번이면 도움이 켜진다")
 	_check(not _state.has_flag(&"bank_test_path"), "강둑 비추기: 어긋나도 실패 화면 없이 계속한다")
-	game.aim = game.aim_for(game.stones[2])
-	await _wait(game.dwell + 0.3)
+	var early := [-1]
+	game.not_yet.connect(func(i): early[0] = i, CONNECT_ONE_SHOT)
+	var misses_before: int = game.misses
+	# 팔이 빛을 따라 움직여 손(빛 나오는 자리)이 옮겨 가므로 몇 번 맞춘다
+	for k in 12:
+		game.aim = game.aim_for(game.stones[2])
+		await _wait(0.05)
+	await _wait(game.dwell)
 	_check(game.found == 0, "강둑 비추기: 차례가 아닌 돌은 비춰도 찾은 것으로 치지 않는다")
+	_check(early[0] == 2 and game.misses == misses_before, "강둑 비추기: 차례가 아닌 돌에 머물면 \"아직\"이라고 깜빡인다(어긋남은 아니다, #119)")
 	game.aim = game.aim_for(game.stones[0])
 	await _wait(game.dwell + 0.3)
 	_check(game.found == 1, "강둑 비추기: 다음 돌에 빛이 머물면 그 돌을 찾는다")

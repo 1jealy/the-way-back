@@ -1,6 +1,6 @@
 class_name FluteEcho
 extends MiniGame
-## 숲 4-2 둘째 갈림길 선율 따라 불기(#111, 기획서 "미니게임"). 첫 갈림길을 지나 주운 할아버지 버들피리로 한다.
+## 숲 4-2 둘째 갈림길 선율 따라 불기(#111, 기획서 "미니게임"). [E] 피리 불기로 시작(#119), 앞 세 음 → 네 음 두 소절. 첫 갈림길을 지나 주운 할아버지 버들피리로 한다.
 ## 둘째 갈림길에서는 하늘이도 냄새를 못 맡는다. 맞는 입구에서 할아버지 휘파람 네 음이 메아리로 들리고,
 ## 빛 알갱이가 그 음의 높낮이를 그리며 하윤 쪽으로 흘러와 공중에 줄지어 선다. 하윤이 피리로 같은 음을 분다.
 ## 조작: ← 낮게 · E 가운데 · → 높게. 맞으면 하윤의 알갱이가 그 자리에 겹쳐 흰 테가 생긴다.
@@ -25,6 +25,10 @@ const MIX_RATE := 22050
 
 ## 지금까지 맞게 분 음 수.
 var played: int = 0
+## 몇째 소절인가(#119): 0은 앞 세 음, 1은 네 음 전부. 짧게 한 번 맞추고 늘려 가며 호응을 쌓는다.
+var round_index: int = 0
+## 첫 소절의 음 수.
+@export var first_round_notes: int = 3
 ## listen(메아리가 들린다) / play(하윤 차례) / done
 var phase: StringName = &"idle"
 
@@ -43,15 +47,26 @@ var _kick: float = 0.0
 var _slump: float = 0.0
 
 
+func _ready() -> void:
+	super._ready()
+	setup_start(trigger_flag)
+
+
 func _process(delta: float) -> void:
-	if not running and not done and GameState.has_flag(trigger_flag):
+	if not running and not done and not starts_on_prompt() and GameState.has_flag(trigger_flag):
 		var player := get_tree().get_first_node_in_group("player") as Player
 		if player and player.controls_enabled and player.global_position.x >= global_position.x:
 			play()
 	super._process(delta)
 
 
+## 이번 소절에 불 음 수.
+func round_length() -> int:
+	return melody.size() if round_index > 0 else mini(first_round_notes, melody.size())
+
+
 func _begin() -> void:
+	round_index = 0
 	if _tones.is_empty():
 		for hz in NOTE_HZ:
 			_tones.append(_make_tone(hz, 0.45))
@@ -131,7 +146,7 @@ func slot_position(i: int) -> Vector2:
 
 
 ## 메아리가 들린다: 입구에서 알갱이가 하나씩 날아와 자리에 선다.
-func _listen() -> void:
+func _listen(retry: bool = false) -> void:
 	_gen += 1
 	var gen := _gen
 	phase = &"listen"
@@ -142,9 +157,10 @@ func _listen() -> void:
 	for i in _slots.size():
 		_slots[i].modulate.a = 0.0
 		_rings[i].default_color.a = 0.0
-	await _wait(0.6)
+	# 틀린 뒤 다시 들을 때는 바로 시작한다(#119: 다시 듣는 대기가 길었다)
+	await _wait(0.25 if retry else 0.6)
 	var gap := echo_gap * (1.5 if help else 1.0)
-	for i in melody.size():
+	for i in round_length():
 		if gen != _gen or not running:
 			return
 		_echo(melody[i])
@@ -217,8 +233,11 @@ func _blow(note: int) -> void:
 		_slots[i].modulate.a = 1.0
 		_rings[i].global_position = slot_position(i)
 		create_tween().tween_property(_rings[i], "default_color:a", 0.95, 0.3)
-		if played >= melody.size():
-			_finish()
+		if played >= round_length():
+			if round_length() < melody.size():
+				_next_round()
+			else:
+				_finish()
 	else:
 		_note_player.stream = _breath
 		_note_player.play()
@@ -232,9 +251,26 @@ func _blow(note: int) -> void:
 			create_tween().tween_property(_slots[k], "modulate:a", 0.0, 0.5)
 			create_tween().tween_property(_rings[k], "default_color:a", 0.0, 0.5)
 		miss()
-		await _wait(1.0)
+		await _wait(0.5)
 		if running:
-			_listen()
+			_listen(true)
+
+
+## 첫 소절을 맞췄다: 흰 테가 한 번 환해지고, 이어서 한 음 더 긴 소절이 메아리친다(#119).
+func _next_round() -> void:
+	phase = &"listen"
+	_gen += 1
+	hide_key_hint()
+	for k in round_length():
+		var t := create_tween()
+		t.tween_property(_rings[k], "default_color:a", 1.0, 0.15)
+		t.tween_property(_rings[k], "scale", Vector2(1.5, 1.5), 0.35)
+		t.parallel().tween_property(_rings[k], "default_color:a", 0.0, 0.35)
+		t.tween_property(_rings[k], "scale", Vector2.ONE, 0.0)
+	await _wait(0.7)
+	round_index = 1
+	if running:
+		_listen()
 
 
 ## 다 맞았다: 입구가 환해지고 하늘이가 그 입구 앞으로 달려가 앉는다.

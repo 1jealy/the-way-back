@@ -150,6 +150,7 @@ art_rotation = -18.0
 position = Vector2(5300, 810)
 script = ExtResource("kite_script")
 grants_flag = &"kite_flown"
+start_prompt = "연 띄우기"
 
 [node name="Gate_2-3" type="StaticBody2D" parent="."]
 position = Vector2(7000, 810)
