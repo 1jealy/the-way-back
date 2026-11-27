@@ -5,13 +5,12 @@ extends Interactable
 ## 주우면 플래그 item_<item>을 세운다(이어하기 뒤에도 남는다). 물건 다섯은 ITEMS.
 ## 장소 씬에 B가 놓는다(Keepsake_<장면>_<물건>). 원점은 땅 위. 담당: A(게임플레이).
 
-## 물건 다섯: 이름 → 그림. 순서는 얻는 순서(들판 → 간이역 → 숲 → 강가 → 철교).
+## 주워서 얻는 물건: 이름 → 그림. 순서는 얻는 순서(들판 → 간이역 → 숲 → 철교). 강가 조약돌은 하늘이가 물어 온다(#148, AskSpot).
 ## 모두 할아버지가 하윤에게 만들어 준 아이 크기의 것(#144). 손전등은 #147에서 호루라기로 바뀌었다.
 const ITEMS := {
 	&"kite": "prop_kite",
 	&"pocket_watch": "prop_pocket_watch",
 	&"willow_flute": "prop_willow_flute",
-	&"stone_pouch": "prop_stone_pouch",
 	&"whistle": "prop_whistle",
 }
 const FLOAT_HEIGHT := 380.0

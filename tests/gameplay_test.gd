@@ -588,27 +588,36 @@ func _run() -> void:
 	_check(not _player.is_locked_by(&"stone_skip"), "물수제비: 끝나면 잠금이 풀린다")
 	spot4.queue_free()
 
-	# 물수제비 미니게임(#115): 돌 주머니가 있으면 선택 미니게임. 할아버지 물결 다섯 자리, 발밑 돌 다섯.
-	# 셋 미만이면 한 번 어긋남, 세 번이면 각도가 느려진다. 돌을 다 쓰면 다시 채워진다. ← →로 그만둔다.
-	_state.set_flag(&"item_stone_pouch")
-	skip.stones = 3
+	# 물수제비 미니게임(#148): 하늘이가 물어 온 조약돌이 있으면 선택 미니게임 — 강가 소절(네 음)을 던지는 거리로 따라 한다.
+	_state.set_flag(&"item_flat_stone")
+	skip.echo_gap = 0.15
 	var game_done := [false]
 	skip.finished.connect(func(): game_done[0] = true, CONNECT_ONE_SHOT)
 	skip.play()
-	await _wait(0.4)
-	_check(skip.running and _player.is_locked_by(&"minigame") and skip.has_key_hint(), "물수제비 미니게임: 주머니가 있으면 미니게임, 손 옆 키 안내")
-	_check(skip._ghosts.size() == 5 and skip._pile.size() == 3, "물수제비 미니게임: 물 위에 할아버지 물결 다섯 자리, 발밑에 남은 돌")
-	_check(skip.skips_for(20.0) == 5 and skip.skips_for(30.0) == 3 and skip.skips_for(60.0) == 0, "물수제비 미니게임: 20도에 가까울수록 많이 튄다")
+	_check(await _wait_until(func(): return skip.phase == &"play", 4.0) and skip.running and _player.is_locked_by(&"minigame"),
+			"물수제비 미니게임: 조약돌이 있으면 휘파람을 듣고 하윤 차례(#148)")
+	_check(skip.melody.size() == 4 and skip._ghosts.size() == 4 and skip._pile.size() == 4 and skip.has_key_hint(),
+			"물수제비 미니게임: 강가 소절 네 음, 물결 자리 넷, 발밑 돌 넷, 손 옆 키 안내")
+	var throw_keys := [&"move_left", &"interact", &"move_right"]
+	await _press(throw_keys[skip.melody[0]])
+	var landed := await _wait_until(func(): return skip.get_node_or_null("Stone") != null, 1.0)
+	await _wait_until(func(): return skip.get_node_or_null("Stone") == null, 3.0)
+	_check(landed and skip.played == 1 and skip._ghosts[0].default_color.is_equal_approx(skip.GOLD)
+			and absf(skip._ghosts[0].global_position.x - skip.landing(skip.melody[0]).x) < 2.0,
+			"물수제비 미니게임: 맞는 거리로 던지면 그 자리 물결이 금빛으로 남는다")
 	for k in 3:
-		skip.angle = 60.0
-		await skip._release()
-	_check(skip.misses >= 3 and skip.help, "물수제비 미니게임: 세 번 셋 미만이면 도움(각도가 느려진다)")
-	_check(skip.stones_left == 3 and skip._pile.size() == 3, "물수제비 미니게임: 돌을 다 쓰면 다시 채워진다")
-	_check(not _state.has_flag(&"skip_five"), "물수제비 미니게임: 다섯 번 전에는 skip_five가 없다")
-	await _press(&"move_right")
-	_check(await _wait_until(func(): return game_done[0], 3.0) and _player.controls_enabled, "물수제비 미니게임: ← →로 그만두면 다시 걷는다")
-	_state.set_flag(&"item_stone_pouch", false)
-	_state.flags.erase(&"item_stone_pouch")
+		await _wait_until(func(): return skip.phase == &"play" and not skip._throwing, 4.0)
+		await _press(throw_keys[(skip.melody[skip.played] + 1) % 3])
+		await _wait(0.2)
+	_check(skip.misses >= 3 and skip.help, "물수제비 미니게임: 틀린 거리로 세 번 던지면 도움이 켜진다")
+	_check(not _state.has_flag(&"skip_five"), "물수제비 미니게임: 다 맞히기 전에는 skip_five가 없다")
+	var auto_skip: Script = load("res://scripts/game/minigame.gd")
+	auto_skip.autoplay = true
+	var finished_game := await _wait_until(func(): return game_done[0], 20.0)
+	auto_skip.autoplay = false
+	_check(finished_game and skip.best >= 5 and _state.has_flag(&"skip_five") and _player.controls_enabled,
+			"물수제비 미니게임: 네 음을 다 맞히면 할아버지가 받아 불고 skip_five, 다시 걷는다")
+	_state.flags.erase(&"item_flat_stone")
 	skip.queue_free()
 	await _wait(0.2)
 

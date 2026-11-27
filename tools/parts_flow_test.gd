@@ -286,8 +286,8 @@ func _run() -> void:
 	for pid in ["riverside", "bridge"]:
 		var place: Node = await _go(pid)
 		for spot in place.get_children():
-			if not String(spot.name).begins_with("AskSpot_"):
-				continue
+			if not String(spot.name).begins_with("AskSpot_") or spot.optional:
+				continue  # 5-4 조약돌(선택)은 아래 강가 순서에서 본다
 			if pid == "bridge":  # 호루라기를 주우면 냄새 부탁 자리는 닫힌다(#147). 주운 뒤에 본다(아래)
 				_check(not spot.used, "철교: 호루라기를 줍기 전에는 냄새 부탁(AskSpot_6-3)이 열려 있다")
 				continue
@@ -304,14 +304,16 @@ func _run() -> void:
 				await _wait(3.0)
 				_check(absf(_dog.global_position.x - _player.global_position.x) < 250.0, "%s: 건너간 뒤 하늘이가 따라온다" % pid)
 			await _wait(6.0)
-			if pid == "riverside":  # 5-4 돌 주머니(#115) → 동그라미 4 → 기억 장면 4 → 물수제비 미니게임(선택)
-				var pouch: Node2D = place.get_node("Keepsake_5-4_Pouch")
+			if pid == "riverside":  # 5-4 조약돌 부탁(#148, 선택) → 동그라미 4 → 기억 장면 4 → 물수제비 미니게임
+				var pebble: Node2D = place.get_node("AskSpot_5-4_Pebble")
 				var shallows: Node2D = place.get_node("Look_5-4_Shallows")
 				var memory: Node = place.get_node("Memory_5-4")
-				await _walk_to(pouch.global_position.x)
-				await _press(&"interact")
-				_check(await _wait_flag(&"item_stone_pouch", 3.0), "강가: 돌 주머니를 줍는다(item_stone_pouch)")
-				await _wait(2.0)
+				await _walk_to(pebble.global_position.x)
+				await _wait(3.0)
+				await _press(&"ask_dog")
+				_check(await _wait_flag(&"item_flat_stone", 20.0), "강가: 하늘이에게 가져와 → 물가에서 납작한 조약돌을 물어 온다(item_flat_stone)")
+				await _wait_until(func(): return _player.controls_enabled, 8.0)
+				await _wait(1.0)
 				await _walk_to(shallows.global_position.x)
 				await _press(&"interact")
 				await _wait(2.5)
@@ -322,14 +324,15 @@ func _run() -> void:
 				var skip: Node = place.get_node("Skip_5-4")
 				await _wait(0.3)
 				_check(skip.playing and skip.running and not _main.dialogue_box().visible,
-						"강가: 기억 장면 뒤 돌 주머니로 물수제비(미니게임)를 한다")
+						"강가: 기억 장면 뒤 조약돌로 물수제비(휘파람 따라 하기)를 한다")
+				skip.echo_gap = 0.25
 				var auto_skip: Script = load("res://scripts/game/minigame.gd")
 				auto_skip.autoplay = true
 				await skip.finished
 				auto_skip.autoplay = false
 				await _wait(0.8)
 				_check(skip.best >= 5 and _state.has_flag(&"skip_five") and not _main.dialogue_box().visible,
-						"강가: 다섯 번을 튀기면 skip_five, \"다섯 번은 어렵다\" 글은 안 나온다")
+						"강가: 강가 소절을 다 따라 하면 skip_five, \"다섯 번은 어렵다\" 글은 안 나온다")
 				_check(_player.controls_enabled, "강가: 물수제비가 끝나면 다시 걷는다")
 		if pid == "bridge":
 			var slope: Node2D = place.get_node("Look_6-3_Slope")

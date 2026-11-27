@@ -290,14 +290,14 @@ func hint_target_x() -> float:
 	var behind := -INF
 	for node in get_tree().get_nodes_in_group("ask_spot"):
 		var spot := node as AskSpot
-		if spot and not (spot.one_shot and spot.used) and spot.global_position.x < px - spot.size.x * 0.5:
+		if spot and not spot.optional and not (spot.one_shot and spot.used) and spot.global_position.x < px - spot.size.x * 0.5:
 			behind = maxf(behind, spot.global_position.x)
 	if behind != -INF:
 		return behind
 	var best := INF
 	for node in get_tree().get_nodes_in_group("ask_spot"):
 		var spot := node as AskSpot
-		if spot and not (spot.one_shot and spot.used) and spot.global_position.x > px + 40.0:
+		if spot and not spot.optional and not (spot.one_shot and spot.used) and spot.global_position.x > px + 40.0:
 			best = minf(best, spot.global_position.x)
 	for node in get_tree().get_nodes_in_group("interactable"):
 		var it := node as Interactable
