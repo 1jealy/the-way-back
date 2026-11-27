@@ -82,6 +82,7 @@ class Layer:
         self.background = background  # 1x, 층 전체 폭 (하늘처럼 픽셀로 만든 바탕)
         self.blur_groups: list[tuple[list[tuple], float]] = []  # (도형들, 흐림 반지름) 도형 아래
         self.haze_groups: list[tuple[list[tuple], float]] = []  # 도형 위
+        self.post = None  # (tile, x0) -> tile. 그림 마무리(질감·빛·흐림, painterly)
 
     def rect(self, x0, y0, x1, y1, color):
         self.poly([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], color)
@@ -158,7 +159,164 @@ class Layer:
         if self.background is not None:
             bg = self.background.crop((x0, 0, x0 + w, H))
             tile = Image.alpha_composite(bg, tile)
+        if self.post is not None:
+            tile = self.post(tile, x0)
         return tile
+
+
+
+# ---------------------------------------------------------------- 그림 마무리 (painterly, #140)
+#
+# 단색 도형만으로는 클립아트처럼 납작하다. 층을 그린 뒤 픽셀로 손을 본다.
+#   1. 도형 안 세로 빛: 위는 밝고 따뜻하게, 아래는 어둡고 차갑게(하늘빛 그늘).
+#   2. 해 쪽(오른쪽 위) 가장자리 빛, 반대쪽 가장자리 그늘 — 모양마다 저절로.
+#   3. 붓결 질감: 가로로 긴 결(붓질)과 고운 낟알(종이). 모양 안에서만.
+#   4. 깊이 흐림: 먼 층과 맨 앞 층은 초점이 나간 듯.
+# 값은 층 이름(PAINT)으로 정한다. 같은 장소의 층은 같은 해 방향·빛 색을 쓴다(paint_light).
+
+PAINT = {
+    #           흐림  결    낟알   위밝기 아래어둠 테두리 그늘
+    "sky":     (0.0, 0.020, 0.012, 0.00, 0.00, 0.0, 0.0),
+    "horizon": (2.2, 0.030, 0.010, 0.06, 0.10, 0.35, 0.10),
+    "far":     (1.4, 0.040, 0.012, 0.08, 0.14, 0.55, 0.16),
+    "hills":   (0.9, 0.050, 0.014, 0.10, 0.18, 0.75, 0.22),
+    "mid":     (0.5, 0.060, 0.016, 0.12, 0.22, 0.85, 0.26),
+    "near":    (0.0, 0.070, 0.018, 0.12, 0.26, 1.00, 0.30),
+    "ground":  (0.0, 0.060, 0.020, 0.06, 0.20, 0.50, 0.20),
+    "props":   (0.0, 0.050, 0.016, 0.08, 0.20, 0.90, 0.30),
+    "front":   (3.0, 0.040, 0.010, 0.00, 0.20, 0.30, 0.10),
+}
+
+
+def _hash_noise(xs: np.ndarray, ys: np.ndarray, sx: float, sy: float, seed: int) -> np.ndarray:
+    """값 잡음(0~1). 세계 좌표 xs·ys 격자(크기 sx×sy)에서 매끄럽게 이어진다(조각끼리 이음매 없음)."""
+    gx, gy = xs / sx, ys / sy
+    ix, iy = np.floor(gx).astype(np.int64), np.floor(gy).astype(np.int64)
+    fx, fy = gx - ix, gy - iy
+    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+
+    def h(a, b):
+        v = (a * 73856093) ^ (b * 19349663) ^ (seed * 83492791)
+        v = (v ^ (v >> 13)) * 1274126177
+        return ((v ^ (v >> 16)) & 0xFFFF) / 65535.0
+
+    a, b = h(ix, iy), h(ix + 1, iy)
+    c, d = h(ix, iy + 1), h(ix + 1, iy + 1)
+    return (a + (b - a) * fx) * (1 - fy) + (c + (d - c) * fx) * fy
+
+
+def _shift(a: np.ndarray, dx: int, dy: int) -> np.ndarray:
+    """a를 (dx, dy)만큼 민다. out[y, x] = a[y + dy, x + dx]. 밖은 가장자리 값을 늘려 쓴다
+    (조각 경계에서 테두리 빛이 생기지 않게)."""
+    hgt, wid = a.shape
+    yi = np.clip(np.arange(hgt) + dy, 0, hgt - 1)
+    xi = np.clip(np.arange(wid) + dx, 0, wid - 1)
+    return a[yi][:, xi]
+
+
+def painterly(name: str, seed: int, light: tuple[int, int, int], shade: tuple[int, int, int]):
+    """층 이름에 맞는 마무리 함수를 만든다. light = 해빛 색, shade = 그늘에 섞을 하늘빛."""
+    blur, streak, grain, top, bottom, rim, dark = PAINT[name]
+
+    def post(tile: Image.Image, x0: int) -> Image.Image:
+        arr = np.asarray(tile).astype(np.float32) / 255.0
+        rgb, a = arr[:, :, :3], arr[:, :, 3]
+        hgt, wid = a.shape
+        yy, xx = np.mgrid[0:hgt, 0:wid].astype(np.float32)
+        xx += x0
+        if name != "sky":
+            # 1. 세로 빛: 모양이 있는 줄의 위·아래에 맞춰
+            rows = np.where(a.max(axis=1) > 0.02)[0]
+            if rows.size:
+                y0, y1 = float(rows[0]), float(rows[-1])
+                t = np.clip((yy - y0) / max(y1 - y0, 1.0), 0, 1)[:, :, None]
+                lit = np.array(light, np.float32) / 255.0
+                sh = np.array(shade, np.float32) / 255.0
+                rgb = rgb + (lit - rgb) * (1 - t) * top
+                rgb = rgb * (1 - t * bottom) + sh * t * bottom * 0.5
+            # 2. 가장자리 빛·그늘(해는 오른쪽 위)
+            d = 3
+            edge_lit = np.clip(a - _shift(a, d, -d), 0, 1)
+            edge_dark = np.clip(a - _shift(a, -d * 2, d * 2), 0, 1)
+            el = np.asarray(Image.fromarray((edge_lit * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.6))).astype(np.float32) / 255.0
+            ed = np.asarray(Image.fromarray((edge_dark * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(4))).astype(np.float32) / 255.0
+            lit = np.array(light, np.float32) / 255.0
+            rgb = rgb + (lit - rgb) * (el * rim * 0.8)[:, :, None]
+            rgb = rgb * (1 - (ed * dark)[:, :, None])
+        # 3. 붓결(가로로 긴 결) + 낟알
+        n = (_hash_noise(xx, yy, 90, 9, seed) - 0.5) * 0.6 + (_hash_noise(xx, yy, 26, 4, seed + 1) - 0.5) * 0.4
+        g = _hash_noise(xx, yy, 2.2, 2.2, seed + 2) - 0.5
+        rgb = rgb * (1 + (n * streak * 2 + g * grain * 2))[:, :, None]
+        arr = np.concatenate([np.clip(rgb, 0, 1), a[:, :, None]], axis=2)
+        out = Image.fromarray((arr * 255 + 0.5).astype(np.uint8), "RGBA")
+        # 4. 깊이 흐림(미리 곱한 알파로 흐려 가장자리가 검게 번지지 않게)
+        if blur > 0:
+            pm = np.asarray(out).astype(np.float32)
+            pm[:, :, :3] *= pm[:, :, 3:4] / 255.0
+            bl = np.asarray(Image.fromarray(pm.astype(np.uint8), "RGBA").filter(ImageFilter.GaussianBlur(blur))).astype(np.float32)
+            al = np.maximum(bl[:, :, 3:4], 1e-3)
+            bl[:, :, :3] = np.where(al > 1, bl[:, :, :3] * 255.0 / al, 0)
+            out = Image.fromarray(np.clip(bl, 0, 255).astype(np.uint8), "RGBA")
+        return out
+
+    return post
+
+
+def finish(layers: dict[str, "Layer"], place_id: str, light: tuple[int, int, int], shade: tuple[int, int, int]) -> dict[str, "Layer"]:
+    """장소의 모든 층에 그림 마무리를 건다(같은 해빛·그늘 색)."""
+    for name, layer in layers.items():
+        if name in PAINT:
+            layer.post = painterly(name, abs(hash((place_id, name))) % 100000, light, shade)
+    return layers
+
+
+
+def paint_clouds(img: Image.Image, rng: random.Random, n: int, w: int, y0: float, y1: float,
+                 sun: tuple[float, float], lit: tuple[int, int, int], shade: tuple[int, int, int],
+                 glow: tuple[int, int, int], size: tuple[float, float] = (300, 640)) -> None:
+    """뭉게구름을 하늘 그림에 직접 칠한다(img를 바꾼다). 둥근 덩어리 여럿을 잡음으로 흔든 모양,
+    해 쪽 위는 밝고 아래는 평평하게 그늘지고, 해에 가까운 아랫면은 노을빛으로 물든다."""
+    arr = np.asarray(img).astype(np.float32)
+    seed = rng.randint(0, 99999)
+    for k in range(n):
+        cx, cy = rng.uniform(0, w), rng.uniform(y0, y1)
+        cw = rng.uniform(*size)
+        puffs = []
+        for _ in range(rng.randint(6, 10)):
+            ox = rng.uniform(-0.45, 0.45) * cw
+            r = rng.uniform(0.10, 0.2) * cw * (1.25 - abs(ox) / cw)
+            puffs.append((cx + ox, cy - rng.uniform(0.0, 0.9) * r, r))
+        base = cy + cw * 0.06  # 평평한 아랫면
+        bx0, bx1 = int(max(0, cx - cw * 0.75)), int(min(w, cx + cw * 0.75))
+        by0, by1 = int(max(0, cy - cw * 0.45)), int(min(img.height, base + 20))
+        if bx1 <= bx0 or by1 <= by0:
+            continue
+        yy, xx = np.mgrid[by0:by1, bx0:bx1].astype(np.float32)
+        # 덩어리들을 부드럽게 합친 밀도(작은 최솟값 대신 지수 합 — 이음매가 없다)
+        acc = np.zeros_like(xx)
+        for px, py, r in puffs:
+            dx, dy = (xx - px) / r, (yy - py) / r
+            acc += np.exp(-(dx * dx + dy * dy) * 2.2)
+        dens = acc - 0.35
+        dens += (_hash_noise(xx, yy, 22, 16, seed + k) - 0.5) * 0.12 * np.clip(acc * 3, 0, 1)
+        dens *= np.clip((base - yy) / 14.0, 0, 1)  # 아랫면을 자른다
+        a = np.clip(dens / 0.16, 0, 1)
+        # 빛: 밀도의 기울기를 표면 방향으로 보고, 해 쪽(오른쪽 위)을 향한 면이 밝다
+        gy, gx = np.gradient(np.asarray(Image.fromarray(np.clip(acc * 80, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(6))).astype(np.float32))
+        gl = np.sqrt(gx * gx + gy * gy) + 1e-3
+        nx, ny = -gx / gl, -gy / gl
+        sdx, sdy = sun[0] - cx, sun[1] - cy
+        sl = math.hypot(sdx, sdy) or 1.0
+        light = np.clip(0.68 + 0.34 * (nx * sdx / sl * 0.7 - ny * 0.7), 0, 1)
+        under = np.clip((yy - (cy - cw * 0.05)) / (base - cy + cw * 0.05 + 1), 0, 1)
+        light = light * (1 - under * 0.55)
+        near_sun = max(0.0, 1 - abs(cx - sun[0]) / 1200.0)
+        lit_c, sh_c, gl_c = (np.array(c, np.float32) for c in (lit, shade, glow))
+        col = sh_c + (lit_c - sh_c) * light[:, :, None]
+        col = col + (gl_c - col) * (under * (0.35 + near_sun * 0.5))[:, :, None] * (1 - light[:, :, None] * 0.5)
+        reg = arr[by0:by1, bx0:bx1, :3]
+        arr[by0:by1, bx0:bx1, :3] = reg + (col - reg) * (a * 0.95)[:, :, None]
+    img.paste(Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGBA"))
 
 
 def vertical_gradient(width: int, stops: list[tuple[float, tuple[int, int, int]]]) -> Image.Image:
@@ -311,6 +469,19 @@ def _hay_bale(L: Layer, x: float, y: float, r: float, body: Color, lit: Color, s
     L.ellipse((x + r * 0.1, y - r * 1.45, x + r * 0.7, y - r * 0.45), _with_alpha(body, 120))
 
 
+def _plume(L: Layer, rng: random.Random, x: float, y: float, size: float, color: Color, stem: Color, lean: float = -1.0) -> None:
+    """억새 이삭: 휘어진 줄기 끝에 가는 털 여러 가닥이 바람 쪽(왼쪽)으로 흩날린다."""
+    tx, ty = x + lean * size * 0.35, y - size
+    L.line([(x, y), (x + lean * size * 0.12, y - size * 0.55), (tx, ty)], stem, max(1.0, size * 0.025))
+    for k in range(7):
+        t = k / 6
+        sx, sy = tx - lean * size * 0.02 * k, ty + size * 0.06 * k
+        ln = size * (0.42 - t * 0.18)
+        ang = math.radians(200 + t * 35 + rng.uniform(-8, 8)) if lean < 0 else math.radians(-20 - t * 35)
+        ex, ey = sx + math.cos(ang) * ln, sy - math.sin(ang) * ln * 0.35 + ln * 0.25
+        L.line([(sx, sy), ((sx + ex) / 2, (sy + ey) / 2 - ln * 0.06), (ex, ey)], color, max(1.0, size * 0.03))
+
+
 def _grass_tuft(L: Layer, rng: random.Random, x: float, base: float, scale: float, stem: Color, tip: Color, n: int) -> None:
     """들풀 한 포기: 휘어진 잎 여럿 + 끝의 밝은 이삭. 바람에 왼쪽으로 눕는다."""
     for _ in range(n):
@@ -319,11 +490,9 @@ def _grass_tuft(L: Layer, rng: random.Random, x: float, base: float, scale: floa
         lean = rng.uniform(-90, -15) * scale
         pts = [(bx + lean * (i / 10) ** 2, base - h * i / 10) for i in range(11)]
         L.line(pts, stem, max(1.4, 3.0 * scale))
-        if rng.random() < 0.7:  # 이삭(밀 이삭처럼 낟알 몇)
+        if rng.random() < 0.6:  # 억새 이삭
             tx, ty = pts[-1]
-            for k in range(5):
-                L.ellipse((tx + lean * 0.04 * k - 4 * scale, ty + k * 7 * scale - 5 * scale,
-                           tx + lean * 0.04 * k + 4 * scale, ty + k * 7 * scale + 5 * scale), tip)
+            _plume(L, rng, tx, ty + 60 * scale, 90 * scale, tip, stem)
 
 
 
@@ -429,17 +598,8 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         rays.append(("poly", [(sun_x, sun_y), (sun_x + math.cos(a) * ln, sun_y + math.sin(a) * ln),
                               (sun_x + math.cos(a2) * ln, sun_y + math.sin(a2) * ln)], rgba(255, 236, 196, 46)))
     L.haze(rays, 18)
-    for _ in range(7):  # 뭉게구름: 아랫면이 해빛에 물든다
-        cx, cy = rng.uniform(0, w), rng.uniform(170, 430)
-        cw = rng.uniform(320, 620)
-        body, lit = [], []
-        for _ in range(rng.randint(5, 8)):
-            ox, r = rng.uniform(-0.45, 0.45) * cw, rng.uniform(0.12, 0.22) * cw
-            oy = rng.uniform(-0.6, 0.0) * r
-            body.append(("ellipse", (cx + ox - r, cy + oy - r * 0.62, cx + ox + r, cy + oy + r * 0.62), rgba(250, 238, 226, 200)))
-            lit.append(("ellipse", (cx + ox - r * 0.9, cy + oy + r * 0.05, cx + ox + r * 0.95, cy + oy + r * 0.62), rgba(255, 206, 160, 170)))
-        L.blur_groups.append((body, 2.5))
-        L.haze(lit, 4)
+    paint_clouds(sky, rng, 7, w, 160, 430, (sun_x, sun_y),
+                 lit=(255, 247, 234), shade=(196, 176, 200), glow=(255, 196, 150))
     L.ellipse((sun_x - 40, sun_y - 40, sun_x + 40, sun_y + 40), rgba(255, 250, 232))
     deco = random.Random("field_deco")
     wisps = []
@@ -454,7 +614,7 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     # 지평선: 아주 먼 산맥. 거의 하늘색에 묻힌다.
     w = layer_width(width, "horizon")
     layers["horizon"] = L = Layer(w)
-    pts = ridge(rng, w, 470, 170, waves=4)
+    pts = ridge(rng, w, 535, 105, waves=4)
     _rim_ridge(L, pts, _fog((104, 126, 184), 0.5), rgba(*FIELD_RIM, 200), 2)
     _slope_shade(L, pts, rgba(80, 92, 150, 70), 260, 30)
     L.haze([("poly", [(-20, 560), (w + 20, 560), (w + 20, 640), (-20, 640)], rgba(*FIELD_HAZE, 150))], 30)
@@ -463,7 +623,7 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     w = layer_width(width, "far")
     layers["far"] = L = Layer(w)
     body = _fog((104, 92, 132), 0.36)
-    pts = ridge(rng, w, 575, 95, waves=3)
+    pts = ridge(rng, w, 600, 70, waves=3)
     _rim_ridge(L, pts, body, rgba(*FIELD_RIM, 210), 2.5)
     _slope_shade(L, pts, rgba(70, 62, 110, 80), 200, 24)
     for vx in (rng.uniform(600, 1400), rng.uniform(2600, 3600)):
@@ -535,6 +695,12 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         x = rng.uniform(0, w)
         y = _ridge_y(hill, x) + rng.uniform(8, 40)
         L.line([(x, y), (x + rng.uniform(60, 160), y + rng.uniform(2, 8))], _fog((186, 150, 90), 0.2, 150), 2)
+    plume_rng = random.Random("field_mid_plumes")
+    for _ in range(int(w / 12)):  # 먼 억새밭: 언덕 위 은빛 결
+        x = plume_rng.uniform(0, w)
+        y0 = _ridge_y(hill, x) + plume_rng.uniform(4, 30)
+        sz = plume_rng.uniform(12, 22)
+        _plume(L, plume_rng, x, y0, sz, _fog((236, 224, 200), 0.15, 200), _fog((150, 116, 70), 0.15, 160))
     x = rng.uniform(100, 400)
     while x < w:
         _blob_tree(L, rng, x, _ridge_y(hill, x) + 6, rng.uniform(34, 54), _fog((96, 80, 46), 0.1), rim)
@@ -576,6 +742,13 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         h = rng.uniform(14, 40)
         lean = rng.uniform(-10, -3)
         L.line([(x, y0), (x + lean, y0 - h)], lerp_color(_fog((150, 108, 52), 0.05), rgba(250, 222, 150), rng.random() ** 1.5), rng.uniform(1.2, 2.2))
+    plume_rng = random.Random("field_plumes")
+    for _ in range(int(w / 16)):  # 억새 이삭: 밭 띠 위로 은빛 털이 흩날린다
+        x = plume_rng.uniform(0, w)
+        y0 = _ridge_y(band, x) + plume_rng.uniform(10, 46)
+        sz = plume_rng.uniform(30, 52)
+        c = lerp_color(rgba(214, 192, 160, 150), rgba(250, 236, 210, 180), plume_rng.random())
+        _plume(L, plume_rng, x, y0, sz, c, rgba(160, 120, 70, 200))
     flower_cols = [rgba(214, 64, 48), rgba(232, 92, 60), rgba(246, 240, 226), rgba(156, 124, 196), rgba(250, 214, 96)]
     x = 0.0
     while x < w:  # 들꽃 무리: 한 색이 모여 핀다
@@ -664,7 +837,7 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         _grass_tuft(tuft, rng, x, H + 10, rng.uniform(0.8, 1.3), rgba(96, 62, 30, 235), rgba(150, 100, 44, 235), rng.randint(10, 16))
         L.under(tuft.shapes, 4)
         x += rng.uniform(900, 1900)
-    return layers
+    return finish(layers, "field", (255, 222, 168), (96, 108, 168))
 
 
 def sag(xa: float, ya: float, xb: float, yb: float, depth: float, n: int = 16) -> list[tuple[float, float]]:
@@ -1976,9 +2149,23 @@ PAINTERS = {
 }
 
 
+def painter_for(place_id: str):
+    """장소 그리기 함수. tools/painters/<place_id>.py에 paint(width, markers)가 있으면 그것을 쓴다(#140 —
+    장소마다 파일을 나눠 여럿이 함께 고칠 수 있게). 없으면 이 파일의 PAINTERS."""
+    path = ROOT / "tools/painters" / f"{place_id}.py"
+    if path.exists():
+        import importlib.util
+        sys.path.insert(0, str(ROOT / "tools"))
+        spec = importlib.util.spec_from_file_location(f"painters_{place_id}", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.paint
+    return PAINTERS[place_id]
+
+
 def build(place_id: str) -> None:
     width, markers = read_place(place_id)
-    layers = PAINTERS[place_id](width, markers)
+    layers = painter_for(place_id)(width, markers)
     out = OUT_DIR / place_id
     out.mkdir(parents=True, exist_ok=True)
     for old in out.glob(f"bg_{place_id}_*.png"):
