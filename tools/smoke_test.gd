@@ -340,23 +340,20 @@ func _check_parts() -> void:
 	var tractor := _find_by_script("field", "res://scripts/game/tractor_pass.gd")
 	_check(tractor.size() == 1 and String(tractor[0][0]) == "Tractor_2-4" and chases.size() == 1 and tractor[0][1] > 7000.0,
 			"부품: 들판 2-4에 경운기(Tractor_2-4) 하나, 2-3 벽(Gate_2-3) 오른쪽 %s" % [tractor])
-	# #142 풀숲: 길 뒤 낮은 풀은 들판 전체, 키 큰 풀숲은 지도가 날아가는 곳(2-3)과 묻히는 덤불을 덮고, 방패연 자리는 앞 겹을 비운다.
+	# #142 풀숲: 길 뒤 낮은 풀은 들판 전체, 키 큰 풀숲은 지도가 날아가는 곳(2-3)과 묻히는 덤불을 덮는다.
+	# 방패연은 풀숲 끝에 걸쳐 있어(장면표 "길가 들풀에 걸린 연") 뒤 겹보다 위, 하윤보다 뒤에 그린다.
 	var grasses := _find_by_script("field", "res://scripts/game/grass_field.gd")
 	var field_scene: Node = load("res://scenes/places/field.tscn").instantiate()
 	var tall: Node = field_scene.get_node_or_null("Grass_2-3_Tall")
 	var verge: Node = field_scene.get_node_or_null("Grass_2-1_Verge")
-	var kite_x: float = keeps[0][1] + field_scene.get_node(String(keeps[0][0])).art_offset.x if keeps.size() == 1 else -1.0
-	var grass_ok: bool = grasses.size() == 2 and tall != null and verge != null \
+	var kite_item: Node = field_scene.get_node(String(keeps[0][0])) if keeps.size() == 1 else null
+	var grass_ok: bool = grasses.size() == 2 and tall != null and verge != null and kite_item != null \
 			and verge.position.x <= 0.0 and verge.position.x + verge.length >= field_scene.width \
 			and tall.position.x <= 4300.0 and tall.position.x + tall.length >= chases[0][1][0] \
-			and tall.front_ratio > 0.0 and tall.front_z > 0 and tall.back_z < 0
-	if grass_ok:
-		var clear_hit := false
-		for c in tall.clear_spots:
-			clear_hit = clear_hit or absf(c - kite_x) < tall.clear_half * 0.5
-		grass_ok = clear_hit
+			and tall.front_ratio > 0.0 and tall.front_z > 0 and tall.back_z < 0 \
+			and kite_item.art_z > tall.back_z and kite_item.art_z < 0 and kite_item.art_offset.y < -150.0
 	field_scene.free()
-	_check(grass_ok, "부품: 들판 풀숲 — 길 뒤 낮은 풀은 전체, 키 큰 풀숲은 2-3 지도 구간, 방패연 자리는 앞 겹을 비운다 %s" % [grasses])
+	_check(grass_ok, "부품: 들판 풀숲 — 길 뒤 낮은 풀은 전체, 키 큰 풀숲은 2-3 지도 구간, 방패연은 풀 끝에 걸쳐 풀 사이에 %s" % [grasses])
 	var opening := _find_by_script("house", "res://scripts/game/opening.gd")
 	var portraits := _find_by_script("house", "res://scripts/game/funeral_portraits.gd")
 	var find_art: Callable = load("res://scripts/ui/cutscene_player.gd").find_art

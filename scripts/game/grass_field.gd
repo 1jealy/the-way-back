@@ -41,7 +41,13 @@ extends Node2D
 @export var sway_px: float = 9.0
 @export var push_radius: float = 120.0
 @export var push_px: float = 40.0
+## 앞 겹이 헤쳐지는 정도(push_px에 곱한다). 작게 두면 하윤 발과 길이 드러나지 않는다.
+@export var front_push: float = 0.3
 @export var seed_text: String = "grass"
+## 앞 겹 아래에 까는 풀빛 띠(원점 기준 y 위·아래, 위쪽은 흐리게). 풀잎 사이로 길이 비치지 않게(#142).
+## (0, 0)이면 깔지 않는다.
+@export var cover_band: Vector2 = Vector2.ZERO
+@export var cover_color: Color = Color(0.6, 0.42, 0.18)
 
 var back: MultiMeshInstance2D
 var front: MultiMeshInstance2D
@@ -49,6 +55,7 @@ var back_stalks: MultiMeshInstance2D
 var front_stalks: MultiMeshInstance2D
 var gust: float = 0.0
 var _mat: ShaderMaterial
+var _mat_front: ShaderMaterial
 var _gust_tween: Tween
 var _player_vel: float = 0.0
 var _last_player_x: float = NAN
@@ -61,6 +68,8 @@ func _ready() -> void:
 	_mat.set_shader_parameter("sway_px", sway_px)
 	_mat.set_shader_parameter("push_radius", push_radius)
 	_mat.set_shader_parameter("push_px", push_px)
+	_mat_front = _mat.duplicate()
+	_mat_front.set_shader_parameter("push_px", push_px * front_push)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(seed_text)
 	var total := int(length / 100.0 * density)
@@ -70,6 +79,8 @@ func _ready() -> void:
 	front = _build("Front", _blade_mesh(), n_front, front_z, front_root, front_tint, rng, true, 1.0)
 	back_stalks = _build("BackStalks", _stalk_mesh(), int(n_back * stalk_ratio), back_z, back_root, Color.WHITE, rng, false, 1.15)
 	front_stalks = _build("FrontStalks", _stalk_mesh(), int(n_front * stalk_ratio), front_z, front_root, front_tint, rng, true, 1.15)
+	if cover_band != Vector2.ZERO:
+		_build_cover()
 	_connect_wind.call_deferred()
 
 
@@ -101,6 +112,8 @@ func _build(node_name: String, mesh: Mesh, count: int, z: int, root: Vector2, ti
 		var edge := clampf(minf(cx, length - cx) / maxf(taper, 1.0), 0.0, 1.0)
 		var tallest := rng.randf_range(height.x, height.y) * lerpf(0.35, 1.0, edge) * tall
 		var cy := rng.randf_range(root.x, root.y)
+		if is_front:  # 앞 겹은 뿌리가 아래(화면 앞)에 있을수록 길게 — 끝이 하윤 허리께에 고르게 모이도록
+			tallest += (cy - root.x)
 		var n := rng.randi_range(clump.x, clump.y)
 		for k in n:
 			if blades.size() >= want:
@@ -130,11 +143,40 @@ func _build(node_name: String, mesh: Mesh, count: int, z: int, root: Vector2, ti
 	var inst := MultiMeshInstance2D.new()
 	inst.name = node_name
 	inst.multimesh = mm
-	inst.material = _mat
+	inst.material = _mat_front if is_front else _mat
 	inst.z_index = z
 	inst.z_as_relative = false
 	add_child(inst)
 	return inst
+
+
+## 길을 덮는 띠: 앞 겹 바로 뒤(front_z - 1). 위쪽 가장자리와 양 끝은 흐리게 사라진다.
+func _build_cover() -> void:
+	var poly := Polygon2D.new()
+	poly.name = "Cover"
+	var top := cover_band.x
+	var soft := top + (cover_band.y - top) * 0.35
+	var fade := minf(taper, length * 0.5)
+	var xs := [0.0, fade, length - fade, length]
+	var ys := [top, soft, cover_band.y]
+	var pts := PackedVector2Array()
+	var cols := PackedColorArray()
+	for r in 3:
+		for c in 4:
+			pts.append(Vector2(xs[c], ys[r]))
+			var a := 0.0 if r == 0 or c == 0 or c == 3 else 1.0
+			cols.append(Color(cover_color, a))
+	poly.polygon = pts
+	poly.vertex_colors = cols
+	var polys := []
+	for r in 2:
+		for c in 3:
+			var i := r * 4 + c
+			polys.append(PackedInt32Array([i, i + 1, i + 5, i + 4]))
+	poly.polygons = polys
+	poly.z_index = front_z - 1
+	poly.z_as_relative = false
+	add_child(poly)
 
 
 func _cleared(gx: float) -> bool:
@@ -188,8 +230,9 @@ static func _strip_mesh(half_width: Callable, seg: int) -> ArrayMesh:
 
 
 func _process(delta: float) -> void:
-	_mat.set_shader_parameter("origin", global_position)
-	_mat.set_shader_parameter("gust", gust)
+	for m in [_mat, _mat_front]:
+		m.set_shader_parameter("origin", global_position)
+		m.set_shader_parameter("gust", gust)
 	var player := get_tree().get_first_node_in_group("player") as Node2D
 	if player:
 		var px := player.global_position.x
@@ -197,8 +240,9 @@ func _process(delta: float) -> void:
 			var v := clampf((px - _last_player_x) / delta, -600.0, 600.0)
 			_player_vel = lerpf(_player_vel, v, minf(1.0, delta * 6.0))
 		_last_player_x = px
-		_mat.set_shader_parameter("player_pos", player.global_position)
-		_mat.set_shader_parameter("player_vel", _player_vel)
+		for m in [_mat, _mat_front]:
+			m.set_shader_parameter("player_pos", player.global_position)
+			m.set_shader_parameter("player_vel", _player_vel)
 
 
 ## 센 바람 한 번: 풀이 크게 눕었다가 천천히 일어난다.
