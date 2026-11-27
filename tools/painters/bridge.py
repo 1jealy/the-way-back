@@ -315,6 +315,6 @@ def paint(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     L.haze(pa.mist(rng, 0, w, H - 60, 160, rgba(160, 150, 196, 90), int(w / 300)), 30)
 
     return _finish(layers, "bridge", (210, 180, 220), (40, 40, 90), tweak={
-        "ground": (0.0, 0.06, 0.02, 0.04, 0.16, 0.45, 0.2),
-        "props": (0.0, 0.05, 0.016, 0.04, 0.14, 0.7, 0.3),
+        "ground": (0.0, 0.06, 0.0, 0.04, 0.16, 0.45, 0.2),
+        "props": (0.0, 0.05, 0.0, 0.04, 0.14, 0.7, 0.3),
     })
