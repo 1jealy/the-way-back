@@ -147,7 +147,10 @@ func _run() -> void:
 	kite_game.gust_seconds = 0.8
 	var autoplay_script: Script = load("res://scripts/game/minigame.gd")
 	autoplay_script.autoplay = true
-	_check(await _wait_until(func(): return kite_game.running, 4.0), "들판: 연을 주우면 그 자리에서 띄운다")
+	await _wait_until(func(): return _player.controls_enabled, 4.0)
+	await _wait(0.3)
+	await _press(&"interact")
+	_check(await _wait_until(func(): return kite_game.running, 4.0), "들판: 연을 주우고 [E] 연 띄우기로 그 자리에서 띄운다")
 	_check(not _player.controls_enabled, "들판: 연을 날리는 동안 하윤은 걷지 않는다")
 	_check(await _wait_flag(&"kite_flown", 20.0), "들판: 돌풍 세 번을 버티면 연이 높이 오른다(kite_flown)")
 	_check(not chase.buried, "들판: 연이 오르면 지도가 다시 보인다")
@@ -269,8 +272,9 @@ func _run() -> void:
 	flute_game.echo_gap = 0.25
 	var auto: Script = load("res://scripts/game/minigame.gd")
 	auto.autoplay = true
-	await _walk_to(flute_game.global_position.x + 60.0)
-	_check(await _wait_until(func(): return flute_game.running or flute_game.done, 3.0), "숲: 피리를 가진 채 지나가면 메아리가 들린다")
+	await _walk_to(flute_game.global_position.x)
+	await _press(&"interact")
+	_check(await _wait_until(func(): return flute_game.running or flute_game.done, 3.0), "숲: [E] 피리 불기로 메아리가 들린다")
 	_check(await _wait_flag(&"flute_echo_done", 15.0), "숲: 메아리를 따라 불면 flute_echo_done")
 	auto.autoplay = false
 	_check(await _wait_until(func(): return _player.controls_enabled, 6.0), "숲: 따라 불고 나면 다시 걷는다")
@@ -336,7 +340,8 @@ func _run() -> void:
 			auto_lamp.autoplay = true
 			await _walk_to(edge.global_position.x + 200.0)
 			_check(_player.global_position.x < edge.global_position.x, "철교: 끊긴 끝(Gate_6-2)에서 막힌다")
-			_check(await _wait_until(func(): return lamp.running or lamp.done, 3.0), "철교: 손전등을 가진 채 끊긴 끝에 서면 강둑 아래를 비춘다")
+			await _press(&"interact")
+			_check(await _wait_until(func(): return lamp.running or lamp.done, 3.0), "철교: 끊긴 끝에서 [E] 강둑 비추기로 강둑 아래를 비춘다")
 			_check(await _wait_flag(&"bridge_bank_path", 20.0), "철교: 디딤돌 다섯을 찾으면 bridge_bank_path")
 			auto_lamp.autoplay = false
 			_check(await _wait_until(func(): return _player.controls_enabled, 6.0), "철교: 다 비추면 다시 걷는다")

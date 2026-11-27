@@ -162,6 +162,7 @@ position = Vector2(4760, 810)
 script = ExtResource("flute_script")
 grants_flag = &"flute_echo_done"
 entrance_x = 5600.0
+start_prompt = "피리 불기"
 
 [node name="Look_4-2_Light21" type="Area2D" parent="." index="13" unique_id=198308308]
 position = Vector2(5000, 810)

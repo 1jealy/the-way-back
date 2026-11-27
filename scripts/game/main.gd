@@ -132,12 +132,16 @@ func _process(delta: float) -> void:
 
 
 ## 걷는 쪽을 앞서 본다. 조작이 막혀 있으면(대사·연출) 천천히 가운데로 돌아온다.
+## 연출이 카메라를 옆으로 잠깐 옮길 때 쓴다(미니게임 보상·돌 따라가기, #119). 앞서 보기 위에 더해진다.
+var look_bias: float = 0.0
+
+
 func _update_look(delta: float) -> void:
 	var walking := _player.controls_enabled and absf(_player.velocity.x) > 10.0
 	var target := signf(_player.velocity.x) * LOOK_AHEAD if walking else 0.0
 	var rate := LOOK_RATE_WALK if walking else LOOK_RATE_REST
 	_look = lerpf(_look, target, 1.0 - exp(-rate * delta))
-	_camera.offset.x = _look
+	_camera.offset.x = _look + look_bias
 
 
 ## 처음 시작한 집에서만 "A D / ← →  걷기"를 띄우고, 조금 걸으면 사라진다(#87).
