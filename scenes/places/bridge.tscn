@@ -15,7 +15,8 @@
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_bridge.ogg" id="10_qs1fr"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_lllq7"]
 [ext_resource type="Script" path="res://scripts/game/passage.gd" id="12_did7t"]
-[ext_resource type="Script" path="res://scripts/game/bank_light.gd" id="bank_light_script"]
+[ext_resource type="Script" path="res://scripts/game/bridge_whistle.gd" id="bridge_whistle_script"]
+[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 
 [node name="Bridge" unique_id=943413289 instance=ExtResource("1_tpl")]
@@ -138,11 +139,18 @@ dog_to = 80.0
 dog_hold = 1.8
 dog_look = -1
 
-[node name="BankLight_6-3" type="Node2D" parent="." index="11" unique_id=1640296791]
+[node name="BridgeWhistle_6-3" type="Node2D" parent="." index="11" unique_id=1640296791]
 position = Vector2(3520, 810)
-script = ExtResource("bank_light_script")
+script = ExtResource("bridge_whistle_script")
 ask_spot = NodePath("../AskSpot_6-3")
-stones = PackedVector2Array(3725, 965, 3830, 1008, 3935, 1036, 4040, 1014, 4145, 985)
-decoys = PackedVector2Array(3760, 1050, 3880, 1070)
 grants_flag = &"bridge_bank_path"
-start_prompt = "강둑 비추기"
+start_prompt = "호루라기 불기"
+
+[node name="Keepsake_6-2_Whistle" type="Area2D" parent="." index="12" unique_id=1640296792]
+position = Vector2(3000, 810)
+script = ExtResource("keepsake_script")
+item = &"whistle"
+art_offset = Vector2(0, -16)
+art_rotation = -10.0
+prompt = "호루라기 줍기"
+lines = PackedStringArray()

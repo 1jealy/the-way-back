@@ -15,7 +15,6 @@
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="10_862vo"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_riverside.ogg" id="11_862vo"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="12_sws2n"]
-[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
 [ext_resource type="Script" path="res://scripts/game/memory_scene.gd" id="mem_script"]
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 [ext_resource type="Script" path="res://scripts/game/water_reflection.gd" id="reflection_script"]
@@ -162,11 +161,10 @@ script = ExtResource("skip_script")
 hop_lengths = PackedFloat32Array(210, 150, 110, 80, 60)
 hop_heights = PackedFloat32Array(70, 46, 30, 20, 12)
 
-[node name="Keepsake_5-4_Pouch" type="Area2D" parent="." index="14" unique_id=1050095152]
+[node name="AskSpot_5-4_Pebble" type="Area2D" parent="." index="14" unique_id=1050095152]
 position = Vector2(6050, 810)
-script = ExtResource("keepsake_script")
-item = &"stone_pouch"
-art_offset = Vector2(0, -36)
-art_rotation = 6.0
-prompt = "주머니 꺼내기"
+script = ExtResource("9_fnntt")
+target_offset = Vector2(260, 0)
+grants_flag = &"item_flat_stone"
 lines = PackedStringArray()
+optional = true

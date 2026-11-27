@@ -29,6 +29,8 @@ enum Action {
 @export var one_shot: bool = true
 ## 하늘이가 돌아와 부탁이 끝났을 때 대사 상자에 띄울 줄(예: 3-5 "하윤: 고마워.").
 @export var lines: PackedStringArray = PackedStringArray()
+## 안 해도 되는 부탁(5-4 조약돌, #148). 하늘이 힌트가 가리키지 않는다.
+@export var optional: bool = false
 
 var used: bool = false
 var player_inside: bool = false

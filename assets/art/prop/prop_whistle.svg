@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="90" viewBox="0 0 170 90">
+  <!-- 할아버지가 하윤 손에 맞게 깎은 작은 나무 호루라기 (게임 크기의 2배). 짙은 나무 몸통, 입에 무는 짧은 부리, 소리 구멍, 놋쇠 고리, 끈 -->
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <!-- 끈 -->
+    <path d="M150 44 C162 30 166 58 152 66 C140 72 132 62 140 56" fill="none" stroke="#9E3B2E" stroke-width="4"/>
+    <!-- 몸통(둥근 통) -->
+    <path d="M52 22 H128 Q148 22 148 45 Q148 68 128 68 H52 Z" fill="#A9733F" stroke="#5E3F22" stroke-width="3.5"/>
+    <path d="M52 54 H140 Q144 62 132 68 H52 Z" fill="#8C5C30"/>
+    <path d="M62 30 H126" stroke="#C99560" stroke-width="5"/>
+    <!-- 부리(입에 무는 쪽) -->
+    <path d="M52 28 Q22 30 12 38 Q8 45 14 52 Q26 60 52 62 Z" fill="#B98450" stroke="#5E3F22" stroke-width="3.5"/>
+    <!-- 소리 구멍(비스듬히 깎은 창) -->
+    <path d="M66 26 L92 26 L84 40 L66 40 Z" fill="#3E2A18" stroke="#5E3F22" stroke-width="2"/>
+    <!-- 놋쇠 고리 -->
+    <path d="M108 21 H120 V69 H108 Z" fill="#D7B25A" stroke="#7A5A22" stroke-width="2.5"/>
+    <!-- 나뭇결 -->
+    <g stroke="#7E5128" stroke-width="1.5" fill="none" opacity="0.7">
+      <path d="M70 50 C80 48 88 52 98 50"/><path d="M126 36 C132 38 136 36 140 38"/>
+    </g>
+  </g>
+</svg>

@@ -588,27 +588,36 @@ func _run() -> void:
 	_check(not _player.is_locked_by(&"stone_skip"), "물수제비: 끝나면 잠금이 풀린다")
 	spot4.queue_free()
 
-	# 물수제비 미니게임(#115): 돌 주머니가 있으면 선택 미니게임. 할아버지 물결 다섯 자리, 발밑 돌 다섯.
-	# 셋 미만이면 한 번 어긋남, 세 번이면 각도가 느려진다. 돌을 다 쓰면 다시 채워진다. ← →로 그만둔다.
-	_state.set_flag(&"item_stone_pouch")
-	skip.stones = 3
+	# 물수제비 미니게임(#148): 하늘이가 물어 온 조약돌이 있으면 선택 미니게임 — 강가 소절(네 음)을 던지는 거리로 따라 한다.
+	_state.set_flag(&"item_flat_stone")
+	skip.echo_gap = 0.15
 	var game_done := [false]
 	skip.finished.connect(func(): game_done[0] = true, CONNECT_ONE_SHOT)
 	skip.play()
-	await _wait(0.4)
-	_check(skip.running and _player.is_locked_by(&"minigame") and skip.has_key_hint(), "물수제비 미니게임: 주머니가 있으면 미니게임, 손 옆 키 안내")
-	_check(skip._ghosts.size() == 5 and skip._pile.size() == 3, "물수제비 미니게임: 물 위에 할아버지 물결 다섯 자리, 발밑에 남은 돌")
-	_check(skip.skips_for(20.0) == 5 and skip.skips_for(30.0) == 3 and skip.skips_for(60.0) == 0, "물수제비 미니게임: 20도에 가까울수록 많이 튄다")
+	_check(await _wait_until(func(): return skip.phase == &"play", 4.0) and skip.running and _player.is_locked_by(&"minigame"),
+			"물수제비 미니게임: 조약돌이 있으면 휘파람을 듣고 하윤 차례(#148)")
+	_check(skip.melody.size() == 4 and skip._ghosts.size() == 4 and skip._pile.size() == 4 and skip.has_key_hint(),
+			"물수제비 미니게임: 강가 소절 네 음, 물결 자리 넷, 발밑 돌 넷, 손 옆 키 안내")
+	var throw_keys := [&"move_left", &"interact", &"move_right"]
+	await _press(throw_keys[skip.melody[0]])
+	var landed := await _wait_until(func(): return skip.get_node_or_null("Stone") != null, 1.0)
+	await _wait_until(func(): return skip.get_node_or_null("Stone") == null, 3.0)
+	_check(landed and skip.played == 1 and skip._ghosts[0].default_color.is_equal_approx(skip.GOLD)
+			and absf(skip._ghosts[0].global_position.x - skip.landing(skip.melody[0]).x) < 2.0,
+			"물수제비 미니게임: 맞는 거리로 던지면 그 자리 물결이 금빛으로 남는다")
 	for k in 3:
-		skip.angle = 60.0
-		await skip._release()
-	_check(skip.misses >= 3 and skip.help, "물수제비 미니게임: 세 번 셋 미만이면 도움(각도가 느려진다)")
-	_check(skip.stones_left == 3 and skip._pile.size() == 3, "물수제비 미니게임: 돌을 다 쓰면 다시 채워진다")
-	_check(not _state.has_flag(&"skip_five"), "물수제비 미니게임: 다섯 번 전에는 skip_five가 없다")
-	await _press(&"move_right")
-	_check(await _wait_until(func(): return game_done[0], 3.0) and _player.controls_enabled, "물수제비 미니게임: ← →로 그만두면 다시 걷는다")
-	_state.set_flag(&"item_stone_pouch", false)
-	_state.flags.erase(&"item_stone_pouch")
+		await _wait_until(func(): return skip.phase == &"play" and not skip._throwing, 4.0)
+		await _press(throw_keys[(skip.melody[skip.played] + 1) % 3])
+		await _wait(0.2)
+	_check(skip.misses >= 3 and skip.help, "물수제비 미니게임: 틀린 거리로 세 번 던지면 도움이 켜진다")
+	_check(not _state.has_flag(&"skip_five"), "물수제비 미니게임: 다 맞히기 전에는 skip_five가 없다")
+	var auto_skip: Script = load("res://scripts/game/minigame.gd")
+	auto_skip.autoplay = true
+	var finished_game := await _wait_until(func(): return game_done[0], 20.0)
+	auto_skip.autoplay = false
+	_check(finished_game and skip.best >= 5 and _state.has_flag(&"skip_five") and _player.controls_enabled,
+			"물수제비 미니게임: 네 음을 다 맞히면 할아버지가 받아 불고 skip_five, 다시 걷는다")
+	_state.flags.erase(&"item_flat_stone")
 	skip.queue_free()
 	await _wait(0.2)
 
@@ -640,7 +649,7 @@ func _run() -> void:
 	await _check_map_closeup()
 	await _check_album()
 	await _check_reflection()
-	await _check_bank_light()
+	await _check_bridge_whistle()
 	await _check_phrase_game()
 	await _check_motes()
 	await _check_shadow()
@@ -1110,70 +1119,72 @@ func _check_reflection() -> void:
 			"물그림자: 물가를 벗어나면 반사가 사라지고 카메라가 돌아온다")
 	water.queue_free()
 	_player.global_position.x = water.global_position.x - 30.0
-## 6-2 강둑 비추기(BankLight, #116): 손전등이 없으면 시작하지 않고 냄새 부탁이 그대로다. 있으면 부탁 자리를 닫고,
-## 끊긴 끝을 지나면 손전등을 켠다. 물그림자를 오래 비추면 어긋남 → 세 번이면 빛이 넓어진다. 돌 다섯을 찾으면 길이 열린다.
-func _check_bank_light() -> void:
+## 철교 호루라기(BridgeWhistle, #147): 호루라기가 없으면 시작하지 않고 냄새 부탁이 그대로다. 있으면 부탁 자리를 닫고,
+## [E] 호루라기 불기 → 휘파람 다섯 음 → 맞으면 하늘이가 그 높이의 돌로 뛰고, 틀리면 끊긴 끝으로 돌아온다.
+## 다 맞으면 하늘이가 강둑에 올라 짖고 길이 열린다. 나루터 FerryCall은 호루라기 없이 오면 다섯째 동그라미만으로 할아버지를 부른다.
+func _check_bridge_whistle() -> void:
 	var place: Node2D = _main.current_place()
 	var px := _player.global_position.x
-	var spot: Area2D = _add_spot(1, 0.0, &"bank_test_path")
-	var game: Node2D = load("res://scripts/game/bank_light.gd").new()
-	game.trigger_flag = &"item_test_torch"
-	game.grants_flag = &"bank_test_path"
-	game.dwell = 0.3
-	game.start_prompt = "강둑 비추기"
+	var spot: Area2D = _add_spot(1, 0.0, &"bridge_test_path")
+	var game: Node2D = load("res://scripts/game/bridge_whistle.gd").new()
+	game.trigger_flag = &"item_test_whistle"
+	game.grants_flag = &"bridge_test_path"
+	game.start_prompt = "호루라기 불기"
+	game.echo_gap = 0.15
+	game.dog_start_x = px + 140.0
+	var cols := PackedFloat32Array()
+	for k in 5:
+		cols.append(px + 300.0 + k * 100.0)
+	game.columns = cols
+	game.bank_x = px + 900.0
 	place.add_child(game)
 	game.ask_spot = game.get_path_to(spot)
 	game.global_position = Vector2(px + 60.0, 810.0)
-	var st := PackedVector2Array()
-	for k in 5:
-		st.append(Vector2(px + 250.0 + k * 90.0, 960.0 + [0, 40, 66, 46, 10][k]))
-	game.stones = st
-	game.decoys = PackedVector2Array([Vector2(px + 960.0, 1021.0), Vector2(px + 1000.0, 1000.0)])
-	_player.global_position.x = px + 100.0
+	_player.global_position.x = px + 80.0
 	await _wait(0.4)
-	_check(not game.running and not spot.used, "강둑 비추기: 손전등 없이 오면 시작하지 않고 냄새 부탁이 그대로다")
-	_state.set_flag(&"item_test_torch")
+	_check(not game.running and not spot.used, "호루라기: 호루라기 없이 오면 시작하지 않고 냄새 부탁이 그대로다")
+	_state.set_flag(&"item_test_whistle")
 	await _wait(0.1)
-	_check(spot.used, "강둑 비추기: 손전등이 있으면 냄새 부탁 자리를 닫는다")
-	await _wait(0.3)
-	_check(not game.running, "강둑 비추기: 손전등이 있어도 저절로 시작하지 않는다(#119)")
+	_check(spot.used, "호루라기: 호루라기가 있으면 냄새 부탁 자리를 닫는다")
+	_check(not game.running, "호루라기: 저절로 시작하지 않는다(#119)")
 	await _press(&"interact")
-	_check(await _wait_until(func(): return game.running, 2.0), "강둑 비추기: [E] 강둑 비추기로 시작한다")
-	_check(_player.is_locked_by(&"minigame") and _player.pose == &"flashlight" and game.has_key_hint(),
-			"강둑 비추기: 하윤이 멈춰 손전등을 아래로 비추고, 손 옆에 [← →] 비추기")
-	var start_aim: float = game.aim
-	await _hold(&"move_left", 0.4)
-	_check(game.aim > start_aim + 5.0 and not game.has_key_hint(), "강둑 비추기: ←로 빛이 발밑 쪽으로 내려가고 키 안내가 사라진다")
-	for k in 3:
-		game._decoy_gone[0] = 0.0
-		game.aim = game.aim_for(game.decoys[0])
-		await _wait(game.dwell + 0.5)
-	_check(game.misses >= 3 and game.help and game.found == 0, "강둑 비추기: 물그림자를 오래 비추면 흩어지고(어긋남), 세 번이면 도움이 켜진다")
-	_check(not _state.has_flag(&"bank_test_path"), "강둑 비추기: 어긋나도 실패 화면 없이 계속한다")
-	var early := [-1]
-	game.not_yet.connect(func(i): early[0] = i, CONNECT_ONE_SHOT)
-	var misses_before: int = game.misses
-	# 팔이 빛을 따라 움직여 손(빛 나오는 자리)이 옮겨 가므로 몇 번 맞춘다
-	for k in 12:
-		game.aim = game.aim_for(game.stones[2])
-		await _wait(0.05)
-	await _wait(game.dwell)
-	_check(game.found == 0, "강둑 비추기: 차례가 아닌 돌은 비춰도 찾은 것으로 치지 않는다")
-	_check(early[0] == 2 and game.misses == misses_before, "강둑 비추기: 차례가 아닌 돌에 머물면 \"아직\"이라고 깜빡인다(어긋남은 아니다, #119)")
-	game.aim = game.aim_for(game.stones[0])
-	await _wait(game.dwell + 0.3)
-	_check(game.found == 1, "강둑 비추기: 다음 돌에 빛이 머물면 그 돌을 찾는다")
+	_check(await _wait_until(func(): return game.running, 2.0) and game.melody.size() == 5, "호루라기: [E] 호루라기 불기로 철교 소절(다섯 음)을 시작한다")
+	_check(await _wait_until(func(): return game.phase == &"play", 4.0), "호루라기: 휘파람을 듣고 나면 하윤 차례")
+	var keys := [&"move_left", &"interact", &"move_right"]
+	await _press(keys[game.melody[0]])
+	await _wait(0.6)
+	var on_stone: Vector2 = game.stone_position(0, game.melody[0])
+	_check(_dog.get("hopping") and _dog.global_position.distance_to(on_stone) < 30.0,
+			"호루라기: 맞는 높이를 불면 하늘이가 그 돌로 뛴다 (%s / %s)" % [_dog.global_position, on_stone])
+	await _press(keys[(game.melody[1] + 1) % 3])
+	await _wait(0.8)
+	_check(game.misses == 1 and absf(_dog.global_position.x - game.dog_start_x) < 10.0,
+			"호루라기: 틀리면 하늘이가 끊긴 끝으로 돌아온다(한 번 어긋남)")
 	var auto: Script = load("res://scripts/game/minigame.gd")
 	auto.autoplay = true
-	var lit := await _wait_until(func(): return _state.has_flag(&"bank_test_path"), 15.0)
+	var opened := await _wait_until(func(): return _state.has_flag(&"bridge_test_path"), 15.0)
 	auto.autoplay = false
-	_check(lit and game.found == 5, "강둑 비추기: 돌 다섯을 다 찾으면 길이 열린다(grants_flag)")
-	_check(await _wait_until(func(): return _player.controls_enabled, 4.0) and _player.pose == &"stand",
-			"강둑 비추기: 끝나면 손전등을 넣고 다시 선다")
+	_check(opened, "호루라기: 다섯 음을 다 맞히면 할아버지가 받아 불고 길이 열린다")
+	_check(absf(_dog.global_position.x - game.bank_x) < 10.0 and absf(_dog.global_position.y - 810.0) < 4.0 and not _dog.get("hopping"),
+			"호루라기: 하늘이가 강둑에 올라선다")
+	await _wait_until(func(): return _player.controls_enabled, 4.0)
+	_player.global_position.x = game.bank_x - 100.0
+	await _wait(0.3)
+	_check(_dog.state != 9, "호루라기: 하윤이 강둑에 오면 하늘이가 다시 따라온다")  # 9 = State.SCRIPTED
 	game.queue_free()
 	spot.queue_free()
 	_player.global_position.x = px
-
+	# 나루터 FerryCall: 호루라기가 없으면 다섯째 동그라미만으로 할아버지를 부른다
+	var call: Node2D = load("res://scripts/game/ferry_call.gd").new()
+	call.trigger_flag = &"item_test_no_whistle"
+	call.circle_flag = &"test_circle_5"
+	call.grants_flag = &"test_grandpa_called"
+	place.add_child(call)
+	await _wait(0.1)
+	_state.set_flag(&"test_circle_5")
+	await _wait(0.1)
+	_check(_state.has_flag(&"test_grandpa_called"), "나루터: 호루라기 없이 왔으면 다섯째 동그라미만으로 할아버지가 나타난다")
+	call.queue_free()
 
 ## 휘파람 따라 하기(#145): 선율은 한 곳(WhistleTune), 숲 피리가 그 위에서 돈다.
 func _check_phrase_game() -> void:

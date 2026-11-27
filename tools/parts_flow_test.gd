@@ -119,11 +119,6 @@ func _run() -> void:
 	_check(_state.has_flag(&"has_map"), "집: 서랍에서 지도를 얻는다")
 	var hint: Label = _main.get_node("Overlay/MapHint")
 	_check(hint.visible, "집: 지도를 얻으면 [M] 지도 안내가 뜬다")
-	var torch: Node2D = house.get_node("Keepsake_1-6_Flashlight")  # #116
-	await _walk_to(torch.global_position.x)
-	await _press(&"interact")
-	_check(await _wait_flag(&"item_flashlight", 3.0), "집: 마당에서 할아버지 손전등을 줍는다(item_flashlight)")
-	await _wait(1.5)
 	await _walk_to(gate.global_position.x + 200.0)
 	_check(_player.global_position.x > gate.global_position.x, "집: 지도를 얻으면 대문을 지나간다")
 
@@ -291,10 +286,10 @@ func _run() -> void:
 	for pid in ["riverside", "bridge"]:
 		var place: Node = await _go(pid)
 		for spot in place.get_children():
-			if not String(spot.name).begins_with("AskSpot_"):
-				continue
-			if pid == "bridge":  # 손전등이 있으면 냄새 부탁 자리는 닫힌다(#116). 없을 때는 gameplay_test가 본다
-				_check(spot.used, "철교: 손전등을 가져왔으면 냄새 부탁(AskSpot_6-3)은 닫힌다")
+			if not String(spot.name).begins_with("AskSpot_") or spot.optional:
+				continue  # 5-4 조약돌(선택)은 아래 강가 순서에서 본다
+			if pid == "bridge":  # 호루라기를 주우면 냄새 부탁 자리는 닫힌다(#147). 주운 뒤에 본다(아래)
+				_check(not spot.used, "철교: 호루라기를 줍기 전에는 냄새 부탁(AskSpot_6-3)이 열려 있다")
 				continue
 			var stones: Node2D = place.get_node_or_null("Gate_5-3")
 			if stones:
@@ -309,14 +304,16 @@ func _run() -> void:
 				await _wait(3.0)
 				_check(absf(_dog.global_position.x - _player.global_position.x) < 250.0, "%s: 건너간 뒤 하늘이가 따라온다" % pid)
 			await _wait(6.0)
-			if pid == "riverside":  # 5-4 돌 주머니(#115) → 동그라미 4 → 기억 장면 4 → 물수제비 미니게임(선택)
-				var pouch: Node2D = place.get_node("Keepsake_5-4_Pouch")
+			if pid == "riverside":  # 5-4 조약돌 부탁(#148, 선택) → 동그라미 4 → 기억 장면 4 → 물수제비 미니게임
+				var pebble: Node2D = place.get_node("AskSpot_5-4_Pebble")
 				var shallows: Node2D = place.get_node("Look_5-4_Shallows")
 				var memory: Node = place.get_node("Memory_5-4")
-				await _walk_to(pouch.global_position.x)
-				await _press(&"interact")
-				_check(await _wait_flag(&"item_stone_pouch", 3.0), "강가: 돌 주머니를 줍는다(item_stone_pouch)")
-				await _wait(2.0)
+				await _walk_to(pebble.global_position.x)
+				await _wait(3.0)
+				await _press(&"ask_dog")
+				_check(await _wait_flag(&"item_flat_stone", 20.0), "강가: 하늘이에게 가져와 → 물가에서 납작한 조약돌을 물어 온다(item_flat_stone)")
+				await _wait_until(func(): return _player.controls_enabled, 8.0)
+				await _wait(1.0)
 				await _walk_to(shallows.global_position.x)
 				await _press(&"interact")
 				await _wait(2.5)
@@ -327,28 +324,38 @@ func _run() -> void:
 				var skip: Node = place.get_node("Skip_5-4")
 				await _wait(0.3)
 				_check(skip.playing and skip.running and not _main.dialogue_box().visible,
-						"강가: 기억 장면 뒤 돌 주머니로 물수제비(미니게임)를 한다")
+						"강가: 기억 장면 뒤 조약돌로 물수제비(휘파람 따라 하기)를 한다")
+				skip.echo_gap = 0.25
 				var auto_skip: Script = load("res://scripts/game/minigame.gd")
 				auto_skip.autoplay = true
 				await skip.finished
 				auto_skip.autoplay = false
 				await _wait(0.8)
 				_check(skip.best >= 5 and _state.has_flag(&"skip_five") and not _main.dialogue_box().visible,
-						"강가: 다섯 번을 튀기면 skip_five, \"다섯 번은 어렵다\" 글은 안 나온다")
+						"강가: 강가 소절을 다 따라 하면 skip_five, \"다섯 번은 어렵다\" 글은 안 나온다")
 				_check(_player.controls_enabled, "강가: 물수제비가 끝나면 다시 걷는다")
 		if pid == "bridge":
 			var slope: Node2D = place.get_node("Look_6-3_Slope")
 			var edge: Node2D = place.get_node("Gate_6-2")
-			var lamp: Node = place.get_node("BankLight_6-3")
-			var auto_lamp: Script = load("res://scripts/game/minigame.gd")
-			auto_lamp.autoplay = true
+			var whistle_item: Node2D = place.get_node("Keepsake_6-2_Whistle")
+			var game: Node = place.get_node("BridgeWhistle_6-3")
+			await _walk_to(whistle_item.global_position.x)
+			await _press(&"interact")
+			_check(await _wait_flag(&"item_whistle", 3.0), "철교: 끊긴 끝 앞에서 호루라기를 줍는다(item_whistle)")
+			_check(place.get_node("AskSpot_6-3").used, "철교: 호루라기를 주우면 냄새 부탁(AskSpot_6-3)은 닫힌다")
+			await _wait_until(func(): return _player.controls_enabled, 4.0)
+			game.echo_gap = 0.25
+			var auto_whistle: Script = load("res://scripts/game/minigame.gd")
+			auto_whistle.autoplay = true
 			await _walk_to(edge.global_position.x + 200.0)
 			_check(_player.global_position.x < edge.global_position.x, "철교: 끊긴 끝(Gate_6-2)에서 막힌다")
 			await _press(&"interact")
-			_check(await _wait_until(func(): return lamp.running or lamp.done, 3.0), "철교: 끊긴 끝에서 [E] 강둑 비추기로 강둑 아래를 비춘다")
-			_check(await _wait_flag(&"bridge_bank_path", 20.0), "철교: 디딤돌 다섯을 찾으면 bridge_bank_path")
-			auto_lamp.autoplay = false
-			_check(await _wait_until(func(): return _player.controls_enabled, 6.0), "철교: 다 비추면 다시 걷는다")
+			_check(await _wait_until(func(): return game.running or game.done, 3.0), "철교: 끊긴 끝에서 [E] 호루라기 불기")
+			_check(await _wait_flag(&"bridge_bank_path", 25.0), "철교: 휘파람 다섯 음을 호루라기로 따라 하면 하늘이가 디딤돌을 건넌다(bridge_bank_path)")
+			auto_whistle.autoplay = false
+			_check(await _wait_until(func(): return _player.controls_enabled, 8.0), "철교: 다 건너면 다시 걷는다")
+			_check(absf(_dog.global_position.x - game.bank_x) < 10.0 and absf(_dog.global_position.y - 810.0) < 4.0 and not _dog.get("hopping"),
+					"철교: 하늘이가 강둑에 올라 기다린다 (%.0f, %.0f)" % [_dog.global_position.x, _dog.global_position.y])
 			await _walk_to(slope.global_position.x)
 			await _press(&"interact")
 			await _wait(2.0)
@@ -368,7 +375,19 @@ func _run() -> void:
 	await _wait(2.5)
 	await _press(&"open_map")  # 지도 접기
 	await _wait(1.0)
-	_check(_state.has_flag(&"map_circle_5") and grandpa.visible, "나루터: 다섯째 동그라미를 체크하면 할아버지가 나타난다")
+	_check(_state.has_flag(&"map_circle_5") and not grandpa.visible, "나루터: 다섯째 동그라미만으로는 아직 할아버지가 안 보인다(#147)")
+	var call: Node = ferry.get_node("FerryCall_7-3")
+	call.echo_gap = 0.25
+	await _walk_to(call.global_position.x)
+	var auto_call: Script = load("res://scripts/game/minigame.gd")
+	auto_call.autoplay = true
+	await _press(&"interact")
+	_check(await _wait_until(func(): return call.running or call.done, 3.0), "나루터: 강가에서 [E] 호루라기 불기")
+	_check(await _wait_flag(&"grandpa_called", 20.0), "나루터: 철교 소절을 불면 할아버지가 휘파람으로 대답한다(grandpa_called)")
+	auto_call.autoplay = false
+	await _wait(2.5)
+	_check(grandpa.visible and grandpa.modulate.a > 0.9, "나루터: 대답한 할아버지가 나룻배 옆에 나타난다")
+	await _wait_until(func(): return _player.controls_enabled, 6.0)
 	await _walk_to(end_gate.global_position.x + 150.0)
 	await _wait(0.5)
 	_check(ending.started and not _player.controls_enabled, "나루터: 할아버지에게 다가가면 엔딩이 시작되고 조작이 멈춘다")
