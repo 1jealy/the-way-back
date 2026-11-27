@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scripts/game/ending.gd" id="11_tlvh7"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="12_k8810"]
 [ext_resource type="Script" path="res://scripts/game/mist_reveal.gd" id="13_tlvh7"]
+[ext_resource type="Script" path="res://scripts/game/ferry_call.gd" id="ferry_call_script"]
 
 [node name="Ferry" unique_id=1705164281 instance=ExtResource("1_tpl")]
 place_id = &"ferry"
@@ -111,10 +112,12 @@ autoplay = true
 
 [node name="Grandpa_7-3" parent="." index="7" unique_id=1178004673 instance=ExtResource("10_34ljx")]
 position = Vector2(1380, 810)
+appears_on_flag = &"grandpa_called"
 
 [node name="Ending_7-3" type="Node2D" parent="." index="8" unique_id=903278131]
 position = Vector2(1380, 810)
 script = ExtResource("11_tlvh7")
+start_flag = &"grandpa_called"
 greeting = PackedStringArray("할아버지: 왔니.")
 cut1_lines = PackedStringArray("하윤: …다섯 군데 다 봤어.", "할아버지: 그래.")
 
@@ -125,3 +128,8 @@ opens_on_flag = &"map_circle_5"
 
 [node name="Mist_7-1" type="Node" parent="." index="10" unique_id=1834763598]
 script = ExtResource("13_tlvh7")
+
+[node name="FerryCall_7-3" type="Node2D" parent="." index="11" unique_id=1834763599]
+position = Vector2(930, 810)
+script = ExtResource("ferry_call_script")
+start_prompt = "호루라기 불기"

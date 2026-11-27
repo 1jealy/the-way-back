@@ -26,6 +26,8 @@ extends MiniGame
 @export var echo_gap: float = 0.75
 ## 메아리(할아버지 휘파람)가 들려오는 자리(x, 장소 좌표).
 @export var echo_x: float = 0.0
+## 메아리가 소리로 들리나. 거짓이면 하윤이 기억해서 먼저 분다(나루터 7-3: 할아버지는 대답만 한다, #147).
+@export var echo_audible: bool = true
 
 ## 소절의 높이(0 낮음 · 1 가운데 · 2 높음).
 var melody: PackedInt32Array = PackedInt32Array()
@@ -117,6 +119,8 @@ func _listen(retry: bool = false) -> void:
 
 
 func _echo(level: int) -> void:
+	if not echo_audible:
+		return
 	dog_react(0.5 + 0.25 * level)  # 메아리에 귀를 쫑긋(#120)
 	_echo_player.stream = _whistles[level]
 	_echo_player.volume_db = 0.0 if help else -6.0

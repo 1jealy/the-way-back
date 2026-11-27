@@ -202,6 +202,8 @@ func _start_task(spot: AskSpot) -> void:
 func _physics_process(delta: float) -> void:
 	if state == State.HIDDEN:
 		return
+	if hopping:
+		return  # 디딤돌 뛰기(#147): 자리는 hop_to의 트윈이 정한다(땅·중력 없이)
 	_track_player_still(delta)
 	# 하윤이 가만히 서 있으면 앉아서 올려다본다(#120). 쓰다듬는 동안에도.
 	if _rig and _rig.has_method("set_look_up"):
@@ -415,6 +417,41 @@ func script_move_to(x: float, speed: float = MEET_SPEED) -> void:
 	_refresh_visuals()
 
 
+## 디딤돌 뛰기(#147, 철교 강둑): 땅 밖(강 위 돌)으로 포물선을 그리며 뛴다. 뛰는 동안은 물리(중력·땅)를 쓰지 않는다.
+## 마지막에는 땅 위(y = Place.GROUND_Y)에 내려 land_hops()로 물리를 되돌린다. await로 기다릴 수 있다.
+var hopping: bool = false
+var _hop_tween: Tween
+
+
+func hop_to(target: Vector2, seconds: float = 0.45, height: float = 90.0) -> void:
+	if not is_joined():
+		return
+	state = State.SCRIPTED
+	_script_moving = false
+	hopping = true
+	velocity = Vector2.ZERO
+	if absf(target.x - global_position.x) > 1.0:
+		facing = 1 if target.x > global_position.x else -1
+	_refresh_visuals()
+	if _rig and _rig.has_method("set_pose"):
+		_rig.set_pose(&"stand")
+	var from := global_position
+	if _hop_tween and _hop_tween.is_valid():
+		_hop_tween.kill()
+	var t := create_tween()
+	_hop_tween = t
+	t.tween_method(func(u: float) -> void:
+		global_position = from.lerp(target, u) + Vector2(0.0, -sin(u * PI) * height), 0.0, 1.0, seconds) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	await t.finished
+
+
+## 디딤돌 뛰기를 끝낸다(땅 위에 내려선 뒤). 그 자리에 앉아 있고, release_script()로 다시 따라온다.
+func land_hops() -> void:
+	hopping = false
+	_refresh_visuals()
+
+
 ## 연출용: 멈춘 채로 그쪽을 본다(1 = 오른쪽, -1 = 왼쪽). 작은 순간(Moment)에서 돌아보기.
 func look(dir: int) -> void:
 	if dir == 0:
@@ -482,6 +519,7 @@ func wag(on: bool) -> void:
 
 
 func release_script() -> void:
+	hopping = false
 	if state == State.SCRIPTED:
 		state = State.FOLLOW
 		_script_moving = false

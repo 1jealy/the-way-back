@@ -161,12 +161,3 @@ script = ExtResource("opening_script")
 [node name="Portraits_1-2" type="Node2D" parent="." index="12" unique_id=1776216442]
 position = Vector2(1340, 810)
 script = ExtResource("portraits_script")
-
-[node name="Keepsake_1-6_Flashlight" type="Area2D" parent="." index="13" unique_id=1354109141]
-position = Vector2(4900, 810)
-script = ExtResource("keepsake_script")
-item = &"flashlight"
-art_offset = Vector2(0, -22)
-art_rotation = -8.0
-prompt = "손전등 줍기"
-lines = PackedStringArray()
