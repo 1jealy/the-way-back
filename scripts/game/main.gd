@@ -106,8 +106,7 @@ func _swap_place(path: String) -> void:
 
 	_player.global_position = _place.spawn_position()
 	_player.velocity = Vector2.ZERO
-	_camera.limit_left = 0
-	_camera.limit_right = int(_place.width)
+	_apply_camera_room()
 	_camera.limit_top = 0
 	_camera.limit_bottom = int(Place.SCREEN_H)
 	_camera.reset_smoothing()
@@ -127,6 +126,7 @@ func _swap_place(path: String) -> void:
 
 
 func _process(delta: float) -> void:
+	_apply_camera_room()
 	_update_look(delta)
 	_update_walk_hint()
 
@@ -134,6 +134,15 @@ func _process(delta: float) -> void:
 ## 걷는 쪽을 앞서 본다. 조작이 막혀 있으면(대사·연출) 천천히 가운데로 돌아온다.
 ## 연출이 카메라를 옆으로 잠깐 옮길 때 쓴다(미니게임 보상·돌 따라가기, #119). 앞서 보기 위에 더해진다.
 var look_bias: float = 0.0
+
+
+## 카메라를 하윤이 있는 구역(Place.camera_rooms) 안에 가둔다. 구역은 옮겨 가기로만 바뀐다(#151 다락).
+func _apply_camera_room() -> void:
+	if not _place:
+		return
+	var room: Vector2 = _place.room_at(_player.global_position.x)
+	_camera.limit_left = int(room.x)
+	_camera.limit_right = int(room.y)
 
 
 func _update_look(delta: float) -> void:
@@ -202,6 +211,7 @@ func move_player_to(x: float) -> void:
 	await _fade_to(1.0)
 	_player.global_position.x = x
 	_player.velocity = Vector2.ZERO
+	_apply_camera_room()
 	_camera.reset_smoothing()
 	_dog.place_behind(_player)
 	await _fade_to(0.0)

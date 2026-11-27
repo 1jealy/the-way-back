@@ -98,6 +98,17 @@ func _run() -> void:
 	var gate: Node2D = house.get_node("Gate_1-6")
 	await _walk_to(gate.global_position.x + 200.0)
 	_check(_player.global_position.x < gate.global_position.x, "집: 지도 없이는 대문(Gate_1-6)에서 막힌다")
+	# 1-4·1-5는 다락(#151): 거실 계단에서 올라간다. 다락은 따로 카메라 구역이라 아래층이 안 보인다.
+	var stairs: Node2D = house.get_node("Look_1-4_Stairs")
+	await _walk_to(stairs.global_position.x)
+	await _press(&"interact")
+	for i in 20:
+		await _wait(0.25)
+		if _player.global_position.x < house.camera_rooms[0] and _player.controls_enabled:
+			break
+	var cam: Camera2D = _player.get_node("Camera")
+	_check(_player.global_position.x < house.camera_rooms[0] and cam.limit_right == int(house.camera_rooms[0]),
+			"집: 계단으로 다락에 올라가면 카메라가 다락 안에 머문다")
 	var drawer: Node = house.get_node("Look_1-5_Drawer")
 	var rattled := [false]
 	drawer.locked.connect(func(): rattled[0] = true)
@@ -119,6 +130,15 @@ func _run() -> void:
 	_check(_state.has_flag(&"has_map"), "집: 서랍에서 지도를 얻는다")
 	var hint: Label = _main.get_node("Overlay/MapHint")
 	_check(hint.visible, "집: 지도를 얻으면 [M] 지도 안내가 뜬다")
+	var ladder: Node2D = house.get_node("Look_1-5_Ladder")
+	await _walk_to(ladder.global_position.x)
+	await _press(&"interact")
+	for i in 20:
+		await _wait(0.25)
+		if _player.global_position.x > house.camera_rooms[0] and _player.controls_enabled:
+			break
+	_check(_player.global_position.x > house.camera_rooms[0] and cam.limit_left == int(house.camera_rooms[0]),
+			"집: 사다리로 내려오면 아래층으로 돌아온다")
 	var torch: Node2D = house.get_node("Keepsake_1-6_Flashlight")  # #116
 	await _walk_to(torch.global_position.x)
 	await _press(&"interact")

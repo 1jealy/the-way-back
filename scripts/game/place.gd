@@ -23,6 +23,10 @@ const SCREEN_H := 1080.0
 @export var footstep_surface: StringName = &"dirt"
 ## x에서 바닥이 바뀌는 곳. {x: 바닥} — 그 x부터 오른쪽은 그 바닥(예: 집 마루 → 마당 흙).
 @export var footstep_changes: Dictionary = {}
+## 카메라 구역 경계(x). 비우면 장소 전체가 한 구역. 예: 집 [1920] → 다락(0~1920)과 아래층(1920~width).
+## 경계마다 벽(하윤·하늘이 모두)이 서고, 카메라는 하윤이 있는 구역 밖을 보여 주지 않는다.
+## 구역 사이는 옮겨 가기(Passage)로 다닌다(#151 다락).
+@export var camera_rooms: PackedFloat32Array = PackedFloat32Array()
 
 @onready var _spawn: Marker2D = $Spawn
 @onready var _exit: Area2D = $Exit
@@ -51,6 +55,16 @@ func surface_at(x: float) -> StringName:
 	return surface
 
 
+## x가 들어 있는 카메라 구역 [왼쪽, 오른쪽].
+func room_at(x: float) -> Vector2:
+	var left := 0.0
+	for edge in camera_rooms:
+		if x < edge:
+			return Vector2(left, edge)
+		left = edge
+	return Vector2(left, width)
+
+
 func spawn_position() -> Vector2:
 	return _spawn.global_position
 
@@ -67,6 +81,13 @@ func _layout_bounds() -> void:
 	_left_wall_shape.position = Vector2(-20.0, GROUND_Y - SCREEN_H)
 	_right_wall_shape.shape = wall.duplicate()
 	_right_wall_shape.position = Vector2(width + 20.0, GROUND_Y - SCREEN_H)
+
+	for edge in camera_rooms:
+		var room_wall := CollisionShape2D.new()
+		room_wall.name = "RoomWall_%d" % int(edge)
+		room_wall.shape = wall.duplicate()
+		room_wall.position = Vector2(edge, GROUND_Y - SCREEN_H)
+		$Bounds/LeftWall.add_child(room_wall)
 
 	var exit_rect := RectangleShape2D.new()
 	exit_rect.size = Vector2(80.0, 400.0)

@@ -8,14 +8,16 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_hills.png" id="5_mg76m"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_ground.png" id="5_mxv64"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_props.png" id="6_bdaxg"]
-[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_front.png" id="7_i8y7p"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_near.png" id="7_mw18l"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="8_sauk6"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_house.ogg" id="9_idm51"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_front_01.png" id="10_mw18l"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/pos_house_radio.ogg" id="10_mxv64"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_bdaxg"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/bg_house_front_02.png" id="11_buau8"]
 [ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
 [ext_resource type="Script" path="res://scripts/game/opening.gd" id="opening_script"]
+[ext_resource type="Script" path="res://scripts/game/passage.gd" id="passage_script"]
 [ext_resource type="Script" path="res://scripts/game/funeral_portraits.gd" id="portraits_script"]
 [ext_resource type="Script" path="res://scripts/game/shake_drop.gd" id="shake_script"]
 
@@ -23,12 +25,13 @@
 place_id = &"house"
 display_name = "산 아래 할아버지 집"
 next_place = "res://scenes/places/field.tscn"
-width = 5760.0
+width = 7680.0
 greybox = false
 footstep_surface = &"wood"
 footstep_changes = {
-4750.0: &"dirt"
+6670.0: &"dirt"
 }
+camera_rooms = PackedFloat32Array(1920)
 
 [node name="Art" type="Node2D" parent="Layers/Sky" index="0" unique_id=1872650011]
 
@@ -78,39 +81,47 @@ centered = false
 texture = ExtResource("6_bdaxg")
 centered = false
 
-[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=1803970321]
+[node name="Art" type="Node2D" parent="Layers/Front" index="0" unique_id=1599615338]
 
-[node name="bg_house_front" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=395706871]
-texture = ExtResource("7_i8y7p")
+[node name="bg_house_front_01" type="Sprite2D" parent="Layers/Front/Art" index="0" unique_id=642874805]
+texture = ExtResource("10_mw18l")
 centered = false
 
+[node name="bg_house_front_02" type="Sprite2D" parent="Layers/Front/Art" index="1" unique_id=795155537]
+position = Vector2(4568, 0)
+texture = ExtResource("11_buau8")
+centered = false
+
+[node name="Spawn" parent="." index="1"]
+position = Vector2(2160, 810)
+
 [node name="1-1" type="Marker2D" parent="Markers" index="0" unique_id=18709884]
-position = Vector2(570, 810)
+position = Vector2(2490, 810)
 
 [node name="1-2" type="Marker2D" parent="Markers" index="1" unique_id=911353669]
-position = Vector2(1340, 810)
+position = Vector2(3260, 810)
 
 [node name="1-3" type="Marker2D" parent="Markers" index="2" unique_id=1434321818]
-position = Vector2(2220, 810)
+position = Vector2(4140, 810)
 
 [node name="1-4" type="Marker2D" parent="Markers" index="3" unique_id=1012191522]
-position = Vector2(3320, 810)
+position = Vector2(1080, 810)
 
 [node name="1-5" type="Marker2D" parent="Markers" index="4" unique_id=404954012]
-position = Vector2(3500, 810)
+position = Vector2(700, 810)
 
 [node name="1-6" type="Marker2D" parent="Markers" index="5" unique_id=1839811503]
-position = Vector2(5190, 810)
+position = Vector2(7110, 810)
 
 [node name="Look_1-3_Album" type="Area2D" parent="." index="5" unique_id=821322420]
-position = Vector2(2220, 810)
+position = Vector2(4140, 810)
 script = ExtResource("8_sauk6")
 prompt = "앨범 넘기기"
 lines = PackedStringArray("하윤: …할아버지.")
 album_art = "album_open"
 
 [node name="Look_1-4_Frame" type="Area2D" parent="." index="6" unique_id=2028437250]
-position = Vector2(3430, 810)
+position = Vector2(1080, 810)
 script = ExtResource("8_sauk6")
 prompt = "액자 살펴보기"
 lines = PackedStringArray()
@@ -120,7 +131,7 @@ sound = "sfx_pickup_"
 pickup_art = "prop_key"
 
 [node name="Look_1-5_Drawer" type="Area2D" parent="." index="7" unique_id=1434765049]
-position = Vector2(3220, 810)
+position = Vector2(700, 810)
 script = ExtResource("8_sauk6")
 prompt = "서랍 열기"
 lines = PackedStringArray("하윤: …같이 가자며.")
@@ -138,19 +149,19 @@ stream = ExtResource("9_idm51")
 autoplay = true
 
 [node name="Radio_1-1" type="AudioStreamPlayer2D" parent="Sound" index="1" unique_id=1209338659]
-position = Vector2(790, 600)
+position = Vector2(2710, 600)
 stream = ExtResource("10_mxv64")
 volume_db = -4.0
 autoplay = true
 max_distance = 1400.0
 
 [node name="Gate_1-6" type="StaticBody2D" parent="." index="9" unique_id=1382589836]
-position = Vector2(5300, 810)
+position = Vector2(7220, 810)
 script = ExtResource("11_bdaxg")
 opens_on_flag = &"has_map"
 
 [node name="Shake_1-6_Apple" type="Area2D" parent="." index="10" unique_id=125121853]
-position = Vector2(5070, 810)
+position = Vector2(6990, 810)
 script = ExtResource("shake_script")
 prompt = "사과나무 흔들기"
 lines = PackedStringArray()
@@ -159,14 +170,30 @@ lines = PackedStringArray()
 script = ExtResource("opening_script")
 
 [node name="Portraits_1-2" type="Node2D" parent="." index="12" unique_id=1776216442]
-position = Vector2(1340, 810)
+position = Vector2(3260, 810)
 script = ExtResource("portraits_script")
 
 [node name="Keepsake_1-6_Flashlight" type="Area2D" parent="." index="13" unique_id=1354109141]
-position = Vector2(4900, 810)
+position = Vector2(6820, 810)
 script = ExtResource("keepsake_script")
 item = &"flashlight"
 art_offset = Vector2(0, -22)
 art_rotation = -8.0
 prompt = "손전등 줍기"
+lines = PackedStringArray()
+
+[node name="Look_1-4_Stairs" type="Area2D" parent="." index="14" unique_id=1510400151]
+position = Vector2(5240, 810)
+script = ExtResource("passage_script")
+to_x = 1560.0
+prompt = "다락으로 올라가기"
+lines = PackedStringArray()
+sound = "step_wood_"
+
+[node name="Look_1-5_Ladder" type="Area2D" parent="." index="15" unique_id=1510400152]
+position = Vector2(1700, 810)
+script = ExtResource("passage_script")
+to_x = 5320.0
+prompt = "아래층으로 내려가기"
+size = Vector2(240, 300)
 lines = PackedStringArray()

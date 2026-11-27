@@ -669,7 +669,7 @@ func _check_sound() -> void:
 	_check(absf(AudioServer.get_bus_volume_db(bus)) < 0.5, "소리: 장소에 들어온 뒤 환경음 버스가 다 켜져 있다 (%.1f dB)" % AudioServer.get_bus_volume_db(bus))
 
 	var house: Node = load("res://scenes/places/house.tscn").instantiate()
-	_check(house.surface_at(300.0) == &"wood" and house.surface_at(5200.0) == &"dirt", "소리: 집은 마루, 마당부터 흙")
+	_check(house.surface_at(300.0) == &"wood" and house.surface_at(3000.0) == &"wood" and house.surface_at(7100.0) == &"dirt", "소리: 집은 마루, 마당부터 흙")
 	house.free()
 
 	var steps: AudioStreamPlayer = _player.get_node("Steps")

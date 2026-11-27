@@ -9,7 +9,7 @@ var _failures: int = 0
 
 ## 장면표(docs/story.md)의 장소 순서, 화면 길이, 장면 번호.
 const PLACES := [
-	[&"house", 3, ["1-1", "1-2", "1-3", "1-4", "1-5", "1-6"]],
+	[&"house", 4, ["1-1", "1-2", "1-3", "1-4", "1-5", "1-6"]],
 	[&"field", 6, ["2-1", "2-2", "2-3", "2-4", "2-5", "2-6"]],
 	[&"station", 5, ["3-1", "3-2", "3-3", "3-4", "3-5", "3-6"]],
 	[&"forest", 5, ["4-1", "4-2", "4-3", "4-4"]],
@@ -83,6 +83,9 @@ func _check_places() -> void:
 			names.append(String(m.name))
 			inside = inside and m.position.x > 0.0 and m.position.x < place.width \
 					and is_equal_approx(m.position.y, Place.GROUND_Y)
+			# 다른 카메라 구역(집 다락, #151)은 옮겨 가기로 가는 곳이라 x 순서를 보지 않는다
+			if place.room_at(m.position.x) != place.room_at(place.get_node("Spawn").position.x):
+				continue
 			ordered = ordered and m.position.x > prev_x
 			prev_x = m.position.x
 		_check(names == want[2], "%s 장면 표시 %s" % [want[0], ", ".join(want[2])])
@@ -392,7 +395,7 @@ func _check_parts() -> void:
 			"부품: 집 1-3 앨범이 펼친 앨범 그림(세 쪽)을 넘긴다 '%s'" % album_art)
 	house_scene.free()
 	var shakes := _find_by_script("house", SHAKE)
-	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Apple" and shakes[0][1] < 5300.0,
+	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Apple" and shakes[0][1] < 7220.0,
 			"부품: 집 마당 1-6에 사과나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
 	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 묻히는 덤불이 임시 배경 FIELD_SNAGS 중 하나, 지도 그림이 있다 %s / %s" % [chases, snags])
 	var chain_ok := true
@@ -475,6 +478,19 @@ func _check_house_puzzle(main: Node, player: CharacterBody2D) -> void:
 		elif player.controls_enabled:
 			break
 	_check(state.has_flag(&"has_map"), "집: 서랍을 열면 지도를 얻는다(has_map)")
+	# 다락(#151): 아래층과 벽으로 나뉘고 카메라도 그 구역 안에 머문다
+	var cam: Camera2D = player.get_node("Camera")
+	await _wait(0.2)
+	_check(place.camera_rooms.size() == 1 and cam.limit_right == int(place.camera_rooms[0]) and cam.limit_left == 0,
+			"집: 다락에 있으면 카메라가 다락(0~%d) 안에 머문다" % int(place.camera_rooms[0]))
+	player.global_position.x = place.camera_rooms[0] - 60.0
+	await _press_hold(&"move_right", 1.0)
+	_check(player.global_position.x < place.camera_rooms[0], "집: 다락에서 오른쪽으로 걸어 아래층으로 넘어갈 수 없다")
+	var stairs: Node = place.get_node("Look_1-4_Stairs")
+	var ladder: Node = place.get_node("Look_1-5_Ladder")
+	_check(stairs.target_x() < place.camera_rooms[0] and stairs.global_position.x > place.camera_rooms[0]
+			and ladder.target_x() > place.camera_rooms[0] and ladder.global_position.x < place.camera_rooms[0],
+			"집: 계단은 다락으로, 사다리는 아래층으로 이어진다")
 	var cut_path: String = load("res://scripts/ui/cutscene_player.gd").find_art(String(drawer.get("cutscene_art")))
 	_check(cut_path.begins_with("res://assets/art/cut/") and not cut_path.contains("/placeholder/"),
 			"집: 1-5 서랍을 열면 일러스트 담당의 지도 컷신(cut_map)이 뜬다 %s" % cut_path)
@@ -493,3 +509,9 @@ func _check_audio(main: Node) -> void:
 	_check(lib.ok(), "소리가 규칙과 장소 씬에 맞다 (아니면 tools/audio_import.gd를 돌린다)")
 	var amb: AudioStreamPlayer = main.current_place().get_node_or_null("Sound/Ambience")
 	_check(amb != null and amb.playing, "장소에 들어오면 환경음이 돈다")
+
+
+func _press_hold(action: StringName, seconds: float) -> void:
+	Input.action_press(action)
+	await _wait(seconds)
+	Input.action_release(action)

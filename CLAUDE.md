@@ -61,7 +61,9 @@
 - 장소 소리는 장소 씬 `Sound/` 아래에 둔다(`Ambience` = 환경음, 그 밖 `AudioStreamPlayer2D` = 자리 소리). 버스는 씬에 적지 않는다 — `main`이 들어올 때 `Ambience` 버스로 보낸다(에디터에는 코드로 만든 버스가 없어 씬에 적으면 Master로 바뀐다).
 - `greybox = true`면 `place.gd`가 회색 네모 배경을 만든다. 그림이 들어오면 끈다.
 - `Horizon`·`Hills`·`Near`는 깊이를 더 줄 때만 쓰는 층이다(#140). 그림 이름 `bg_<place>_horizon|hills|near`.
-- **실루엣 화풍 배경**(#140): 일러스트 담당 없이 `tools/placeholder_art.py`가 그린다. 장소마다 `tools/painters/<place_id>.py`의 `paint()`(없으면 `PAINTERS`). 그린 뒤 `finish()`가 층마다 `painterly()` 마무리를 건다(`PAINT` 표: 깊이 흐림·붓결·세로 빛·가장자리 빛과 그늘). 픽셀 낟알 잡음은 PNG가 열 배 커져 쓰지 않는다. 반투명 도형은 따로 그려 합성한다(ImageDraw는 알파를 덮어써서 아래 층이 비쳤다). 한 가지 색 실루엣 층을 겹치고, 멀수록 지평선 빛(`FIELD_HAZE`)에 섞고(`_fog`), 해 쪽 위 가장자리에 밝은 테(`_rim_ridge`)를 둔다. 층 사이에 흐린 안개 띠.
+- **카메라 구역**(`Place.camera_rooms`, #151): 경계 x 목록. 경계마다 벽(하윤·하늘이 모두)이 서고, 카메라(`main._apply_camera_room`)는 하윤이 있는 구역 밖을 보여 주지 않는다. 구역 사이는 Passage로 다닌다. 집: `[1920]` — 다락(0~1920, 한 화면) / 아래층(1920~7680). 다른 구역의 장면 표시는 스모크 검사가 x 순서를 보지 않는다.
+- **컷신 화풍 배경**(#151, 지금은 집만): `tools/painters/ink.py`(`Ink`: 2배로 칠하고 갈색 윤곽선, `glaze` 반투명 덧칠(그릴 곳만 잘라 합성 — 통째로 하면 몇 분 걸린다), `planks_v/h` 판자, `LightMap` 빛 지도 → `light()`로 꿀빛/보랏빛 그늘, `rays` 빛줄기, `motes` 먼지, `bokeh` 빛망울, `soften` 앞 층 흐림). 벽·바닥(ground)과 물건(props)은 같은 빛 지도를 쓴다. 창은 `erase`로 구멍을 뚫어 뒤 층이 비친다. 앞 층에는 하윤을 가리는 세로 기둥을 두지 않는다.
+- **실루엣 화풍 배경**(#140, 집 밖 장소): 일러스트 담당 없이 `tools/placeholder_art.py`가 그린다. 장소마다 `tools/painters/<place_id>.py`의 `paint()`(없으면 `PAINTERS`). 그린 뒤 `finish()`가 층마다 `painterly()` 마무리를 건다(`PAINT` 표: 깊이 흐림·붓결·세로 빛·가장자리 빛과 그늘). 픽셀 낟알 잡음은 PNG가 열 배 커져 쓰지 않는다. 반투명 도형은 따로 그려 합성한다(ImageDraw는 알파를 덮어써서 아래 층이 비쳤다). 한 가지 색 실루엣 층을 겹치고, 멀수록 지평선 빛(`FIELD_HAZE`)에 섞고(`_fog`), 해 쪽 위 가장자리에 밝은 테(`_rim_ridge`)를 둔다. 층 사이에 흐린 안개 띠.
 - 패럴랙스 층의 내용 폭은 `1920 + (width - 1920) × scroll` 이상이어야 끝까지 덮인다.
 
 ## 물리 층
@@ -128,7 +130,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
   - 막는 벽의 플래그를 세우는 부품은 그 벽보다 왼쪽(또는 앞 장소)에 있어야 한다(스모크 검사가 본다).
   - 지금 놓인 것: 집 대문 `Gate_1-6`(`has_map`), 들판 `Gate_2-3`(`map_caught`, 날아간 지도), 대합실 문 `Gate_3-6`(`station_door_open`), 징검다리 `Gate_5-3`(`river_stone_held`), 끊긴 철교 `Gate_6-2`(늘 막음).
   - 숲 4-2 빛 갈림길 두 번: 첫째는 냄새 부탁 `AskSpot_4-2_1`, 둘째는 나무 피리(`Keepsake_4-2_Flute`) + 선율 따라 불기(`FluteEcho_4-2`, #113) + 덤불 벽 입구 셋 `Look_4-2_LightNM`(Passage, `[E] 왼쪽/가운데/오른쪽 입구로 들어가기` — 셋이 같은 말이면 어느 입구 앞인지 몰랐다(#109), 맞는 입구는 다음으로, 틀린 입구는 이끼 바위 앞으로) + 늘 막는 `Gate_4-2_N`(덤불 그림). 덤불 벽과 입구는 임시 배경 props 층에 그린다. 빛줄기 자리는 임시 배경(`tools/placeholder_art.py` `FOREST_FORKS`)과 같다.
-- **Passage**: `Area2D` + `scripts/game/passage.gd`(조사 대상을 이은 것). 조사하면 화면이 어두워졌다 밝아지며 하윤이 같은 장소의 `to_x`로 옮겨 간다(`main.move_player_to`). `fallback_until_flag`가 서기 전에는 `fallback_to_x`로 간다(숲 둘째 갈림길의 맞는 입구 `Look_4-2_Light23`: 피리로 따라 불기 전에는 이끼 바위 앞으로). 바닥 높이로 이어지지 않는 길에 쓴다. 지금은 철교 `Look_6-3_Slope`(손전등으로 디딤돌을 찾거나 냄새 부탁 뒤 강둑으로 내려가기).
+- **Passage**: `Area2D` + `scripts/game/passage.gd`(조사 대상을 이은 것). 조사하면 화면이 어두워졌다 밝아지며 하윤이 같은 장소의 `to_x`로 옮겨 간다(`main.move_player_to`). `fallback_until_flag`가 서기 전에는 `fallback_to_x`로 간다(숲 둘째 갈림길의 맞는 입구 `Look_4-2_Light23`: 피리로 따라 불기 전에는 이끼 바위 앞으로). 바닥 높이로 이어지지 않는 길에 쓴다. 지금은 집 계단 `Look_1-4_Stairs`(다락으로)·`Look_1-5_Ladder`(아래층으로, #151), 철교 `Look_6-3_Slope`(손전등으로 디딤돌을 찾거나 냄새 부탁 뒤 강둑으로 내려가기).
 
 ## 작은 순간 (Moment)
 
@@ -153,7 +155,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 기획서 "할아버지의 물건과 미니게임"이 목록이다. 물건 다섯(손전등·마름모 연·회중시계·나무 피리·돌 주머니), 미니게임 넷(들판 연·숲 피리·강가 물수제비(선택)·철교 손전등). 장소마다 형태가 다르다. **#144에서 물건은 할아버지가 하윤에게 만들어 준 아이 크기의 것(마름모 연·회중시계·나무 피리·조약돌·호루라기)으로, 미니게임은 "휘파람 따라 하기" 하나로 바꾸는 중이다**(아래).
 
-- **Keepsake**: `Area2D` + `scripts/game/keepsake.gd`(조사 대상을 이은 것). 이름 `Keepsake_<장면>_<물건>`. `item`(`Keepsake.ITEMS`의 열쇠)의 그림이 땅에 놓여 보이고(`art_offset`, `art_rotation`), E로 주우면 하윤이 무릎을 굽혀 숙여 손이 땅까지 닿게 집고(`player.play_pickup()`, `HayunRig.PICKUP_KEYS`, 잠깐 잠금 `pickup`, #114) 그림이 손에 들려 올라온 뒤 빛에 싸여 머리 위로 떠올랐다 사라진다. 플래그 `item_<item>`(`Keepsake.flag_for`). 지금 놓인 것: 집 `Keepsake_1-6_Flashlight`(마당 x 4900, 여기서는 안 쓴다), 들판 `Keepsake_2-3_Kite`, 숲 `Keepsake_4-2_Flute`(첫 갈림길 뒤 x 4600), 강가 `Keepsake_5-4_Pouch`(x 6050).
+- **Keepsake**: `Area2D` + `scripts/game/keepsake.gd`(조사 대상을 이은 것). 이름 `Keepsake_<장면>_<물건>`. `item`(`Keepsake.ITEMS`의 열쇠)의 그림이 땅에 놓여 보이고(`art_offset`, `art_rotation`), E로 주우면 하윤이 무릎을 굽혀 숙여 손이 땅까지 닿게 집고(`player.play_pickup()`, `HayunRig.PICKUP_KEYS`, 잠깐 잠금 `pickup`, #114) 그림이 손에 들려 올라온 뒤 빛에 싸여 머리 위로 떠올랐다 사라진다. 플래그 `item_<item>`(`Keepsake.flag_for`). 지금 놓인 것: 집 `Keepsake_1-6_Flashlight`(마당 x 6820, 여기서는 안 쓴다), 들판 `Keepsake_2-3_Kite`, 숲 `Keepsake_4-2_Flute`(첫 갈림길 뒤 x 4600), 강가 `Keepsake_5-4_Pouch`(x 6050).
 - **MiniGame**: `scripts/game/minigame.gd`. UI를 화면 안에 녹이는 공통 부품 — 하윤 잠금(이유 `minigame`), 손 옆 작은 키 안내(`show_key_hint(["E"], "꾹 누르면 감기")`, 처음 누르면 사라진다. 손이 몸 뒤로 가도 몸에 겹치지 않게 늘 하윤 앞쪽), 어긋남(`miss()`) → `help_after`(3)번이면 `help`(빛이 넓어지거나 하늘이가 먼저 움직인다, `_on_help`), 끝나면 `grants_flag`·`cleared`. 띠·게이지·숫자·실패 화면은 만들지 않는다. **하윤이 직접 시작한다**(#119): `start_prompt`(예: "연 띄우기")가 있으면 원점에 조사 대상(`Start`, `requires_flag` = 물건 플래그, `one_shot`)이 생기고 E로 시작한다 — 하위 부품은 `_ready`에서 `setup_start(trigger_flag)`를 부르고, `starts_on_prompt()`면 저절로 시작하지 않는다. 하늘이 힌트도 그 자리를 가리킨다. 카메라를 잠깐 옆으로 옮기려면 `pan_camera(bias, 초)`(`main.look_bias`, 앞서 보기 위에 더해진다). 하위 부품은 `_begin`·`_tick`·`_on_help`만 쓴다. 검사는 `MiniGame.autoplay = true`(하위 부품이 스스로 잘 해낸다).
 - **KiteFly**(들판 2-3): `Node2D` + `scripts/game/kite_fly.gd`, `KiteFly_2-3`(마름모 연과 같은 자리, x 5300). 마름모 연을 줍고 `[E] 연 띄우기`로 시작한다(#119, 줍기만 해서는 시작하지 않는다. 시작한 E 누름은 한 번 떼야 감기로 친다). E를 누르고 있으면 연이 오르고 떼면 내려온다. 하늘의 노을빛 띠(`zone_center` ± `zone_half`, 도움이면 두 배) 안이면 연이 환해진다. 돌풍(`calm` 1.4·`warn`·`gust` 초 — calm은 3초가 길어 #119에서 줄였다)을 `hold_ratio`(60%) 넘게 띠 안에서 버티면 꼬리 리본 하나가 붉게 물든다(셋). 연이 땅까지 오면 한 번 어긋남. 다 버티면 연이 높이 오르고 `grants_flag`(`kite_flown`) → 지도가 보이고, 카메라가 들풀 속 지도 쪽으로 옮겨 갔다(2.2초) 돌아온다(#119). 하윤 자세 `kite`(두 손으로 줄을 잡고 올려다본다). 매 프레임 `player.set_motion()`으로 감을 때 두 손을 번갈아 당기고 몸을 조금 뒤로, 돌풍에는 다리를 벌려 버티고 꽁지머리가 날리며, 고개는 연 높이를 따라간다(#114). 연줄은 하윤 뒤(z -1)에 그려 주먹이 줄을 덮고, 주먹 아래로 남은 줄(`StringTail`)이 조금 늘어진다 — 줄이 손가락 끝에 붙어 보이지 않게.
 - **휘파람 따라 하기**(#144, 기획서 "할아버지 휘파람 따라 하기"): 미니게임은 하나의 놀이로 바꾸는 중이다 — 장소마다 할아버지 휘파람 한 소절을 그 장소 물건으로 따라 한다(← 낮음 · E 가운데 · → 높음). 선율은 `scripts/game/whistle_tune.gd`(`WhistleTune.PHRASES`, 소절마다 높이 셋) **한 곳**에만 적는다 — `tools/placeholder_sound.py`가 `# TUNE BEGIN ~ END` 사이를 JSON으로 읽어 기억 장면 소절 `mus_phrase_1~4`(들판·숲·강가·철교)·배 위 `mus_theme_full`(숲+강가+철교)·집 라디오를 만든다(고치면 `python3 tools/placeholder_sound.py mus_ pos_house_radio`). 들판 소절은 숲 소절의 앞 세 음(음 높이)이다(검사가 본다). 공통 부품 **PhraseGame**(`scripts/game/phrase_game.gd`, `MiniGame`을 이음): `phrase_id`·`first_round_notes`(0이면 한 번에)·`echo_gap`·`echo_x`·`trigger_flag`. 메아리(`Echo`, `AudioStreamPlayer2D`, 할아버지 휘파람) → `phase` play → 맞으면 다음 음, 틀리면 헛바람 + `miss()` + 0.5초 뒤 그 소절 다시 → 다 맞으면 `answer`(할아버지가 그 소절을 받아 분다) → `_on_finish()`(하위 부품이 `clear()`). 도움: 메아리 1.5배 느리고 크게, 하늘이가 다음 음마다 짖는다(`dog.bark()`). 하위 부품은 `_setup`·`_update`·`_on_listen`·`_on_echo`·`_on_play`·`_on_note`·`_on_round`·`_on_finish`·`_make_tone`만 바꿔 끼운다. 소리는 코드로 만든다(`make_flute`·`make_whistle`, 진짜 소리는 #122). 들판 연(#146)·철교 호루라기와 나루터 대답(#147)·강가 조약돌(#148)을 이 부품으로 옮길 차례다.
@@ -171,7 +173,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 ## 흔들면 떨어지는 것 (ShakeDrop, 장면표 1-6 사과나무)
 
-`Area2D` + `scripts/game/shake_drop.gd`(조사 대상을 이은 것). 집 마당 `Shake_1-6_Apple`(사과나무 밑동 x 5070, 대문 안쪽).
+`Area2D` + `scripts/game/shake_drop.gd`(조사 대상을 이은 것). 집 마당 `Shake_1-6_Apple`(사과나무 밑동 x 6990, 대문 안쪽).
 
 - "[E] 사과나무 흔들기" → 잎이 몇 장 떨어지고(`sfx_tree_shake_`) 사과 하나(`prop_apple`)가 `drop_from`에서 떨어져 땅에 닿고(`sfx_fruit_drop_`, 신호 `dropped`) 조금 구른다.
 - 진행과 상관없다(선택). 조작을 막지 않는다. 한 번만(`one_shot`).
