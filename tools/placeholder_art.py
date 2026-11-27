@@ -115,7 +115,23 @@ class Layer:
         return tiles
 
     def _draw(self, img: Image.Image, shapes, x0: int) -> None:
-        d = ImageDraw.Draw(img, "RGBA")
+        """도형을 img에 그린다. 반투명 도형은 따로 그려 합성한다 — ImageDraw는 알파를 섞지 않고
+        덮어써서, 불투명한 바탕 위에 옅게 칠하면 그 자리가 비쳐 보였다(#140)."""
+        run: list = []
+        run_clear = False
+        for s in shapes:
+            clear = len(s[2]) == 4 and s[2][3] < 255
+            if run and clear != run_clear:
+                self._draw_run(img, run, x0, run_clear)
+                run = []
+            run.append(s)
+            run_clear = clear
+        if run:
+            self._draw_run(img, run, x0, run_clear)
+
+    def _draw_run(self, img: Image.Image, shapes, x0: int, clear: bool) -> None:
+        target = Image.new("RGBA", img.size, (0, 0, 0, 0)) if clear else img
+        d = ImageDraw.Draw(target, "RGBA")
 
         def tr(pts):
             return [((x - x0) * SS, y * SS) for x, y in pts]
@@ -137,6 +153,8 @@ class Layer:
                 if bx1 < x0 - 50 or bx0 > x0 + img.width / SS + 50:
                     continue
                 d.ellipse(((bx0 - x0) * SS, by0 * SS, (bx1 - x0) * SS, by1 * SS), fill=s[2])
+        if clear:
+            img.alpha_composite(target)
 
     def _soft(self, big: Image.Image, shapes, radius: float, x0: int) -> Image.Image:
         # 투명한 곳(검정)이 섞여 번지지 않게, 모양(알파)만 흐리고 색은 한 가지로 칠한다.
@@ -172,19 +190,20 @@ class Layer:
 #   2. 해 쪽(오른쪽 위) 가장자리 빛, 반대쪽 가장자리 그늘 — 모양마다 저절로.
 #   3. 붓결 질감: 가로로 긴 결(붓질)과 고운 낟알(종이). 모양 안에서만.
 #   4. 깊이 흐림: 먼 층과 맨 앞 층은 초점이 나간 듯.
+# 고운 낟알(픽셀 하나하나의 잡음)은 PNG 압축이 안 돼 그림이 열 배 가까이 커져서 0으로 둔다(#140).
 # 값은 층 이름(PAINT)으로 정한다. 같은 장소의 층은 같은 해 방향·빛 색을 쓴다(paint_light).
 
 PAINT = {
     #           흐림  결    낟알   위밝기 아래어둠 테두리 그늘
-    "sky":     (0.0, 0.020, 0.012, 0.00, 0.00, 0.0, 0.0),
-    "horizon": (2.2, 0.030, 0.010, 0.06, 0.10, 0.35, 0.10),
-    "far":     (1.4, 0.040, 0.012, 0.08, 0.14, 0.55, 0.16),
-    "hills":   (0.9, 0.050, 0.014, 0.10, 0.18, 0.75, 0.22),
-    "mid":     (0.5, 0.060, 0.016, 0.12, 0.22, 0.85, 0.26),
-    "near":    (0.0, 0.070, 0.018, 0.12, 0.26, 1.00, 0.30),
-    "ground":  (0.0, 0.060, 0.020, 0.06, 0.20, 0.50, 0.20),
-    "props":   (0.0, 0.050, 0.016, 0.08, 0.20, 0.90, 0.30),
-    "front":   (3.0, 0.040, 0.010, 0.00, 0.20, 0.30, 0.10),
+    "sky":     (0.0, 0.020, 0.0, 0.00, 0.00, 0.0, 0.0),
+    "horizon": (2.2, 0.030, 0.0, 0.06, 0.10, 0.35, 0.10),
+    "far":     (1.4, 0.040, 0.0, 0.08, 0.14, 0.55, 0.16),
+    "hills":   (0.9, 0.050, 0.0, 0.10, 0.18, 0.75, 0.22),
+    "mid":     (0.5, 0.060, 0.0, 0.12, 0.22, 0.85, 0.26),
+    "near":    (0.0, 0.070, 0.0, 0.12, 0.26, 1.00, 0.30),
+    "ground":  (0.0, 0.060, 0.0, 0.06, 0.20, 0.50, 0.20),
+    "props":   (0.0, 0.050, 0.0, 0.08, 0.20, 0.90, 0.30),
+    "front":   (3.0, 0.040, 0.0, 0.00, 0.20, 0.30, 0.10),
 }
 
 

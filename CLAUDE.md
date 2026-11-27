@@ -61,7 +61,7 @@
 - 장소 소리는 장소 씬 `Sound/` 아래에 둔다(`Ambience` = 환경음, 그 밖 `AudioStreamPlayer2D` = 자리 소리). 버스는 씬에 적지 않는다 — `main`이 들어올 때 `Ambience` 버스로 보낸다(에디터에는 코드로 만든 버스가 없어 씬에 적으면 Master로 바뀐다).
 - `greybox = true`면 `place.gd`가 회색 네모 배경을 만든다. 그림이 들어오면 끈다.
 - `Horizon`·`Hills`·`Near`는 깊이를 더 줄 때만 쓰는 층이다(#140). 그림 이름 `bg_<place>_horizon|hills|near`.
-- **실루엣 화풍 배경**(#140, 금빛 들판이 시범): 일러스트 담당 없이 `tools/placeholder_art.py`가 그린다. 한 가지 색 실루엣 층을 겹치고, 멀수록 지평선 빛(`FIELD_HAZE`)에 섞고(`_fog`), 해 쪽 위 가장자리에 밝은 테(`_rim_ridge`)를 둔다. 층 사이에 흐린 안개 띠.
+- **실루엣 화풍 배경**(#140): 일러스트 담당 없이 `tools/placeholder_art.py`가 그린다. 장소마다 `tools/painters/<place_id>.py`의 `paint()`(없으면 `PAINTERS`). 그린 뒤 `finish()`가 층마다 `painterly()` 마무리를 건다(`PAINT` 표: 깊이 흐림·붓결·세로 빛·가장자리 빛과 그늘). 픽셀 낟알 잡음은 PNG가 열 배 커져 쓰지 않는다. 반투명 도형은 따로 그려 합성한다(ImageDraw는 알파를 덮어써서 아래 층이 비쳤다). 한 가지 색 실루엣 층을 겹치고, 멀수록 지평선 빛(`FIELD_HAZE`)에 섞고(`_fog`), 해 쪽 위 가장자리에 밝은 테(`_rim_ridge`)를 둔다. 층 사이에 흐린 안개 띠.
 - 패럴랙스 층의 내용 폭은 `1920 + (width - 1920) × scroll` 이상이어야 끝까지 덮인다.
 
 ## 물리 층
