@@ -223,6 +223,16 @@ def _rim_ridge(L: Layer, pts: list[tuple[float, float]], body: Color, rim: Color
     L.poly(pts, body)
 
 
+def _slope_shade(L: Layer, pts: list[tuple[float, float]], color: Color, depth: float, blur: float) -> None:
+    """해(오른쪽)를 등진 비탈(오른쪽으로 올라가는 곳)에 그늘을 흐리게 깐다."""
+    quads = []
+    for (xa, ya), (xb, yb) in zip(pts[1:-2], pts[2:-1]):
+        if yb < ya - 0.5:
+            k = min(1.0, (ya - yb) / max(xb - xa, 1.0) * 4.0)
+            quads.append(("poly", [(xa, ya + 4), (xb, yb + 4), (xb, yb + depth * k), (xa, ya + depth * k)], color))
+    L.haze(quads, blur)
+
+
 def _ridge_y(pts: list[tuple[float, float]], x: float) -> float:
     for (xa, ya), (xb, yb) in zip(pts[1:-2], pts[2:-1]):
         if xa <= x <= xb:
@@ -314,6 +324,87 @@ def _grass_tuft(L: Layer, rng: random.Random, x: float, base: float, scale: floa
                            tx + lean * 0.04 * k + 4 * scale, ty + k * 7 * scale + 5 * scale), tip)
 
 
+
+def _farmhouse(L: Layer, x: float, y: float, s: float, wall: Color, roof: Color, rim: Color) -> None:
+    """농가: 흰 벽, 붉은 박공지붕, 굴뚝. 해 쪽 지붕 끝에 테."""
+    w, h = 70 * s, 40 * s
+    L.rect(x, y - h, x + w, y + 2, wall)
+    L.rect(x + w * 0.62, y - h - 30 * s, x + w * 0.74, y - h, roof)  # 굴뚝
+    L.poly([(x - 6 * s + 3, y - h), (x + w * 0.5 + 3, y - h - 34 * s - 3), (x + w + 6 * s + 3, y - h)], rim)
+    L.poly([(x - 6 * s, y - h), (x + w * 0.5, y - h - 34 * s), (x + w + 6 * s, y - h)], roof)
+    for k in range(2):  # 창
+        wx = x + w * (0.22 + k * 0.42)
+        L.rect(wx, y - h * 0.65, wx + 10 * s, y - h * 0.3, rgba(255, 226, 150, 220))
+
+
+def _barn(L: Layer, x: float, y: float, s: float, wall: Color, roof: Color, rim: Color) -> None:
+    """붉은 헛간: 꺾인 지붕, 큰 문에 X자 나무."""
+    w, h = 120 * s, 70 * s
+    L.rect(x, y - h, x + w, y + 2, wall)
+    top = [(x - 6 * s, y - h), (x + w * 0.16, y - h - 34 * s), (x + w * 0.5, y - h - 52 * s),
+           (x + w * 0.84, y - h - 34 * s), (x + w + 6 * s, y - h)]
+    L.poly([(px + 3, py - 3) for px, py in top], rim)
+    L.poly(top, roof)
+    dx0, dx1 = x + w * 0.32, x + w * 0.68
+    L.rect(dx0, y - h * 0.75, dx1, y + 2, roof)
+    L.line([(dx0, y - h * 0.75), (dx1, y)], wall, 3 * s)
+    L.line([(dx1, y - h * 0.75), (dx0, y)], wall, 3 * s)
+
+
+def _sheep(L: Layer, rng: random.Random, x: float, y: float, n: int, s: float, wool: Color, dark: Color) -> None:
+    """풀 뜯는 양 몇 마리: 둥근 몸, 검은 머리."""
+    for _ in range(n):
+        sx = x + rng.uniform(-60, 60) * s
+        sy = y + rng.uniform(-6, 8) * s
+        d = rng.choice((-1, 1))
+        L.ellipse((sx - 9 * s, sy - 12 * s, sx + 9 * s, sy), wool)
+        L.ellipse((sx + d * 8 * s - 3 * s, sy - 9 * s, sx + d * 8 * s + 3 * s, sy - 3 * s), dark)
+
+
+def _oak(L: Layer, rng: random.Random, x: float, y: float, r: float, body: Color, rim: Color, trunk: Color) -> None:
+    """큰 참나무: 굵은 줄기와 가지, 넓게 퍼진 잎 덩어리."""
+    L.poly([(x - r * 0.12, y), (x + r * 0.12, y), (x + r * 0.07, y - r * 1.2), (x - r * 0.07, y - r * 1.2)], trunk)
+    for a in (-0.7, 0.6):
+        L.line([(x, y - r * 1.0), (x + a * r * 0.8, y - r * 1.6)], trunk, r * 0.07)
+    balls = []
+    for _ in range(9):
+        balls.append((x + rng.uniform(-1.1, 1.1) * r, y - r * rng.uniform(1.5, 2.3), r * rng.uniform(0.45, 0.7)))
+    for bx, by, rr in balls:
+        d = rr * 0.1
+        L.ellipse((bx - rr + d, by - rr - d, bx + rr + d, by + rr - d), rim)
+    for bx, by, rr in balls:
+        L.ellipse((bx - rr, by - rr, bx + rr, by + rr), body)
+
+
+def _scarecrow(L: Layer, x: float, y: float, s: float, body: Color, hat: Color) -> None:
+    """허수아비: 막대 십자, 헐렁한 옷, 챙 넓은 모자."""
+    L.line([(x, y), (x, y - 110 * s)], body, 4 * s)
+    L.line([(x - 40 * s, y - 78 * s), (x + 40 * s, y - 74 * s)], body, 4 * s)
+    L.poly([(x - 18 * s, y - 84 * s), (x + 18 * s, y - 84 * s), (x + 22 * s, y - 40 * s), (x - 22 * s, y - 40 * s)], hat)
+    L.ellipse((x - 9 * s, y - 108 * s, x + 9 * s, y - 88 * s), body)
+    L.ellipse((x - 22 * s, y - 112 * s, x + 22 * s, y - 104 * s), hat)
+    L.poly([(x - 9 * s, y - 108 * s), (x, y - 126 * s), (x + 9 * s, y - 108 * s)], hat)
+
+
+def _hay_cart(L: Layer, x: float, y: float, s: float, wood: Color, hay: Color, lit: Color) -> None:
+    """건초를 실은 나무 수레: 큰 바퀴 둘, 앞으로 뻗은 끌채."""
+    L.ellipse((x - 70 * s, y - 70 * s, x + 50 * s, y - 20 * s), hay)
+    L.ellipse((x - 40 * s, y - 72 * s, x + 46 * s, y - 40 * s), lit)
+    L.rect(x - 74 * s, y - 32 * s, x + 54 * s, y - 22 * s, wood)
+    for wx in (x - 46 * s, x + 26 * s):
+        L.ellipse((wx - 20 * s, y - 40 * s, wx + 20 * s, y), wood)
+        L.ellipse((wx - 12 * s, y - 32 * s, wx + 12 * s, y - 8 * s), hay)
+    L.line([(x - 74 * s, y - 26 * s), (x - 130 * s, y - 12 * s)], wood, 4 * s)
+
+
+def _flock(L: Layer, rng: random.Random, x: float, y: float, n: int, color: Color) -> None:
+    """먼 새 떼: 작은 V 여럿."""
+    for _ in range(n):
+        bx, by = x + rng.uniform(-90, 90), y + rng.uniform(-30, 30)
+        sz = rng.uniform(5, 9)
+        L.line([(bx - sz, by - sz * 0.5), (bx, by), (bx + sz, by - sz * 0.6)], color, 1.6)
+
+
 def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     rng = random.Random("field")
     layers: dict[str, Layer] = {}
@@ -348,12 +439,22 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         L.blur_groups.append((body, 2.5))
         L.haze(lit, 4)
     L.ellipse((sun_x - 40, sun_y - 40, sun_x + 40, sun_y + 40), rgba(255, 250, 232))
+    deco = random.Random("field_deco")
+    wisps = []
+    for _ in range(14):  # 높은 새털구름
+        cx, cy = deco.uniform(0, w), deco.uniform(60, 220)
+        ln = deco.uniform(200, 520)
+        wisps.append(("line", [(cx, cy), (cx + ln * 0.5, cy - 6), (cx + ln, cy + 4)], rgba(255, 244, 232, 70), deco.uniform(6, 12)))
+    L.haze(wisps, 7)
+    for _ in range(4):
+        _flock(L, deco, deco.uniform(200, w - 200), deco.uniform(300, 480), deco.randint(4, 8), rgba(90, 80, 96, 170))
 
     # 지평선: 아주 먼 산맥. 거의 하늘색에 묻힌다.
     w = layer_width(width, "horizon")
     layers["horizon"] = L = Layer(w)
     pts = ridge(rng, w, 470, 170, waves=4)
     _rim_ridge(L, pts, _fog((104, 126, 184), 0.5), rgba(*FIELD_RIM, 200), 2)
+    _slope_shade(L, pts, rgba(80, 92, 150, 70), 260, 30)
     L.haze([("poly", [(-20, 560), (w + 20, 560), (w + 20, 640), (-20, 640)], rgba(*FIELD_HAZE, 150))], 30)
 
     # 먼 산 + 언덕 위 마을.
@@ -362,6 +463,7 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     body = _fog((104, 92, 132), 0.36)
     pts = ridge(rng, w, 575, 95, waves=3)
     _rim_ridge(L, pts, body, rgba(*FIELD_RIM, 210), 2.5)
+    _slope_shade(L, pts, rgba(70, 62, 110, 80), 200, 24)
     for vx in (rng.uniform(600, 1400), rng.uniform(2600, 3600)):
         if vx < w - 400:
             _village(L, rng, vx, _ridge_y(pts, vx) + 6, body, rgba(*FIELD_RIM, 210))
@@ -369,6 +471,15 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     while x < w:
         _poplar(L, x, _ridge_y(pts, x) + 8, rng.uniform(60, 90), body, rgba(*FIELD_RIM, 180))
         x += rng.uniform(150, 600)
+    darker = _fog((84, 78, 112), 0.4)
+    for _ in range(int(w / 700)):  # 산자락 숲: 작은 나무 덩어리가 모인 곳
+        fx = deco.uniform(0, w)
+        for _ in range(deco.randint(18, 34)):
+            tx = fx + deco.uniform(-160, 160)
+            ty = _ridge_y(pts, tx) + deco.uniform(10, 60)
+            r = deco.uniform(8, 14)
+            L.ellipse((tx - r, ty - r * 1.6, tx + r, ty + r * 0.3), darker)
+    _village(L, deco, w * 0.62, _ridge_y(pts, w * 0.62) + 6, body, rgba(*FIELD_RIM, 210))
     L.haze([("poly", [(-20, 620), (w + 20, 620), (w + 20, 690), (-20, 690)], rgba(*FIELD_HAZE, 120))], 24)
 
     # 구릉: 산울타리 나무 줄, 풍차.
@@ -378,6 +489,26 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     rim = rgba(*FIELD_RIM, 220)
     pts = ridge(rng, w, 640, 60, waves=3)
     _rim_ridge(L, pts, body, rim, 3)
+    tints = [_fog((156, 120, 58), 0.28), _fog((120, 112, 58), 0.28), _fog((142, 96, 58), 0.28), _fog((170, 138, 72), 0.28)]
+    x = -20.0
+    while x < w:  # 조각보 밭: 비스듬한 경계로 나뉜 밭, 갈아엎은 밭에는 고랑
+        fw = deco.uniform(220, 560)
+        sl = deco.uniform(-80, 80)
+        c = deco.choice(tints)
+        top_a, top_b = _ridge_y(pts, x) + 10, _ridge_y(pts, x + fw) + 10
+        L.poly([(x, top_a), (x + fw, top_b), (x + fw + sl, 740), (x + sl, 740)], c)
+        if c == tints[2]:
+            for k in range(1, 7):
+                t = k / 7
+                L.line([(x + fw * t, _ridge_y(pts, x + fw * t) + 12), (x + fw * t + sl, 740)], _fog((118, 80, 50), 0.28, 160), 1.5)
+        L.line([(x, top_a), (x + sl, 740)], _fog((92, 84, 52), 0.28, 200), 3)  # 밭 경계 산울타리
+        x += fw
+    for _ in range(3):  # 농가
+        fx = deco.uniform(300, w - 300)
+        _farmhouse(L, fx, _ridge_y(pts, fx) + 26, 0.7, _fog((236, 222, 196), 0.28), _fog((176, 70, 50), 0.28), rim)
+    for _ in range(4):  # 양 떼
+        sx = deco.uniform(200, w - 200)
+        _sheep(L, deco, sx, _ridge_y(pts, sx) + 40, deco.randint(4, 7), 0.8, _fog((244, 236, 220), 0.25), _fog((70, 60, 56), 0.28))
     x = 80.0
     while x < w:  # 밭 경계의 나무 줄
         run = rng.uniform(300, 700)
@@ -388,6 +519,7 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         x += run + rng.uniform(250, 700)
     mill_x = w * 0.55
     _windmill(L, mill_x, _ridge_y(pts, mill_x) + 6, 0.8, body, rim, 0.35)
+    _windmill(L, w * 0.18, _ridge_y(pts, w * 0.18) + 6, 0.6, body, rim, 1.1)
     L.haze([("poly", [(-20, 680), (w + 20, 680), (w + 20, 730), (-20, 730)], rgba(*FIELD_HAZE, 110))], 20)
 
     # 가운데 언덕: 나무 덩어리, 건초더미, 멀리까지 이어진 전봇대 줄(2-1).
@@ -412,6 +544,15 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
             _hay_bale(L, bx, _ridge_y(hill, bx) + 14, rng.uniform(13, 18), _fog((196, 150, 78), 0.18),
                       _fog((240, 200, 120), 0.1), _fog((120, 92, 56), 0.2, 120))
         x += rng.uniform(700, 1600)
+    mid_wall, mid_roof = _fog((214, 196, 166), 0.12), _fog((168, 62, 44), 0.12)
+    for bx in (w * 0.22, w * 0.7):
+        _barn(L, bx, _ridge_y(hill, bx) + 12, 0.9, mid_wall, mid_roof, rim)
+    for ox in (w * 0.08, w * 0.45, w * 0.86):
+        _oak(L, deco, ox, _ridge_y(hill, ox) + 10, 46, _fog((104, 86, 46), 0.1), rim, _fog((84, 62, 40), 0.1))
+    for sx in (w * 0.33, w * 0.6):
+        _scarecrow(L, sx, _ridge_y(hill, sx) + 18, 0.9, _fog((96, 72, 50), 0.12), _fog((176, 130, 64), 0.1))
+    cx = w * 0.52
+    _hay_cart(L, cx, _ridge_y(hill, cx) + 16, 0.9, _fog((100, 72, 48), 0.12), _fog((214, 168, 82), 0.1), _fog((244, 206, 128), 0.06))
     tops = []
     for x in range(160, w, 300):
         y = _ridge_y(hill, x) + 4
@@ -433,6 +574,18 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         h = rng.uniform(14, 40)
         lean = rng.uniform(-10, -3)
         L.line([(x, y0), (x + lean, y0 - h)], lerp_color(_fog((150, 108, 52), 0.05), rgba(250, 222, 150), rng.random() ** 1.5), rng.uniform(1.2, 2.2))
+    flower_cols = [rgba(214, 64, 48), rgba(232, 92, 60), rgba(246, 240, 226), rgba(156, 124, 196), rgba(250, 214, 96)]
+    x = 0.0
+    while x < w:  # 들꽃 무리: 한 색이 모여 핀다
+        c = deco.choice(flower_cols)
+        for _ in range(deco.randint(20, 50)):
+            fx = x + deco.gauss(0, 60)
+            fy = _ridge_y(band, fx) + deco.uniform(4, 44)
+            r = deco.uniform(1.8, 3.6)
+            L.ellipse((fx - r, fy - r, fx + r, fy + r), c)
+        x += deco.uniform(180, 520)
+    for tx in (w * 0.15, w * 0.48, w * 0.8):  # 밭가의 큰 나무
+        _oak(L, deco, tx, _ridge_y(band, tx) + 16, 70, rgba(112, 88, 44), rgba(*FIELD_RIM, 240), rgba(88, 62, 38))
     fence_dark, fence_lit = rgba(104, 78, 52), rgba(196, 150, 96)
     x = rng.uniform(200, 600)
     while x < w:  # 나무 울타리(끊어졌다 이어진다)
