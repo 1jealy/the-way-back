@@ -218,6 +218,19 @@ static func make_key_hint(keys: Array, text: String) -> Node2D:
 	return root
 
 
+## 하늘이가 귀를 쫑긋(#120). 꼬리 흔들기는 wag_seconds 동안.
+func dog_react(amount: float = 1.0, wag_seconds: float = 0.0) -> void:
+	var dog := get_tree().get_first_node_in_group("dog")
+	if dog == null or not dog.has_method("perk"):
+		return
+	dog.perk(amount)
+	if wag_seconds > 0.0 and dog.has_method("wag") and not dog.wagging:
+		dog.wag(true)
+		await _wait(wag_seconds)
+		if is_instance_valid(dog):
+			dog.wag(false)
+
+
 func _wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds, false).timeout
 
