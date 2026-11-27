@@ -1,8 +1,8 @@
 class_name GrassField
 extends Node2D
 ## 바람에 흔들리는 풀(#142). 장면표 2 "하윤이 지나가면 들풀이 갈라진다".
-## 풀잎을 한 장씩 MultiMesh로 그리고 shaders/grass.gdshader가 흔든다. 풀잎은 고르게 깔지 않고 포기(다발)로 모아
-## 부채꼴로 벌어지게 심고, 그 사이에 이삭 달린 줄기(stalk)를 섞는다. 끝은 해빛에 밝다(배경의 밝은 테와 같은 빛).
+## 억새: 잎을 한 장씩 MultiMesh로 그리고 shaders/grass.gdshader가 흔든다. 잎은 포기(다발)로 모아 부채꼴로 벌어지고
+## 끝이 활처럼 휘어 늘어진다(droop). 잎보다 높이 솟은 줄기 끝에 은빛 털 이삭(plume)이 바람 쪽으로 흩날린다.
 ## 하윤이 지나가면 가까운 풀이 하윤에게서 비켜 눕고, 지나간 뒤에는 출렁이며 돌아온다(구멍이 뚫리지 않게 휘기만).
 ## 뒤 겹(back_z, 하윤 뒤)과 앞 겹(front_z, 하윤 앞, 어둡고 성긴 실루엣) 두 겹이라 키 큰 풀숲에서는 하윤이 파묻힌다.
 ## 2-3 날아간 지도(MapChase)가 날아갈 때 풀이 크게 눕는다.
@@ -24,8 +24,13 @@ extends Node2D
 @export var blade_width: Vector2 = Vector2(4.0, 7.0)
 ## 한 포기의 풀잎 수.
 @export var clump: Vector2i = Vector2i(5, 11)
-## 풀잎 수에 대한 이삭 줄기 비율.
-@export var stalk_ratio: float = 0.12
+## 잎 수에 대한 이삭 비율.
+@export var stalk_ratio: float = 0.1
+## 잎이 휘어 늘어지는 정도(0 = 곧음).
+@export var droop: Vector2 = Vector2(0.15, 0.6)
+## 이삭 색(은빛 ~ 연한 금빛).
+@export var plume_colors: PackedColorArray = PackedColorArray([
+	Color(0.93, 0.87, 0.78), Color(0.88, 0.8, 0.68), Color(0.97, 0.92, 0.84), Color(0.84, 0.74, 0.6)])
 ## 양 끝에서 키를 줄이는 구간(px). 풀숲이 갑자기 끝나 보이지 않게.
 @export var taper: float = 300.0
 ## 풀잎 색(뿌리는 어둡고 끝은 밝게 칠한다). 하나씩 골라 조금씩 흔든다. 배경 가까운 밭(near)의 들풀 색과 같은 계열.
@@ -77,8 +82,8 @@ func _ready() -> void:
 	var n_back := total - n_front
 	back = _build("Back", _blade_mesh(), n_back, back_z, back_root, Color.WHITE, rng, false, 1.0)
 	front = _build("Front", _blade_mesh(), n_front, front_z, front_root, front_tint, rng, true, 1.0)
-	back_stalks = _build("BackStalks", _stalk_mesh(), int(n_back * stalk_ratio), back_z, back_root, Color.WHITE, rng, false, 1.15)
-	front_stalks = _build("FrontStalks", _stalk_mesh(), int(n_front * stalk_ratio), front_z, front_root, front_tint, rng, true, 1.15)
+	back_stalks = _build("BackStalks", _plume_mesh(), int(n_back * stalk_ratio), back_z, back_root, Color.WHITE, rng, false, 1.3)
+	front_stalks = _build("FrontStalks", _plume_mesh(), int(n_front * stalk_ratio), front_z, front_root, front_tint, rng, true, 1.3)
 	if cover_band != Vector2.ZERO:
 		_build_cover()
 	_connect_wind.call_deferred()
@@ -123,8 +128,13 @@ func _build(node_name: String, mesh: Mesh, count: int, z: int, root: Vector2, ti
 			if is_front and _cleared(global_position.x + x):
 				continue
 			var h := tallest * lerpf(1.0, 0.55, absf(u)) * rng.randf_range(0.85, 1.05)
-			var lean := u * h * rng.randf_range(0.25, 0.45)  # 부채꼴로 벌어진다(끝이 이만큼 옆으로)
-			blades.append([x, cy + rng.randf_range(-3.0, 3.0), h, rng.randf_range(blade_width.x, blade_width.y), lean])
+			var is_plume := node_name.ends_with("Stalks")
+			var lean := u * h * (rng.randf_range(0.05, 0.15) if is_plume else rng.randf_range(0.2, 0.4))  # 부채꼴로 벌어진다
+			var wd := rng.randf_range(blade_width.x, blade_width.y) * (1.6 if is_plume else 1.0)
+			var dr := 0.0 if is_plume else rng.randf_range(droop.x, droop.y)
+			# 늘어지는 쪽: 벌어진 쪽으로(0~0.49 왼쪽, 0.5~0.99 오른쪽)
+			var dr_code := dr * 0.49 + (0.5 if u > 0.0 else 0.0)
+			blades.append([x, cy + rng.randf_range(-3.0, 3.0), h, wd, lean, dr_code])
 	mm.instance_count = blades.size()
 	for i in blades.size():
 		var b: Array = blades[i]
@@ -133,13 +143,15 @@ func _build(node_name: String, mesh: Mesh, count: int, z: int, root: Vector2, ti
 		var h: float = b[2]
 		var wd: float = b[3]
 		var lean: float = b[4]
+		var dr_code: float = b[5]
 		# 풀잎 메시는 키 1(위가 -y), 폭 1. y축에 기울기(-lean)를 넣으면 끝이 lean만큼 옆으로 간다.
 		mm.set_instance_transform_2d(i, Transform2D(Vector2(wd, 0.0), Vector2(-lean, h), Vector2(x, y)))
-		var c: Color = colors[rng.randi() % colors.size()]
+		var palette := plume_colors if node_name.ends_with("Stalks") else colors
+		var c: Color = palette[rng.randi() % palette.size()]
 		c = c.lightened(rng.randf_range(-0.06, 0.08)) * tint
 		c.a = 1.0
 		mm.set_instance_color(i, c)
-		mm.set_instance_custom_data(i, Color(x, floorf(wd * 10.0) + rng.randf() * 0.999, h, y))
+		mm.set_instance_custom_data(i, Color(x, floorf(wd * 10.0) + rng.randf() * 0.999, floorf(h) + dr_code, y))
 	var inst := MultiMeshInstance2D.new()
 	inst.name = node_name
 	inst.multimesh = mm
@@ -189,16 +201,62 @@ func _cleared(gx: float) -> bool:
 ## 풀잎 한 장: 키 1, 폭 1. 뿌리(0,0)에서 위(-y)로 가늘어지며 살짝 휜다.
 ## 색: 뿌리는 어둡고 투명하게(땅에 녹게), 위로 갈수록 밝고, 끝은 해빛에 더 밝다.
 static func _blade_mesh() -> ArrayMesh:
-	return _strip_mesh(func(t: float) -> float: return 0.5 * (1.0 - t * 0.94), 7)
+	return _strip_mesh(func(t: float) -> float: return 0.5 * (1.0 - t * 0.97) * (1.0 - 0.3 * t), 9)
 
 
-## 이삭 줄기: 가는 줄기 끝에 길쭉한 이삭이 달린다.
-static func _stalk_mesh() -> ArrayMesh:
-	return _strip_mesh(func(t: float) -> float:
-		if t < 0.72:
-			return 0.16
-		var u := (t - 0.72) / 0.28
-		return 0.16 + 0.5 * sin(u * PI) * (1.0 - u * 0.4), 10)
+## 억새 이삭: 가는 줄기(키의 80%) 끝에서 털 가닥 일곱이 바람 쪽(왼쪽)으로 흩날린다. 폭 1은 이삭 너비.
+## 줄기는 어둡고, 털은 끝으로 갈수록 밝고 옅다.
+static func _plume_mesh() -> ArrayMesh:
+	var verts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	var idx := PackedInt32Array()
+	var stem_top := 0.8
+	# 줄기(가는 띠)
+	var seg := 6
+	for i in seg + 1:
+		var t := float(i) / seg * stem_top
+		for side in [-1.0, 1.0]:
+			verts.append(Vector2(side * 0.03, -t))
+			uvs.append(Vector2(0.5, 1.0 - t))
+			var sh := lerpf(0.45, 0.8, t / stem_top)
+			cols.append(Color(sh * 0.8, sh * 0.7, sh * 0.55, smoothstep(0.0, 0.25, t)))
+	for i in seg:
+		var a := i * 2
+		idx.append_array([a, a + 1, a + 2, a + 1, a + 3, a + 2])
+	# 털 가닥: 줄기 위쪽에서 나와 왼쪽(바람 쪽)으로 흩날린다. 길이·처짐·굵기가 가닥마다 다르다(고정 난수).
+	var r := RandomNumberGenerator.new()
+	r.seed = 7
+	for k in 13:
+		var f := float(k) / 12.0
+		var root_t := lerpf(stem_top + 0.17, stem_top - 0.1, f) + r.randf_range(-0.02, 0.02)
+		var ln := lerpf(0.1, 0.22, f) * r.randf_range(0.75, 1.2)
+		var sag := r.randf_range(0.0, 0.5) * f + 0.05
+		var curl := r.randf_range(-0.6, 0.6)
+		var base := verts.size()
+		var pts := 5
+		for j in pts + 1:
+			var s := float(j) / pts
+			# x는 폭 단위(이삭 폭 ≈ 10px)라 길게 곱한다
+			var px := -ln * s * 7.0 + curl * s * s
+			var py := -root_t + ln * s * sag + 0.03 * s * s
+			var half := r.randf_range(0.02, 0.035) * (1.0 - s * 0.9)
+			for side in [-1.0, 1.0]:
+				verts.append(Vector2(px, py + side * half))
+				uvs.append(Vector2(0.5, clampf(1.0 + py, 0.0, 1.0)))
+				cols.append(Color(1.0, 1.0, 1.0, lerpf(0.7, 0.12, s)))
+		for j in pts:
+			var a := base + j * 2
+			idx.append_array([a, a + 1, a + 2, a + 1, a + 3, a + 2])
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_COLOR] = cols
+	arrays[Mesh.ARRAY_INDEX] = idx
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 static func _strip_mesh(half_width: Callable, seg: int) -> ArrayMesh:

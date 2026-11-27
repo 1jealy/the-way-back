@@ -1,6 +1,7 @@
 shader_type canvas_item;
 // 풀잎 한 장(GrassField의 MultiMesh 인스턴스, #142). UV.y: 0 = 끝, 1 = 뿌리.
-// INSTANCE_CUSTOM: r = 뿌리 x(노드 기준), g = 폭(px)×10의 정수부 + 흔들림 위상(소수부), b = 키(px), a = 뿌리 y(노드 기준).
+// INSTANCE_CUSTOM: r = 뿌리 x(노드 기준), g = 폭(px)×10의 정수부 + 흔들림 위상(소수부),
+// b = 키(px) 정수부 + 늘어짐(소수부: 0~0.49 왼쪽, 0.5~0.99 오른쪽으로 활처럼 휜다), a = 뿌리 y(노드 기준).
 // VERTEX는 인스턴스 변환(폭·키로 늘이기) 전의 풀잎 좌표(키 1, 폭 1)라, 픽셀로 구한 휨을 폭·키로 나눠 더한다.
 // 끝이 옆으로 가는 만큼 내려와 풀잎이 늘어나지 않고 휘어 보인다.
 // 바람은 왼쪽으로 분다(그림의 풀도 왼쪽으로 눕는다). 하윤 가까이 있는 풀은 하윤에게서 비켜 눕고,
@@ -22,7 +23,11 @@ void vertex() {
 	float wx = origin.x + INSTANCE_CUSTOM.r;
 	float phase = fract(INSTANCE_CUSTOM.g) * 6.2832;
 	float w = max(floor(INSTANCE_CUSTOM.g) / 10.0, 0.5);
-	float h = max(INSTANCE_CUSTOM.b, 1.0);
+	float h = max(floor(INSTANCE_CUSTOM.b), 1.0);
+	float drc = fract(INSTANCE_CUSTOM.b);
+	float droop = (drc < 0.5 ? drc : drc - 0.5) / 0.49;
+	float droop_dir = drc < 0.5 ? -1.0 : 1.0;
+	float tt = 1.0 - UV.y;
 	float k = h / 120.0;
 	float sway = sin(TIME * 1.9 + phase + wx * 0.004) * 0.65 + sin(TIME * 0.8 + wx * 0.0017) * 0.35;
 	float wave = smoothstep(0.35, 1.0, sin((wx + TIME * wave_speed) * 6.2832 / wave_len));
@@ -42,6 +47,9 @@ void vertex() {
 	tip += wake * 14.0 * min(k, 1.8);
 	float dx = tip * bend;
 	float dy = (tip * tip) / (2.0 * h) * bend;  // 옆으로 간 만큼 끝이 내려온다(휘기)
+	// 잎이 활처럼 휘어 늘어진다: 끝이 옆으로 나가며 아래로 떨어진다
+	dx += droop_dir * droop * h * 0.42 * tt * tt;
+	dy += droop * h * 0.5 * tt * tt * tt;
 	VERTEX.x += dx / w;
 	VERTEX.y += dy / h;
 }
