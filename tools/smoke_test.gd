@@ -344,14 +344,21 @@ func _check_parts() -> void:
 	# 방패연은 풀숲 끝에 걸쳐 있어(장면표 "길가 들풀에 걸린 연") 뒤 겹보다 위, 하윤보다 뒤에 그린다.
 	var grasses := _find_by_script("field", "res://scripts/game/grass_field.gd")
 	var field_scene: Node = load("res://scenes/places/field.tscn").instantiate()
-	var tall: Node = field_scene.get_node_or_null("Grass_2-3_Tall")
+	var tall: Node = field_scene.get_node_or_null("Grass_2-1_Tall")
 	var verge: Node = field_scene.get_node_or_null("Grass_2-1_Verge")
 	var kite_item: Node = field_scene.get_node(String(keeps[0][0])) if keeps.size() == 1 else null
-	var grass_ok: bool = grasses.size() == 3 and tall != null and verge != null and kite_item != null \
+	var grass_ok: bool = grasses.size() == 4 and tall != null and verge != null and kite_item != null \
 			and verge.position.x <= 0.0 and verge.position.x + verge.length >= field_scene.width \
 			and tall.position.x <= 4300.0 and tall.position.x + tall.length >= chases[0][1][0] \
 			and tall.front_ratio > 0.0 and tall.front_z > 0 and tall.back_z < 0 \
 			and kite_item.art_z > tall.back_z and kite_item.art_z < 0 and kite_item.art_offset.y < -150.0
+	# 정류장(2-5 벤치·시간표) 앞은 키 큰 풀을 비운다 — 앉은 하윤과 시간표가 풀에 묻히지 않게.
+	var bench_x: float = field_scene.get_node("Sit_2-5").position.x
+	var table_x: float = field_scene.get_node("Look_2-5_Timetable").position.x
+	for g in field_scene.get_children():
+		if g.get_script() == tall.get_script() and g != verge and g.name != "Grass_2-3_Deep":
+			for x in [bench_x, table_x]:
+				grass_ok = grass_ok and not (x > g.position.x - 200.0 and x < g.position.x + g.length + 200.0)
 	# 하윤이 통째로 덮이는 깊은 풀숲: 묻힌 지도 덤불(줍는 자리)과 2-3 벽 사이 — 조사·줍기 자리를 덮지 않는다.
 	var deep: Node = field_scene.get_node_or_null("Grass_2-3_Deep")
 	var gate_x: float = field_scene.get_node("Gate_2-3").position.x
@@ -359,7 +366,7 @@ func _check_parts() -> void:
 			and deep.position.x + deep.length < gate_x and deep.front_z > tall.front_z \
 			and deep.height.x - deep.front_root.x > 330.0
 	field_scene.free()
-	_check(grass_ok, "부품: 들판 풀숲 — 길 뒤 낮은 풀은 전체, 키 큰 풀숲은 2-3 지도 구간, 방패연은 풀 끝에, 하윤을 덮는 깊은 풀숲은 지도와 벽 사이 %s" % [grasses])
+	_check(grass_ok, "부품: 들판 풀숲 — 길 뒤 낮은 풀과 키 큰 억새는 들판 전체(정류장 앞만 비움), 방패연은 풀 끝에, 하윤을 덮는 깊은 풀숲은 지도와 벽 사이 %s" % [grasses])
 	var opening := _find_by_script("house", "res://scripts/game/opening.gd")
 	var portraits := _find_by_script("house", "res://scripts/game/funeral_portraits.gd")
 	var find_art: Callable = load("res://scripts/ui/cutscene_player.gd").find_art

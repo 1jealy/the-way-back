@@ -663,7 +663,10 @@ func _check_sound() -> void:
 	get_root().get_tree().process_frame.connect(watch)
 	await _hold(&"move_left", 1.2)
 	await _hold(&"move_right", 1.2)
-	_check(String(heard["step"]).begins_with("step_dirt_"), "소리: 들판을 걸으면 흙길 발소리 (%s)" % heard["step"])
+	# 들판은 억새 속(grass), 정류장 앞만 흙길(dirt) — #142. 서 있는 자리의 바닥 소리가 나야 한다.
+	var want_surface: StringName = _main.current_place().surface_at(_player.global_position.x)
+	_check(String(heard["step"]).begins_with("step_%s_" % want_surface) and want_surface in [&"grass", &"dirt"],
+			"소리: 들판을 걸으면 그 자리 바닥 발소리 (%s, %s)" % [want_surface, heard["step"]])
 	_check(not heard["claw"], "소리: 들판에서는 하늘이 발톱 소리가 없다")
 	var real_place: StringName = _state.current_place
 	_state.current_place = &"station"

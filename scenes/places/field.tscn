@@ -30,8 +30,9 @@
 place_id = &"field"
 display_name = "금빛 들판"
 footstep_changes = {
-3900.0: &"grass",
-7250.0: &"dirt"
+250.0: &"grass",
+8850.0: &"dirt",
+9800.0: &"grass"
 }
 next_place = "res://scenes/places/station.tscn"
 width = 11520.0
@@ -219,11 +220,11 @@ blade_width = Vector2(3.5, 6)
 taper = 120.0
 seed_text = "verge"
 
-[node name="Grass_2-3_Tall" type="Node2D" parent="."]
-position = Vector2(3900, 810)
+[node name="Grass_2-1_Tall" type="Node2D" parent="."]
+position = Vector2(250, 810)
 script = ExtResource("grass_script")
-length = 3350.0
-density = 120.0
+length = 8600.0
+density = 105.0
 front_ratio = 0.55
 front_sparse = 1.0
 front_tint = Color(0.86, 0.78, 0.7, 1)
@@ -238,6 +239,27 @@ sway_px = 12.0
 push_radius = 110.0
 push_px = 46.0
 seed_text = "tall"
+cover_band = Vector2(-40, 120)
+
+[node name="Grass_2-6_Tall" type="Node2D" parent="."]
+position = Vector2(9800, 810)
+script = ExtResource("grass_script")
+length = 1500.0
+density = 105.0
+front_ratio = 0.55
+front_sparse = 1.0
+front_tint = Color(0.86, 0.78, 0.7, 1)
+back_z = -2
+front_z = 3
+back_root = Vector2(-14, 4)
+front_root = Vector2(50, 260)
+height = Vector2(150, 270)
+blade_width = Vector2(5, 9)
+taper = 450.0
+sway_px = 12.0
+push_radius = 110.0
+push_px = 46.0
+seed_text = "tall26"
 cover_band = Vector2(-40, 120)
 
 [node name="Grass_2-3_Deep" type="Node2D" parent="."]
