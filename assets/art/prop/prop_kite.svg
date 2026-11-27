@@ -1,43 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="320" height="520" viewBox="0 0 320 520">
-  <!-- 방패연 (게임 크기의 2배). 하윤 그림체: 평면 색 + 그늘 한 톤 + 얇은 따뜻한 윤곽선 -->
+  <!-- 할아버지 연(마름모 천 연, 게임 크기의 2배). 아래 끝에서 꼬리 리본 셋. 하윤 그림체: 평면 색 + 그늘 한 톤 + 얇은 따뜻한 윤곽선 -->
   <g stroke-linejoin="round" stroke-linecap="round">
     <!-- 꼬리 리본 셋 -->
-    <path d="M118 318 C96 360 140 382 116 424 C98 456 128 478 112 510" fill="none" stroke="#8B5E3C" stroke-width="13"/>
-    <path d="M118 318 C96 360 140 382 116 424 C98 456 128 478 112 510" fill="none" stroke="#D2554A" stroke-width="9"/>
-    <path d="M160 320 C146 362 180 384 160 426 C146 458 172 478 160 506" fill="none" stroke="#8B5E3C" stroke-width="13"/>
-    <path d="M160 320 C146 362 180 384 160 426 C146 458 172 478 160 506" fill="none" stroke="#D2554A" stroke-width="9"/>
-    <path d="M202 318 C224 360 180 382 204 424 C222 456 192 478 208 510" fill="none" stroke="#8B5E3C" stroke-width="13" stroke-opacity="0.55"/>
-    <path d="M202 318 C224 360 180 382 204 424 C222 456 192 478 208 510" fill="none" stroke="#F3E6CC" stroke-width="9"/>
-
-    <!-- 종이 -->
-    <path d="M44 22 H276 Q284 22 284 30 V306 Q284 314 276 314 H44 Q36 314 36 306 V30 Q36 22 44 22 Z" fill="#F6EBD3" stroke="#8B5E3C" stroke-width="3.5"/>
-    <!-- 오른쪽·아래 그늘 -->
-    <path d="M250 26 H276 Q280 26 280 30 V306 Q280 310 276 310 H52 Q60 296 72 296 H250 Z" fill="#EAD9B6"/>
-    <!-- 종이 결 -->
-    <g stroke="#E2CFA8" stroke-width="1.5" fill="none" opacity="0.8">
-      <path d="M60 90 C110 84 150 96 200 88"/>
-      <path d="M70 230 C120 224 170 236 240 228"/>
-      <path d="M56 270 C96 266 140 274 180 268"/>
-      <path d="M200 60 C220 58 240 62 262 58"/>
+    <path d="M152 316 C120 360 150 384 122 424 C102 456 130 478 112 510" fill="none" stroke="#8B5E3C" stroke-width="13"/>
+    <path d="M152 316 C120 360 150 384 122 424 C102 456 130 478 112 510" fill="none" stroke="#D2554A" stroke-width="9"/>
+    <path d="M160 318 C146 362 180 384 160 426 C146 458 172 478 160 506" fill="none" stroke="#8B5E3C" stroke-width="13"/>
+    <path d="M160 318 C146 362 180 384 160 426 C146 458 172 478 160 506" fill="none" stroke="#D2554A" stroke-width="9"/>
+    <path d="M168 316 C200 360 170 384 198 424 C218 456 190 478 208 510" fill="none" stroke="#8B5E3C" stroke-width="13" stroke-opacity="0.55"/>
+    <path d="M168 316 C200 360 170 384 198 424 C218 456 190 478 208 510" fill="none" stroke="#F3E6CC" stroke-width="9"/>
+    <!-- 천(네 쪽: 위 둘은 붉은 줄무늬, 아래 둘은 크림색). 위가 짧고 아래가 긴 마름모 -->
+    <path d="M160 12 L22 118 L160 320 L298 118 Z" fill="#F6EBD3" stroke="#8B5E3C" stroke-width="3.5"/>
+    <path d="M160 12 L22 118 L160 118 Z" fill="#D2554A"/>
+    <path d="M160 12 L298 118 L160 118 Z" fill="#E7C46A"/>
+    <path d="M160 12 L298 118 L262 118 L160 40 Z" fill="#CFA94F"/>
+    <path d="M160 118 L298 118 L160 320 Z" fill="#EAD9B6"/>
+    <!-- 천에 꿰맨 땀 -->
+    <g stroke="#8B5E3C" stroke-width="2" stroke-dasharray="7 7" fill="none" opacity="0.55">
+      <path d="M40 118 L280 118"/>
+      <path d="M160 30 L160 300"/>
     </g>
-    <!-- 대살(비치는 살): 머릿살·허릿살·장살·귀살 -->
-    <g stroke="#C29467" stroke-width="3" fill="none" opacity="0.75">
-      <path d="M40 30 H280"/>
-      <path d="M40 168 H280"/>
-      <path d="M160 26 V310"/>
-      <path d="M42 28 L278 308"/>
-      <path d="M278 28 L42 308"/>
+    <!-- 겉 테 다시 -->
+    <path d="M160 12 L22 118 L160 320 L298 118 Z" fill="none" stroke="#8B5E3C" stroke-width="3.5" stroke-linejoin="round"/>
+    <!-- 뼈대(비치는 살) -->
+    <g stroke="#8B6A44" stroke-width="3" fill="none" opacity="0.5">
+      <path d="M160 16 V316"/>
+      <path d="M26 118 H294"/>
     </g>
-    <!-- 꼭지(위 반달) -->
-    <path d="M104 26 A56 56 0 0 0 216 26 Z" fill="#D2554A" stroke="#8B5E3C" stroke-width="3"/>
-    <path d="M190 26 A56 56 0 0 1 160 80 A56 56 0 0 0 214 30 Z" fill="#B44238"/>
-    <!-- 방구멍 -->
-    <circle cx="160" cy="168" r="40" fill="#9FBAD8" stroke="#8B5E3C" stroke-width="3.5"/>
-    <path d="M178 134 A40 40 0 0 1 178 202 A46 46 0 0 0 178 134 Z" fill="#86A3C4"/>
-    <!-- 양 귀의 색 -->
-    <path d="M38 280 L80 314 H44 Q36 314 36 306 Z" fill="#3E6496" stroke="#8B5E3C" stroke-width="3"/>
-    <path d="M282 280 L240 314 H276 Q284 314 284 306 Z" fill="#3E6496" stroke="#8B5E3C" stroke-width="3"/>
+    <!-- 덧댄 천 조각(할아버지가 기운 자리) -->
+    <path d="M196 170 L232 164 L236 196 L200 202 Z" fill="#9FBAD8" stroke="#8B5E3C" stroke-width="2.5"/>
+    <path d="M200 172 L230 167 M202 199 L234 194" stroke="#8B5E3C" stroke-width="1.5" stroke-dasharray="4 4"/>
     <!-- 목줄 매듭 -->
-    <circle cx="160" cy="168" r="5" fill="#8B5E3C"/>
+    <circle cx="160" cy="118" r="6" fill="#8B5E3C"/>
   </g>
 </svg>

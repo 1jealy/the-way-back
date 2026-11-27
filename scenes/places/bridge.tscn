@@ -2,18 +2,21 @@
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_sky.png" id="2_rjk84"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_horizon.png" id="3_eoj7f"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_far.png" id="3_qxxtq"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_mid.png" id="4_qs1fr"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_ground.png" id="5_1xeqe"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_hills.png" id="5_fdpvc"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_props.png" id="6_lllq7"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_front_01.png" id="7_did7t"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_near.png" id="7_i3cf4"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/bridge/bg_bridge_front_02.png" id="8_kt3x1"]
 [ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="9_qxxtq"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_bridge.ogg" id="10_qs1fr"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="11_lllq7"]
 [ext_resource type="Script" path="res://scripts/game/passage.gd" id="12_did7t"]
-[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 [ext_resource type="Script" path="res://scripts/game/bank_light.gd" id="bank_light_script"]
+[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 
 [node name="Bridge" unique_id=943413289 instance=ExtResource("1_tpl")]
 place_id = &"bridge"
@@ -32,16 +35,34 @@ footstep_changes = {
 texture = ExtResource("2_rjk84")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Horizon" index="0" unique_id=560687431]
+
+[node name="bg_bridge_horizon" type="Sprite2D" parent="Layers/Horizon/Art" index="0" unique_id=1972835971]
+texture = ExtResource("3_eoj7f")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=1506540677]
 
 [node name="bg_bridge_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=1900759782]
 texture = ExtResource("3_qxxtq")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Hills" index="0" unique_id=1540878709]
+
+[node name="bg_bridge_hills" type="Sprite2D" parent="Layers/Hills/Art" index="0" unique_id=1903559955]
+texture = ExtResource("5_fdpvc")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=1304995561]
 
 [node name="bg_bridge_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=986619205]
 texture = ExtResource("4_qs1fr")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Near" index="0" unique_id=1534546848]
+
+[node name="bg_bridge_near" type="Sprite2D" parent="Layers/Near/Art" index="0" unique_id=1449956100]
+texture = ExtResource("7_i3cf4")
 centered = false
 
 [node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1476684113]
@@ -104,22 +125,24 @@ lines = PackedStringArray()
 requires_flag = &"bridge_bank_path"
 one_shot = true
 
-[node name="Moment_6-1_Creak" type="Node2D" parent="."]
+[node name="Moment_6-1_Creak" type="Node2D" parent="." index="9" unique_id=844154274]
 position = Vector2(2400, 810)
 script = ExtResource("moment_script")
 dog_to = 0.0
 dog_hold = 1.6
 
-[node name="Moment_6-3_LookBack" type="Node2D" parent="."]
+[node name="Moment_6-3_LookBack" type="Node2D" parent="." index="10" unique_id=1966149760]
 position = Vector2(6600, 810)
 script = ExtResource("moment_script")
 dog_to = 80.0
 dog_hold = 1.8
 dog_look = -1
 
-[node name="BankLight_6-3" type="Node2D" parent="."]
+[node name="BankLight_6-3" type="Node2D" parent="." index="11" unique_id=1640296791]
 position = Vector2(3520, 810)
 script = ExtResource("bank_light_script")
 ask_spot = NodePath("../AskSpot_6-3")
+stones = PackedVector2Array(3725, 965, 3830, 1008, 3935, 1036, 4040, 1014, 4145, 985)
+decoys = PackedVector2Array(3760, 1050, 3880, 1070)
 grants_flag = &"bridge_bank_path"
 start_prompt = "강둑 비추기"

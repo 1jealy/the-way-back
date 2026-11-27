@@ -3,20 +3,23 @@
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_sky.png" id="2_51hdf"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_far.png" id="3_0jycl"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_horizon.png" id="3_2ao41"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_mid.png" id="4_fnntt"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_ground.png" id="5_862vo"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_hills.png" id="5_aruyk"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_props.png" id="6_sws2n"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_front_01.png" id="7_5vltc"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_near.png" id="7_w1di5"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/riverside/bg_riverside_front_02.png" id="8_q62ua"]
 [ext_resource type="Script" path="res://scripts/dog/ask_spot.gd" id="9_fnntt"]
 [ext_resource type="Script" path="res://scripts/game/interactable.gd" id="10_862vo"]
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_riverside.ogg" id="11_862vo"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="12_sws2n"]
-[ext_resource type="Script" uid="uid://bluqmseo20c52" path="res://scripts/game/memory_scene.gd" id="mem_script"]
-[ext_resource type="Script" path="res://scripts/game/water_reflection.gd" id="reflection_script"]
-[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
-[ext_resource type="Script" path="res://scripts/game/stone_skip.gd" id="skip_script"]
 [ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
+[ext_resource type="Script" path="res://scripts/game/memory_scene.gd" id="mem_script"]
+[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
+[ext_resource type="Script" path="res://scripts/game/water_reflection.gd" id="reflection_script"]
+[ext_resource type="Script" path="res://scripts/game/stone_skip.gd" id="skip_script"]
 
 [node name="Riverside" unique_id=22785897 instance=ExtResource("1_tpl")]
 place_id = &"riverside"
@@ -32,16 +35,34 @@ footstep_surface = &"pebble"
 texture = ExtResource("2_51hdf")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Horizon" index="0" unique_id=848619168]
+
+[node name="bg_riverside_horizon" type="Sprite2D" parent="Layers/Horizon/Art" index="0" unique_id=788011565]
+texture = ExtResource("3_2ao41")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=1862808514]
 
 [node name="bg_riverside_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=411772376]
 texture = ExtResource("3_0jycl")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Hills" index="0" unique_id=1113839429]
+
+[node name="bg_riverside_hills" type="Sprite2D" parent="Layers/Hills/Art" index="0" unique_id=2063587260]
+texture = ExtResource("5_aruyk")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=638860926]
 
 [node name="bg_riverside_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=922641410]
 texture = ExtResource("4_fnntt")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Near" index="0" unique_id=1896047783]
+
+[node name="bg_riverside_near" type="Sprite2D" parent="Layers/Near/Art" index="0" unique_id=711602983]
+texture = ExtResource("7_w1di5")
 centered = false
 
 [node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1581178133]
@@ -108,7 +129,7 @@ position = Vector2(3510, 810)
 script = ExtResource("12_sws2n")
 opens_on_flag = &"river_stone_held"
 
-[node name="Memory_5-4" type="Node2D" parent="."]
+[node name="Memory_5-4" type="Node2D" parent="." index="9" unique_id=1070253834]
 position = Vector2(6790, 890)
 script = ExtResource("mem_script")
 circle = 4
@@ -116,34 +137,36 @@ art = "mem_skip"
 phrase = "mus_phrase_4"
 walk_while_playing = false
 
-[node name="Reflection_5-2" type="Node2D" parent="."]
+[node name="Reflection_5-2" type="Node2D" parent="." index="10" unique_id=853356113]
 position = Vector2(2040, 810)
 script = ExtResource("reflection_script")
 half_width = 380.0
 
-[node name="Moment_5-2_Paw" type="Node2D" parent="."]
+[node name="Moment_5-2_Paw" type="Node2D" parent="." index="11" unique_id=78880222]
 position = Vector2(1950, 810)
 script = ExtResource("moment_script")
 dog_to = 110.0
 dog_hold = 2.2
 
-[node name="Moment_5-4_Heron" type="Node2D" parent="."]
+[node name="Moment_5-4_Heron" type="Node2D" parent="." index="12" unique_id=1969741985]
 position = Vector2(5600, 810)
 script = ExtResource("moment_script")
 art = "prop_heron"
 art_from = Vector2(250, -200)
 art_to = Vector2(-650, -540)
 art_seconds = 4.0
-art_z = -8
 
-[node name="Skip_5-4" type="Node2D" parent="."]
+[node name="Skip_5-4" type="Node2D" parent="." index="13" unique_id=1475024974]
 position = Vector2(6390, 810)
 script = ExtResource("skip_script")
+hop_lengths = PackedFloat32Array(210, 150, 110, 80, 60)
+hop_heights = PackedFloat32Array(70, 46, 30, 20, 12)
 
-[node name="Keepsake_5-4_Pouch" type="Area2D" parent="."]
+[node name="Keepsake_5-4_Pouch" type="Area2D" parent="." index="14" unique_id=1050095152]
 position = Vector2(6050, 810)
 script = ExtResource("keepsake_script")
 item = &"stone_pouch"
-prompt = "주머니 꺼내기"
 art_offset = Vector2(0, -36)
 art_rotation = 6.0
+prompt = "주머니 꺼내기"
+lines = PackedStringArray()

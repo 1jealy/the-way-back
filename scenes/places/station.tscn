@@ -2,10 +2,13 @@
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_sky.png" id="2_t5rhc"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_horizon.png" id="3_7x34a"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_far.png" id="3_x6j8v"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_mid.png" id="4_4l6tm"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_hills.png" id="5_0vm0u"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_ground_01.png" id="5_dd10l"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_ground_02.png" id="6_dawgu"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_near.png" id="7_1m4d1"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_props_01.png" id="7_w0dms"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_props_02.png" id="8_xfxxh"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/station/bg_station_front_01.png" id="9_7a7fx"]
@@ -16,7 +19,7 @@
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/amb_station.ogg" id="14_dawgu"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="15_w0dms"]
 [ext_resource type="Script" path="res://scripts/game/bench_sit.gd" id="16_xfxxh"]
-[ext_resource type="Script" uid="uid://bluqmseo20c52" path="res://scripts/game/memory_scene.gd" id="mem_script"]
+[ext_resource type="Script" path="res://scripts/game/memory_scene.gd" id="mem_script"]
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 
 [node name="Station" unique_id=83172775 instance=ExtResource("1_tpl")]
@@ -36,16 +39,34 @@ footstep_changes = {
 texture = ExtResource("2_t5rhc")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Horizon" index="0" unique_id=390954210]
+
+[node name="bg_station_horizon" type="Sprite2D" parent="Layers/Horizon/Art" index="0" unique_id=391156005]
+texture = ExtResource("3_7x34a")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=630578905]
 
 [node name="bg_station_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=2006969794]
 texture = ExtResource("3_x6j8v")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Hills" index="0" unique_id=2032177943]
+
+[node name="bg_station_hills" type="Sprite2D" parent="Layers/Hills/Art" index="0" unique_id=1608318542]
+texture = ExtResource("5_0vm0u")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=96949525]
 
 [node name="bg_station_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=1103930574]
 texture = ExtResource("4_4l6tm")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Near" index="0" unique_id=1126656364]
+
+[node name="bg_station_near" type="Sprite2D" parent="Layers/Near/Art" index="0" unique_id=786665900]
+texture = ExtResource("7_1m4d1")
 centered = false
 
 [node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=784282282]
@@ -160,20 +181,20 @@ ambience_duck_db = -10.0
 lines = PackedStringArray()
 grants_flag = &"station_sat"
 
-[node name="Memory_3-1" type="Node2D" parent="."]
+[node name="Memory_3-1" type="Node2D" parent="." index="13" unique_id=786596953]
 position = Vector2(1176, 890)
 script = ExtResource("mem_script")
 circle = 2
 art = "mem_train"
 phrase = "mus_phrase_2"
 
-[node name="Moment_3-6_Sniff" type="Node2D" parent="."]
+[node name="Moment_3-6_Sniff" type="Node2D" parent="." index="14" unique_id=1123454824]
 position = Vector2(5300, 810)
 script = ExtResource("moment_script")
 dog_to = 120.0
 dog_hold = 2.0
 
-[node name="Moment_3-6_Lead" type="Node2D" parent="."]
+[node name="Moment_3-6_Lead" type="Node2D" parent="." index="15" unique_id=250508949]
 position = Vector2(7000, 810)
 script = ExtResource("moment_script")
 dog_to = 600.0

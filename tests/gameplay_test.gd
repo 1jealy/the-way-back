@@ -462,7 +462,7 @@ func _run() -> void:
 			var branch_start: Vector2 = map_data.side_road_points(road)[0]
 			branches_ok = branches_ok and branch_start.distance_to(map_data.segment_point(at[0], at[1])) < 0.5
 	_check(branches_ok, "지도: 갈라지는 오솔길이 길 위에서 시작한다")
-	_check(canvas.has_node("Side_읍내") and canvas.has_node("Side_산"), "지도: 가지 않는 길 이름(읍내, 산)")
+	_check(canvas.has_node("Side_마을") and canvas.has_node("Side_산"), "지도: 가지 않는 길 이름(마을, 산)")
 	await _press(&"open_map")
 	await _wait(0.5)
 	_check(not map.is_open() and _player.controls_enabled, "지도: M으로 접으면 다시 걷는다")
@@ -634,6 +634,8 @@ func _run() -> void:
 	await _check_tractor()
 	await _check_shake()
 	await _check_bench_early()
+	await _check_grass()
+	await _check_cutscene_look()
 	await _check_clearing()
 	await _check_map_closeup()
 	await _check_album()
@@ -681,7 +683,10 @@ func _check_sound() -> void:
 	get_root().get_tree().process_frame.connect(watch)
 	await _hold(&"move_left", 1.2)
 	await _hold(&"move_right", 1.2)
-	_check(String(heard["step"]).begins_with("step_dirt_"), "소리: 들판을 걸으면 흙길 발소리 (%s)" % heard["step"])
+	# 들판은 억새 속(grass), 정류장 앞만 흙길(dirt) — #142. 서 있는 자리의 바닥 소리가 나야 한다.
+	var want_surface: StringName = _main.current_place().surface_at(_player.global_position.x)
+	_check(String(heard["step"]).begins_with("step_%s_" % want_surface) and want_surface in [&"grass", &"dirt"],
+			"소리: 들판을 걸으면 그 자리 바닥 발소리 (%s, %s)" % [want_surface, heard["step"]])
 	_check(not heard["claw"], "소리: 들판에서는 하늘이 발톱 소리가 없다")
 	var real_place: StringName = _state.current_place
 	_state.current_place = &"station"
@@ -875,10 +880,10 @@ func _check_tractor() -> void:
 	_check(gone and not tractor.running, "경운기: 왼쪽으로 멀어져 사라지고, 다시 오지 않는다")
 
 
-## 흔들면 떨어지는 조사 대상(ShakeDrop, 1-6 감나무): E → 감이 떨어져 땅에 닿는다. 한 번만.
+## 흔들면 떨어지는 조사 대상(ShakeDrop, 1-6 사과나무): E → 사과가 떨어져 땅에 닿는다. 한 번만.
 func _check_shake() -> void:
 	var tree: Area2D = load("res://scripts/game/shake_drop.gd").new()
-	tree.prompt = "감나무 흔들기"
+	tree.prompt = "사과나무 흔들기"
 	_main.current_place().add_child(tree)
 	tree.global_position = Vector2(_player.global_position.x + 30.0, 810.0)
 	var landed := [false]
@@ -886,13 +891,46 @@ func _check_shake() -> void:
 	await _wait(0.3)
 	await _press(&"interact")
 	await _wait(0.3)
-	_check(tree.fallen != null and tree.fallen.position.y < -100.0, "감나무: E로 흔들면 감이 가지에 달려 있다가")
+	_check(tree.fallen != null and tree.fallen.position.y < -100.0, "사과나무: E로 흔들면 사과가 가지에 달려 있다가")
 	var down := await _wait_until(func(): return landed[0], 2.0)
 	await _wait(0.6)
-	_check(down and is_zero_approx(tree.fallen.position.y) and _player.controls_enabled, "감나무: 땅에 떨어진다(조작은 막지 않는다)")
-	_check(not tree.is_offered(), "감나무: 한 번만 흔든다")
+	_check(down and is_zero_approx(tree.fallen.position.y) and _player.controls_enabled, "사과나무: 땅에 떨어진다(조작은 막지 않는다)")
+	_check(not tree.is_offered(), "사과나무: 한 번만 흔든다")
 	tree.queue_free()
 	await _wait(0.2)
+
+
+## 풀숲(GrassField, #142): 풀잎이 두 겹으로 생기고, 앞 겹은 비우는 자리를 비우고, 하윤 자리를 셰이더에 넘기고,
+## 센 바람(blow)에 gust가 올랐다 내려온다.
+func _check_grass() -> void:
+	var grass: Node2D = load("res://scripts/game/grass_field.gd").new()
+	grass.length = 600.0
+	grass.density = 50.0
+	grass.front_ratio = 0.5
+	grass.taper = 0.0
+	var x0 := _player.global_position.x - 300.0
+	grass.position = Vector2(x0, 810.0)
+	grass.clear_spots = PackedFloat32Array([x0 + 300.0])
+	grass.clear_half = 100.0
+	_main.current_place().add_child(grass)
+	await _wait(0.2)
+	var nb: int = grass.back.multimesh.instance_count
+	var nf: int = grass.front.multimesh.instance_count
+	var cleared := true
+	for i in nf:
+		var gx: float = x0 + grass.front.multimesh.get_instance_transform_2d(i).origin.x
+		cleared = cleared and absf(gx - (x0 + 300.0)) >= 100.0
+	_check(nb == 150 and nf > 60 and nf <= 150 and cleared, "풀숲: 뒤·앞 두 겹, 앞 겹은 비우는 자리를 비운다 (%d, %d)" % [nb, nf])
+	_check(grass.back.z_index < 0 and grass.front.z_index > 0, "풀숲: 뒤 겹은 하윤 뒤, 앞 겹은 하윤 앞")
+	var pos: Vector2 = grass.back.material.get_shader_parameter("player_pos")
+	_check(pos.distance_to(_player.global_position) < 1.0, "풀숲: 하윤 자리를 셰이더에 넘긴다(헤치기)")
+	grass.blow()
+	await _wait(0.5)
+	var high: float = grass.gust
+	await _wait(2.6)
+	_check(high > 0.8 and grass.gust < 0.05, "풀숲: 센 바람에 크게 눕었다가 일어난다 (%.2f → %.2f)" % [high, grass.gust])
+	grass.queue_free()
+	await _wait(0.1)
 
 
 ## 4-3 빈터(ClearingLight): 바닥에 앉으면 빛이 쏟아지고, 하늘이가 한쪽을 보며 꼬리를 흔든다. 일어나면 돌아온다.
@@ -1020,6 +1058,27 @@ func _check_bench_early() -> void:
 			"벤치(자동): 처음에는 못 일어나고, 끝 무렵엔 방향키로 먼저 일어나며 플래그가 선다")
 	bench.queue_free()
 	_state.flags.erase(&"test_sat")
+
+
+## 조사하면 손그림 컷신(cutscene_art, #135 1-5 지도): 컷신이 뜨고 그동안 하윤이 멈추며, 컷신 위로 대사가 나오고 걷히면 다시 걷는다.
+func _check_cutscene_look() -> void:
+	var look: Area2D = _add_interactable(PackedStringArray(["하윤: …같이 가자며."]), &"test_cut_seen", 30.0)
+	look.cutscene_art = "cut_map"
+	look.cutscene_seconds = 0.4
+	await _wait(0.3)
+	await _press(&"interact")
+	await _wait(0.3)
+	var cut: Node = _main.get_tree().root.find_child("Cutscene", true, false)
+	_check(cut != null and _player.is_locked_by(&"cutscene") and not _state.has_flag(&"test_cut_seen"),
+			"컷신 조사: E로 조사하면 컷신이 뜨고 하윤이 멈춘다(플래그는 아직)")
+	var said := await _wait_until(func(): return _main.dialogue_box().is_open(), 4.0)
+	_check(said and _main.dialogue_box().current_text() == "…같이 가자며." and is_instance_valid(cut),
+			"컷신 조사: 카메라가 다가간 뒤 컷신 위로 대사가 나온다")
+	await _speak_through(_main.dialogue_box())
+	var back := await _wait_until(func(): return _player.controls_enabled, 3.0)
+	_check(back and not is_instance_valid(cut) and _state.has_flag(&"test_cut_seen"), "컷신 조사: 대사를 넘기면 컷신이 걷히고 그때 플래그가 서며 다시 걷는다")
+	look.queue_free()
+	_state.flags.erase(&"test_cut_seen")
 	await _wait(0.2)
 
 

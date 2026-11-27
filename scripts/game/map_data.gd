@@ -34,7 +34,7 @@ const PLACES := [
 ## from_route: [구간, t] — 길 위 그 자리에서 갈라져 나온다(첫 점 앞에 붙는다).
 const SIDE_ROADS := [
 	{"kind": "road", "points": [Vector2(265.0, 245.0), Vector2(215.0, 185.0), Vector2(170.0, 145.0), Vector2(135.0, 120.0)],
-		"label": "읍내", "label_pos": Vector2(140.0, 82.0)},
+		"label": "마을", "label_pos": Vector2(140.0, 82.0)},
 	{"kind": "trail", "from_route": [0, 0.55], "points": [Vector2(430.0, 420.0), Vector2(500.0, 360.0), Vector2(540.0, 320.0)],
 		"label": "산", "label_pos": Vector2(550.0, 270.0)},
 ]

@@ -375,7 +375,7 @@ func _place_kite(delta: float) -> void:
 	# 꼬리 리본: 연 아래에서 바람 반대쪽(왼쪽)으로 물결친다. 버틴 만큼 붉게 물든다.
 	for i in _ribbons.size():
 		var r := _ribbons[i]
-		var base := Vector2(-34.0 + 34.0 * i, 70.0)
+		var base := Vector2(-6.0 + 6.0 * i, 76.0)  # 마름모 연의 아래 끝(#136)
 		var pts := PackedVector2Array()
 		for k in 9:
 			var u := k / 8.0
