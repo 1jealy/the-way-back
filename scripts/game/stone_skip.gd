@@ -334,6 +334,8 @@ func _throw_from(hand: Vector2, n: int, fill: bool) -> void:
 	await _fly(hand, at, 18.0, 0.42)
 	for i in n:
 		touches += 1
+		if fill:
+			dog_react(0.4 + 0.15 * i)  # 튈 때마다 쫑긋(#120)
 		# 미니게임에서는 튈수록 물보라가 커지고 소리가 높아진다(#119)
 		_ripple(at, (0.7 + 0.18 * i) if fill else (1.0 - 0.15 * i))
 		if fill and i >= 2:

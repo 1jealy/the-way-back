@@ -94,6 +94,11 @@ var _bark_t: float = -1.0
 ## 신나서 꼬리를 크게·빨리 흔드는 정도(0~1). Dog.wag()가 정한다(4-3 빈터).
 var excited: float = 0.0
 var _excited_target: float = 0.0
+## 귀를 쫑긋 세우고 고개를 드는 정도(1 → 0, perk()로 튀긴다. #120 미니게임 반응).
+var _perk: float = 0.0
+## 하윤을 올려다보는 정도(0~1, set_look_up()으로 천천히).
+var look_up: float = 0.0
+var _look_up_target: float = 0.0
 
 
 func _ready() -> void:
@@ -122,6 +127,16 @@ func set_excited(on: bool) -> void:
 
 func bark() -> void:
 	_bark_t = 0.0
+
+
+## 소리·움직임에 반응해 귀를 쫑긋 세우고 고개를 살짝 든다(#120). amount 0~1.
+func perk(amount: float = 1.0) -> void:
+	_perk = maxf(_perk, amount)
+
+
+## 하윤을 올려다본다 / 그친다(#120, 멈춰 서 있을 때·쓰다듬을 때). 천천히 바뀐다.
+func set_look_up(on: bool) -> void:
+	_look_up_target = 1.0 if on else 0.0
 
 
 func walk_amount() -> float:
@@ -166,6 +181,8 @@ func _process(delta: float) -> void:
 		return
 	_time += delta
 	excited = move_toward(excited, _excited_target, delta * 1.5)
+	_perk = move_toward(_perk, 0.0, delta * 1.4)
+	look_up = move_toward(look_up, _look_up_target, delta * 2.5)
 	var dog := get_parent().get_parent() as CharacterBody2D
 	var speed := absf(dog.velocity.x) if dog else 0.0
 	var walking := speed > 10.0
@@ -242,6 +259,11 @@ func _angles() -> Dictionary:
 		out[j] = float(out.get(j, 0.0)) + float(_pose_cur[j])
 	if pose == &"sniff" or pose == &"sniff_walk":
 		out["head"] = float(out["head"]) + sin(_time * 22.0) * 2.5  # 킁킁
+	# 쫑긋(perk): 귀를 세우고 고개를 든다. 올려다보기: 목과 고개를 위로(하윤 쪽).
+	var ease_perk := _perk * _perk * (3.0 - 2.0 * _perk)
+	out["ear"] = float(out["ear"]) - 18.0 * ease_perk
+	out["head"] = float(out["head"]) - 9.0 * ease_perk - 14.0 * look_up
+	out["neck"] = float(out["neck"]) - 10.0 * look_up
 	if _bark_t >= 0.0:
 		out["head"] = float(out["head"]) + BARK_HEAD * sin(clampf(_bark_t / BARK_SECONDS, 0.0, 1.0) * PI)
 	return out

@@ -240,12 +240,38 @@ func _run() -> void:
 	var far := _add_spot(_actions["FETCH"], 200.0, &"test_far")
 	far.position.x += 1500.0
 	await _wait(0.2)
-	await _press_ask()
-	_check(not _dog.is_busy(), "부탁 자리 밖에서 F는 아무 일도 하지 않는다")
 	_check(not _dog.get_node("PawMark").is_shown(), "부탁 자리 밖에서는 발바닥 표시가 없다")
+	await _press_ask()
+	_check(not _dog.is_busy() and _dog.petting, "부탁 자리 밖에서 F는 부탁이 아니라 쓰다듬기(#120)")
 	_check(not _state.has_flag(&"test_far"), "멀리 있는 부탁 자리는 쓰이지 않는다")
+	var petted := await _wait_until(func(): return _player.pose == &"crouch" and _dog.wagging, 3.0)
+	var in_front: bool = signf(_dog.global_position.x - _player.global_position.x) == float(_player.facing)
+	_check(petted and in_front and _dog.facing == -_player.facing and _player.controls_enabled,
+			"쓰다듬기: 하늘이가 하윤 앞으로 와 마주 보고 꼬리를 흔들고, 하윤이 쪼그려 앉는다(조작은 안 막는다)")
+	_check(await _wait_until(func(): return _dog.get_node("Visual/Rig").look_up > 0.5, 1.5) if _dog.has_node("Visual/Rig") else true,
+			"쓰다듬기: 하늘이가 하윤을 올려다본다")
+	await _hold(&"move_left", 0.3)
+	_check(await _wait_until(func(): return not _dog.petting and not _dog.wagging, 1.0) and _player.pose == &"stand",
+			"쓰다듬기: 걷기 시작하면 곧바로 끝나고 다시 선다")
 	far.queue_free()
-	await _wait(0.2)
+	await _wait(1.0)
+	# 돌아서기(#120 모션 손질): 방향을 바꾸면 한 번에 뒤집지 않고 잠깐에 걸쳐 돈다
+	await _hold(&"move_right", 0.2)
+	var vis: Node2D = _player.get_node("Visual")
+	var down := InputEventAction.new()
+	down.action = &"move_left"
+	down.pressed = true
+	Input.parse_input_event(down)
+	await physics_frame
+	await physics_frame
+	var mid: float = vis.scale.x
+	await _wait(0.25)
+	var up := InputEventAction.new()
+	up.action = &"move_left"
+	up.pressed = false
+	Input.parse_input_event(up)
+	_check(mid > -0.99 and mid < 0.99 and is_equal_approx(vis.scale.x, -1.0), "돌아서기: 한 번에 뒤집지 않고 잠깐에 걸쳐 돈다 (%.2f → %.2f)" % [mid, vis.scale.x])
+	await _wait(0.3)
 
 	# 가져와
 	var fetch := _add_spot(_actions["FETCH"], 260.0, &"test_fetched")
