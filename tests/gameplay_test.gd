@@ -240,12 +240,38 @@ func _run() -> void:
 	var far := _add_spot(_actions["FETCH"], 200.0, &"test_far")
 	far.position.x += 1500.0
 	await _wait(0.2)
-	await _press_ask()
-	_check(not _dog.is_busy(), "부탁 자리 밖에서 F는 아무 일도 하지 않는다")
 	_check(not _dog.get_node("PawMark").is_shown(), "부탁 자리 밖에서는 발바닥 표시가 없다")
+	await _press_ask()
+	_check(not _dog.is_busy() and _dog.petting, "부탁 자리 밖에서 F는 부탁이 아니라 쓰다듬기(#120)")
 	_check(not _state.has_flag(&"test_far"), "멀리 있는 부탁 자리는 쓰이지 않는다")
+	var petted := await _wait_until(func(): return _player.pose == &"crouch" and _dog.wagging, 3.0)
+	var in_front: bool = signf(_dog.global_position.x - _player.global_position.x) == float(_player.facing)
+	_check(petted and in_front and _dog.facing == -_player.facing and _player.controls_enabled,
+			"쓰다듬기: 하늘이가 하윤 앞으로 와 마주 보고 꼬리를 흔들고, 하윤이 쪼그려 앉는다(조작은 안 막는다)")
+	_check(await _wait_until(func(): return _dog.get_node("Visual/Rig").look_up > 0.5, 1.5) if _dog.has_node("Visual/Rig") else true,
+			"쓰다듬기: 하늘이가 하윤을 올려다본다")
+	await _hold(&"move_left", 0.3)
+	_check(await _wait_until(func(): return not _dog.petting and not _dog.wagging, 1.0) and _player.pose == &"stand",
+			"쓰다듬기: 걷기 시작하면 곧바로 끝나고 다시 선다")
 	far.queue_free()
-	await _wait(0.2)
+	await _wait(1.0)
+	# 돌아서기(#120 모션 손질): 방향을 바꾸면 한 번에 뒤집지 않고 잠깐에 걸쳐 돈다
+	await _hold(&"move_right", 0.2)
+	var vis: Node2D = _player.get_node("Visual")
+	var down := InputEventAction.new()
+	down.action = &"move_left"
+	down.pressed = true
+	Input.parse_input_event(down)
+	await physics_frame
+	await physics_frame
+	var mid: float = vis.scale.x
+	await _wait(0.25)
+	var up := InputEventAction.new()
+	up.action = &"move_left"
+	up.pressed = false
+	Input.parse_input_event(up)
+	_check(mid > -0.99 and mid < 0.99 and is_equal_approx(vis.scale.x, -1.0), "돌아서기: 한 번에 뒤집지 않고 잠깐에 걸쳐 돈다 (%.2f → %.2f)" % [mid, vis.scale.x])
+	await _wait(0.3)
 
 	# 가져와
 	var fetch := _add_spot(_actions["FETCH"], 260.0, &"test_fetched")
@@ -613,6 +639,7 @@ func _run() -> void:
 	await _check_album()
 	await _check_reflection()
 	await _check_bank_light()
+	await _check_phrase_game()
 	await _check_motes()
 	await _check_shadow()
 	await _check_cutout()
@@ -793,8 +820,12 @@ func _check_kite_fly(place: Node2D, chase: Node2D) -> void:
 	game.calm_seconds = 0.4
 	game.warn_seconds = 0.2
 	game.gust_seconds = 0.6
-	_check(await _wait_until(func(): return game.running, 3.0), "연: 주우면 그 자리에서 연 날리기가 시작된다")
 	_check(await _wait_until(func(): return not item.get_node("Art").visible, 4.0), "연: 주운 방패연 그림은 떠올라 사라진다")
+	await _wait_until(func(): return _player.controls_enabled, 3.0)
+	await _wait(0.3)
+	_check(not game.running, "연: 줍기만 해서는 시작하지 않는다(#119, 직접 시작)")
+	await _press(&"interact")
+	_check(await _wait_until(func(): return game.running, 2.0), "연: [E] 연 띄우기로 그 자리에서 시작한다")
 	_check(_player.is_locked_by(&"minigame") and _player.pose == &"kite", "연: 하윤이 멈추고 두 손으로 연줄을 잡는다")
 	_check(game.has_key_hint(), "연: 처음에는 손 옆에 [E] 꾹 누르면 감기")
 	var half: float = game.zone_high() - game.zone_low()
@@ -1026,6 +1057,7 @@ func _check_bank_light() -> void:
 	game.trigger_flag = &"item_test_torch"
 	game.grants_flag = &"bank_test_path"
 	game.dwell = 0.3
+	game.start_prompt = "강둑 비추기"
 	place.add_child(game)
 	game.ask_spot = game.get_path_to(spot)
 	game.global_position = Vector2(px + 60.0, 810.0)
@@ -1040,7 +1072,10 @@ func _check_bank_light() -> void:
 	_state.set_flag(&"item_test_torch")
 	await _wait(0.1)
 	_check(spot.used, "강둑 비추기: 손전등이 있으면 냄새 부탁 자리를 닫는다")
-	_check(await _wait_until(func(): return game.running, 2.0), "강둑 비추기: 손전등을 가진 채 끊긴 끝을 지나면 시작한다")
+	await _wait(0.3)
+	_check(not game.running, "강둑 비추기: 손전등이 있어도 저절로 시작하지 않는다(#119)")
+	await _press(&"interact")
+	_check(await _wait_until(func(): return game.running, 2.0), "강둑 비추기: [E] 강둑 비추기로 시작한다")
 	_check(_player.is_locked_by(&"minigame") and _player.pose == &"flashlight" and game.has_key_hint(),
 			"강둑 비추기: 하윤이 멈춰 손전등을 아래로 비추고, 손 옆에 [← →] 비추기")
 	var start_aim: float = game.aim
@@ -1052,9 +1087,16 @@ func _check_bank_light() -> void:
 		await _wait(game.dwell + 0.5)
 	_check(game.misses >= 3 and game.help and game.found == 0, "강둑 비추기: 물그림자를 오래 비추면 흩어지고(어긋남), 세 번이면 도움이 켜진다")
 	_check(not _state.has_flag(&"bank_test_path"), "강둑 비추기: 어긋나도 실패 화면 없이 계속한다")
-	game.aim = game.aim_for(game.stones[2])
-	await _wait(game.dwell + 0.3)
+	var early := [-1]
+	game.not_yet.connect(func(i): early[0] = i, CONNECT_ONE_SHOT)
+	var misses_before: int = game.misses
+	# 팔이 빛을 따라 움직여 손(빛 나오는 자리)이 옮겨 가므로 몇 번 맞춘다
+	for k in 12:
+		game.aim = game.aim_for(game.stones[2])
+		await _wait(0.05)
+	await _wait(game.dwell)
 	_check(game.found == 0, "강둑 비추기: 차례가 아닌 돌은 비춰도 찾은 것으로 치지 않는다")
+	_check(early[0] == 2 and game.misses == misses_before, "강둑 비추기: 차례가 아닌 돌에 머물면 \"아직\"이라고 깜빡인다(어긋남은 아니다, #119)")
 	game.aim = game.aim_for(game.stones[0])
 	await _wait(game.dwell + 0.3)
 	_check(game.found == 1, "강둑 비추기: 다음 돌에 빛이 머물면 그 돌을 찾는다")
@@ -1067,6 +1109,64 @@ func _check_bank_light() -> void:
 			"강둑 비추기: 끝나면 손전등을 넣고 다시 선다")
 	game.queue_free()
 	spot.queue_free()
+	_player.global_position.x = px
+
+
+## 휘파람 따라 하기(#145): 선율은 한 곳(WhistleTune), 숲 피리가 그 위에서 돈다.
+func _check_phrase_game() -> void:
+	var tune: Script = load("res://scripts/game/whistle_tune.gd")
+	var field: PackedInt32Array = tune.levels(&"field")
+	var forest: PackedInt32Array = tune.levels(&"forest")
+	_check(field.size() == 3 and forest.size() == 4 and tune.levels(&"riverside").size() == 4 and tune.levels(&"bridge").size() == 5,
+			"휘파람: 소절 길이가 들판 3 · 숲 4 · 강가 4 · 철교 5")
+	var ok := true
+	for id in [&"field", &"forest", &"riverside", &"bridge"]:
+		ok = ok and tune.pitches(id).size() <= 3
+		for lv in tune.levels(id):
+			ok = ok and lv >= 0 and lv <= 2
+	_check(ok, "휘파람: 소절마다 높이는 셋(← E →)뿐이다")
+	var same := true
+	for k in 3:
+		same = same and int(tune.notes(&"forest")[k][0]) == int(tune.notes(&"field")[k][0])
+	_check(same and forest.slice(0, 3) == field, "휘파람: 들판 소절은 숲 소절의 앞 세 음이다(음 높이)")
+	var place: Node2D = _main.current_place()
+	var px := _player.global_position.x
+	var game: Node2D = load("res://scripts/game/flute_echo.gd").new()
+	game.trigger_flag = &"item_test_flute"
+	game.grants_flag = &"phrase_test_done"
+	game.start_prompt = "피리 불기"
+	game.echo_gap = 0.15
+	place.add_child(game)
+	game.global_position = Vector2(px + 60.0, 810.0)
+	game.entrance_x = px + 900.0
+	_check(game.melody == forest, "휘파람: 숲 피리는 숲 소절을 분다")
+	_state.set_flag(&"item_test_flute")
+	_player.global_position.x = px + 80.0
+	await _wait(0.2)
+	await _press(&"interact")
+	_check(await _wait_until(func(): return game.phase == &"play", 4.0) and game.round_length() == 3,
+			"휘파람: 메아리를 듣고 나면 하윤 차례, 첫 소절은 들판에서 배운 세 음")
+	var wrong := 0 if field[0] != 0 else 2
+	for k in 3:
+		await _wait_until(func(): return game.phase == &"play", 4.0)
+		await _press(&"move_left" if wrong == 0 else &"move_right")
+		await _wait(0.1)
+	_check(game.misses >= 3 and game.help and game.played == 0, "휘파람: 틀리면 그 소절을 다시 들려주고, 세 번이면 도움이 켜진다")
+	_check(not _state.has_flag(&"phrase_test_done"), "휘파람: 틀려도 실패 화면 없이 계속한다")
+	var keys := [&"move_left", &"interact", &"move_right"]
+	await _wait_until(func(): return game.phase == &"play", 4.0)
+	for k in 3:
+		await _press(keys[game.melody[k]])
+		await _wait(0.05)
+	_check(await _wait_until(func(): return game.round_index == 1 and game.phase == &"play", 4.0) and game.round_length() == 4,
+			"휘파람: 첫 소절을 맞추면 한 음 더 긴 숲 소절이 들린다")
+	for k in 4:
+		await _press(keys[game.melody[k]])
+		await _wait(0.05)
+	_check(await _wait_until(func(): return game.phase == &"answer", 2.0), "휘파람: 다 맞으면 할아버지 휘파람이 받아 분다")
+	_check(await _wait_until(func(): return _state.has_flag(&"phrase_test_done"), 10.0), "휘파람: 받아 분 뒤 길이 열린다(grants_flag)")
+	await _wait_until(func(): return _player.controls_enabled, 5.0)
+	game.queue_free()
 	_player.global_position.x = px
 
 

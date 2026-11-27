@@ -28,6 +28,10 @@ static var autoplay: bool = false
 @export var grants_flag: StringName = &""
 ## 이만큼 어긋나면 도움이 켜진다(빛이 넓어지거나 하늘이가 먼저 움직인다).
 @export var help_after: int = 3
+## 하윤이 직접 시작하는 안내(#119, 예: "연 띄우기"). 비우면 하위 부품이 스스로 시작한다(예전 방식).
+## 있으면 원점에 조사 대상("[E] …")이 생기고, 조사하면 시작한다. 하늘이 힌트도 그 자리를 가리킨다.
+@export var start_prompt: String = ""
+@export var start_size: Vector2 = Vector2(320.0, 300.0)
 
 var running: bool = false
 var done: bool = false
@@ -36,12 +40,45 @@ var help: bool = false
 
 var _player: Player
 var _hint: Node2D
+var _start_spot: Interactable
+var _pan_tween: Tween
 
 
 func _ready() -> void:
 	add_to_group("minigame")
 	if not grants_flag.is_empty() and GameState.has_flag(grants_flag):
 		done = true
+
+
+## 하위 부품이 _ready에서 부른다: 직접 시작하는 조사 대상을 놓는다(requires = 물건 플래그).
+func setup_start(requires: StringName) -> void:
+	if start_prompt.is_empty() or done:
+		return
+	_start_spot = Interactable.new()
+	_start_spot.name = "Start"
+	_start_spot.prompt = start_prompt
+	_start_spot.size = start_size
+	_start_spot.requires_flag = requires
+	_start_spot.one_shot = true
+	_start_spot.lines = PackedStringArray()
+	add_child(_start_spot)
+	_start_spot.interacted.connect(play)
+
+
+## 직접 시작하는 방식인가(그러면 하위 부품의 저절로 시작은 끈다).
+func starts_on_prompt() -> bool:
+	return not start_prompt.is_empty()
+
+
+## 카메라를 옆으로 bias만큼 옮겼다가(seconds) 그대로 둔다. 0이면 제자리로.
+func pan_camera(bias: float, seconds: float) -> void:
+	var main := get_tree().get_first_node_in_group("main")
+	if main == null or not "look_bias" in main:
+		return
+	if _pan_tween and _pan_tween.is_valid():
+		_pan_tween.kill()
+	_pan_tween = create_tween()
+	_pan_tween.tween_property(main, "look_bias", bias, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 ## 미니게임 한 판. 다 해낼 때까지 기다린다.
@@ -106,6 +143,9 @@ func clear() -> void:
 func _exit_tree() -> void:
 	if running and _player and is_instance_valid(_player):
 		_player.unlock(LOCK)
+	var main := get_tree().get_first_node_in_group("main") if is_inside_tree() else null
+	if main and "look_bias" in main:
+		main.look_bias = 0.0
 
 
 ## 하윤 손 옆에 작은 키 안내를 띄운다(처음 한 번). keys = ["E"] / ["←", "E", "→"], text = 짧은 동사.
@@ -178,11 +218,24 @@ static func make_key_hint(keys: Array, text: String) -> Node2D:
 	return root
 
 
+## 하늘이가 귀를 쫑긋(#120). 꼬리 흔들기는 wag_seconds 동안.
+func dog_react(amount: float = 1.0, wag_seconds: float = 0.0) -> void:
+	var dog := get_tree().get_first_node_in_group("dog")
+	if dog == null or not dog.has_method("perk"):
+		return
+	dog.perk(amount)
+	if wag_seconds > 0.0 and dog.has_method("wag") and not dog.wagging:
+		dog.wag(true)
+		await _wait(wag_seconds)
+		if is_instance_valid(dog):
+			dog.wag(false)
+
+
 func _wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds, false).timeout
 
 
-func _play_sound(prefix: String) -> void:
+func _play_sound(prefix: String, pitch: float = 1.0) -> void:
 	if prefix.is_empty():
 		return
 	var stream := SoundBank.pick(prefix)
@@ -190,6 +243,7 @@ func _play_sound(prefix: String) -> void:
 		return
 	var p := AudioStreamPlayer.new()
 	p.stream = stream
+	p.pitch_scale = pitch
 	p.bus = SoundBank.BUS_SFX
 	add_child(p)
 	p.finished.connect(p.queue_free)

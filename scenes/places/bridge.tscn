@@ -122,3 +122,4 @@ position = Vector2(3520, 810)
 script = ExtResource("bank_light_script")
 ask_spot = NodePath("../AskSpot_6-3")
 grants_flag = &"bridge_bank_path"
+start_prompt = "강둑 비추기"

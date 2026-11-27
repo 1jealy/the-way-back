@@ -1,13 +1,16 @@
 class_name BankLight
 extends MiniGame
 ## 철교 6-2 끊긴 끝에서 강둑 아래를 비추는 미니게임(#116, 기획서 "미니게임"). 집 마당에서 주운 할아버지 손전등으로 한다.
-## 끊긴 끝에 서면 하윤이 손전등을 켜 아래 안개를 비춘다. ← →로 빛을 아래위로 움직인다.
+## 끊긴 끝에서 [E] 강둑 비추기(#119)로 하윤이 손전등을 켜 아래 안개를 비춘다. ← →로 빛을 아래위로 움직인다.
 ## 안개 속에 디딤돌 다섯이 강둑까지 이어져 있고, 빛이 다음 돌에 잠깐 머물면 그 돌이 빛을 머금고 남는다(차례대로).
-## 다음 돌이 아닌 돌은 빛이 지나갈 때만 비친다. 물그림자(가짜 돌)를 오래 비추면 흩어진다(한 번 어긋남).
+## 다음 돌이 아닌 돌은 빛이 지나갈 때만 비치고, 거기 머물면 한 번 깜빡이며 다음 돌이 숨 쉰다("아직", #119). 물그림자(가짜 돌)를 오래 비추면 흩어진다(한 번 어긋남).
 ## 다 찾으면 돌이 하나씩 다시 빛나고 grants_flag(bridge_bank_path)가 서서 "강둑으로 내려가기"가 열린다.
 ## 도움(세 번 어긋나면): 빛이 넓어지고, 하늘이가 다음 돌 쪽을 보고 짖고, 다음 돌이 빛 밖에서도 희미하게 숨 쉰다.
 ## 손전등 없이 왔으면 시작하지 않는다 — 예전처럼 하늘이 냄새 부탁(ask_spot)으로 간다. 손전등이 있으면 그 부탁 자리는 닫는다.
 ## 장소 씬에 B가 놓는다(BankLight_6-3). 원점은 땅 위, 하윤이 손전등을 가진 채 원점을 지나면 시작한다.
+
+## 차례가 아닌 돌을 먼저 비췄을 때(i = 그 돌).
+signal not_yet(i: int)
 
 const MIX_RATE := 22050
 const AIM_MIN := 22.0
@@ -54,10 +57,16 @@ var _plop: AudioStreamWAV
 var _t: float = 0.0
 var _pulse: float = 0.0
 var _hinted: bool = false
+var _early_hold: float = 0.0
+var _early_cool: float = 0.0
+## 다음 돌이 숨 쉬는 정도(1 → 0, "아직" 뒤 잠깐).
+var _guide: float = 0.0
+var _flash: PackedFloat32Array = PackedFloat32Array()
 
 
 func _ready() -> void:
 	super._ready()
+	setup_start(trigger_flag)
 	if GameState.has_flag(trigger_flag):
 		_close_ask_spot.call_deferred()
 	GameState.flag_changed.connect(_on_flag_changed)
@@ -78,7 +87,7 @@ func _close_ask_spot() -> void:
 
 
 func _process(delta: float) -> void:
-	if not running and not done and GameState.has_flag(trigger_flag):
+	if not running and not done and not starts_on_prompt() and GameState.has_flag(trigger_flag):
 		var player := get_tree().get_first_node_in_group("player") as Player
 		if player and player.controls_enabled and player.global_position.x >= global_position.x:
 			play()
@@ -139,6 +148,8 @@ func _build() -> void:
 	_fog.global_position = Vector2.ZERO
 	_stone_nodes.clear()
 	_stone_glows.clear()
+	_flash.resize(stones.size())
+	_flash.fill(0.0)
 	for i in stones.size():
 		var g := Sprite2D.new()
 		g.name = "StoneGlow%d" % i
@@ -234,6 +245,9 @@ func _half() -> float:
 func _tick(delta: float) -> void:
 	_t += delta
 	_pulse = move_toward(_pulse, 0.0, delta * 2.0)
+	_guide = move_toward(_guide, 0.0, delta * 0.6)
+	for k in _flash.size():
+		_flash[k] = move_toward(_flash[k], 0.0, delta * 1.6)
 	if phase == &"aim":
 		var dir := 0.0
 		if MiniGame.autoplay:
@@ -264,6 +278,21 @@ func _check(delta: float) -> void:
 			_light(found)
 	else:
 		_hold = maxf(0.0, _hold - delta * 2.0)
+	# 차례가 아닌 돌(더 먼 돌)에 머물면 "아직" — 그 돌이 한 번 깜빡이고 다음 돌이 숨 쉰다(#119: 반응이 없어 헷갈렸다)
+	var early := -1
+	var best := half * 0.6
+	for i in range(found + 1, stones.size()):
+		var off := angle_off(stones[i])
+		if off < best:
+			best = off
+			early = i
+	if early >= 0:
+		_early_hold += delta
+		if _early_hold >= dwell and _early_cool <= 0.0:
+			_not_yet(early)
+	else:
+		_early_hold = 0.0
+	_early_cool -= delta
 	for i in decoys.size():
 		if _decoy_gone[i] > 0.0:
 			_decoy_gone[i] -= delta
@@ -278,6 +307,7 @@ func _check(delta: float) -> void:
 
 
 func _light(i: int) -> void:
+	dog_react(0.9, 0.9 if i == stones.size() - 1 else 0.0)  # 돌이 켜지면 쫑긋, 마지막엔 꼬리(#120)
 	_hold = 0.0
 	found += 1
 	_hinted = false
@@ -293,6 +323,18 @@ func _light(i: int) -> void:
 	tw.parallel().tween_property(g, "scale", Vector2(2.4, 1.2), 0.6)
 	if found >= stones.size():
 		_finish()
+
+
+## 더 먼 돌을 먼저 비췄다: 어긋남은 아니다. 그 돌이 한 번 깜빡이고(낮은 종) 다음 돌이 잠깐 숨 쉰다.
+func _not_yet(i: int) -> void:
+	_early_hold = 0.0
+	_early_cool = 1.5
+	_guide = 1.0
+	_sfx.stream = _chime
+	_sfx.pitch_scale = 0.75
+	_sfx.play()
+	_flash[i] = 1.0
+	not_yet.emit(i)
 
 
 ## 물그림자였다: 일렁이며 흩어진다. 한 번 어긋남.
@@ -333,10 +375,14 @@ func _shade() -> void:
 			continue
 		var off := angle_off(stones[i])
 		a = clampf(1.0 - (off - half * 0.5) / (half * 1.6), 0.0, 1.0) * on * 0.9
+		if i < _flash.size():
+			a = maxf(a, _flash[i] * 0.9)
 		if i == found:
 			a = maxf(a, clampf(_hold / dwell, 0.0, 1.0))
 			if help:
 				a = maxf(a, 0.18 + 0.12 * sin(_t * 3.0))
+			if _guide > 0.0:
+				a = maxf(a, _guide * (0.35 + 0.25 * sin(_t * 9.0)))
 		s.modulate = Color(STONE_COLOR, a)
 	for i in _decoy_nodes.size():
 		if _decoy_gone[i] > 0.0:

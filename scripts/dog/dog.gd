@@ -43,6 +43,14 @@ const LOCK := &"dog_task"
 var state: State = State.HIDDEN
 ## 1 = 오른쪽, -1 = 왼쪽.
 var facing: int = 1
+## 돌아서는 데 걸리는 시간(초, #120 모션 손질).
+const TURN_SECONDS := 0.16
+## 쓰다듬기(#120): 하윤 앞 이만큼에 와서 앉고, PET_SECONDS 동안 쓰다듬는다. 가만히 서 있으면 LOOK_UP_AFTER초 뒤 올려다본다.
+const PET_GAP := 175.0
+const PET_SECONDS := 2.6
+const LOOK_UP_AFTER := 3.5
+var petting: bool = false
+signal pet_started
 
 var _player: Player
 var _spot: AskSpot
@@ -156,7 +164,7 @@ func place_behind(player: Player) -> void:
 ## 지금 F를 누르면 쓸 수 있는 부탁 자리. 없으면 null.
 func available_spot() -> AskSpot:
 	# 연출(작은 순간·엔딩) 중에는 부탁을 받지 않는다. 받으면 연출이 끊기고 script_arrived가 영영 안 온다(#85).
-	if not is_joined() or is_busy() or state == State.SCRIPTED:
+	if not is_joined() or is_busy() or (state == State.SCRIPTED and not petting):
 		return null
 	# 하윤이 대사·지도·벤치·연출로 막혀 있으면 부탁도 안 받는다. 받으면 돌아와서 띄우는 대사가
 	# 읽던 대사를 덮어썼다(#107).
@@ -176,9 +184,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if spot:
 		_start_task(spot)
 		get_viewport().set_input_as_handled()
+	elif can_pet():
+		pet()
+		get_viewport().set_input_as_handled()
 
 
 func _start_task(spot: AskSpot) -> void:
+	petting = false  # 쓰다듬던 중이면 부탁이 먼저(#120)
 	_spot = spot
 	state = State.TASK_GO
 	if spot.action != AskSpot.Action.HOLD:
@@ -191,6 +203,9 @@ func _physics_process(delta: float) -> void:
 	if state == State.HIDDEN:
 		return
 	_track_player_still(delta)
+	# 하윤이 가만히 서 있으면 앉아서 올려다본다(#120). 쓰다듬는 동안에도.
+	if _rig and _rig.has_method("set_look_up"):
+		_rig.set_look_up(petting or (state == State.SIT and _player_still > LOOK_UP_AFTER))
 	var goal_x := global_position.x
 	var max_speed := 0.0
 	match state:
@@ -355,7 +370,11 @@ func _move_toward_x(goal_x: float, max_speed: float, delta: float) -> void:
 
 func _refresh_visuals() -> void:
 	visible = state != State.HIDDEN
-	_visual.scale.x = facing
+	# 돌아설 때 TURN_SECONDS에 걸쳐 돈다(물리 프레임에서만. 연출 호출은 바로)
+	if Engine.is_in_physics_frame():
+		_visual.scale.x = move_toward(_visual.scale.x, facing, get_physics_process_delta_time() * 2.0 / TURN_SECONDS)
+	else:
+		_visual.scale.x = facing
 	var sitting := state == State.SIT or (state == State.MEETING and not _meet_moving) \
 			or (state == State.SCRIPTED and not _script_moving)
 	if _rig:
@@ -404,6 +423,54 @@ func look(dir: int) -> void:
 	_refresh_visuals()
 
 
+## 소리·움직임에 귀를 쫑긋(#120, 미니게임 중 반응). 컷아웃이 없으면 아무 일도 없다.
+func perk(amount: float = 1.0) -> void:
+	if _rig and _rig.has_method("perk") and is_joined():
+		_rig.perk(amount)
+
+
+## 부탁 자리 밖에서 F를 누르면 쓰다듬기를 할 수 있나(#120).
+func can_pet() -> bool:
+	return is_joined() and not petting and state in [State.FOLLOW, State.SIT] \
+			and _player != null and _player.controls_enabled and _player.is_on_floor()
+
+
+## 쓰다듬기(#120): 하늘이가 하윤 앞으로 와서 앉아 올려다보며 꼬리를 흔들고, 하윤이 쪼그려 앉아 머리를 쓰다듬는다.
+## 하윤을 잠그지 않는다 — 걷기 시작하면 곧바로 끝난다. 대사 없음.
+func pet() -> void:
+	if not can_pet():
+		return
+	petting = true
+	var side := _player.facing
+	var px := _player.global_position.x
+	script_move_to(px + side * PET_GAP)
+	var waited := 0.0
+	while _script_moving and petting and waited < 2.0:
+		await get_tree().physics_frame
+		waited += get_physics_process_delta_time()
+		if absf(_player.velocity.x) > 1.0:
+			petting = false
+	if petting:
+		look(-side)
+		wag(true)
+		_player.set_pose(&"crouch")
+		pet_started.emit()
+		var t := 0.0
+		while petting and t < PET_SECONDS:
+			await get_tree().physics_frame
+			t += get_physics_process_delta_time()
+			if absf(_player.velocity.x) > 1.0 or not _player.controls_enabled:
+				break
+			# 손을 앞으로 뻗어 머리를 쓰다듬는다(앞뒤로 천천히)
+			_player.set_motion({"shoulder": -32.0 + sin(t * 6.5) * 8.0, "elbow": -12.0, "head": 4.0, "torso": 6.0})
+		_player.set_motion({})
+		_player.set_pose(&"stand")
+	petting = false
+	wag(false)
+	if state == State.SCRIPTED:
+		release_script()
+
+
 ## 연출용: 꼬리를 신나게 흔든다 / 그친다(4-3 빈터). 컷아웃이 없으면 아무 일도 없다.
 var wagging: bool = false
 
@@ -432,6 +499,11 @@ func _rig_pose(sitting: bool) -> StringName:
 				if _spot.action == AskSpot.Action.SNIFF:
 					return &"sniff_walk"
 	return &"sit" if sitting else &"stand"
+
+
+## 짖는다(소리 + 고개 젖히기). 미니게임 도움(#145)에서 다음 음 쪽을 알려 줄 때.
+func bark() -> void:
+	_bark()
 
 
 func _bark() -> void:

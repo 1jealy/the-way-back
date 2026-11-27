@@ -1,7 +1,7 @@
 class_name KiteFly
 extends MiniGame
 ## 들판 2-3 연 날리기(#111, 기획서 "미니게임"). 지도가 바람에 날아가 억새 속으로 사라진 뒤,
-## 길가에서 할아버지 방패연(물건)을 주우면 그 자리에서 띄운다. 높이 올린 연에서 지도가 걸린 자리가 보인다.
+## 길가에서 할아버지 방패연(물건)을 주우고 [E] 연 띄우기로 그 자리에서 띄운다(#119, start_prompt). 높이 올린 연에서 지도가 걸린 자리가 보인다.
 ## 화면 안에 녹인 UI: 하늘에 비스듬한 노을빛 띠(맞춰야 할 높이), 연이 그 안이면 연 둘레가 환해진다.
 ## 돌풍은 바람 줄기로 1초 먼저 보인다. 돌풍을 버틸 때마다 연 꼬리 리본 하나가 붉게 물든다(셋).
 ## 조작: E를 누르고 있으면 줄을 감아 올라가고, 떼면 풀려 내려온다. 연이 땅까지 내려오면 한 번 어긋남.
@@ -27,7 +27,7 @@ const CREAM := Color(0.96, 0.91, 0.8)
 @export var zone_center: float = 0.68
 @export var zone_half: float = 0.1
 ## 돌풍 사이 쉬는 시간, 예고 시간, 돌풍 시간(초).
-@export var calm_seconds: float = 3.0
+@export var calm_seconds: float = 1.4  # 3초는 기다리는 비중이 컸다(#119)
 @export var warn_seconds: float = 1.0
 @export var gust_seconds: float = 1.4
 ## 돌풍 동안 이만큼(비율) 띠 안에 있으면 버틴 것.
@@ -51,6 +51,7 @@ var _gust_dir: float = -1.0
 var _anchor: Vector2
 var _waiting: float = -1.0
 var _pressed_once: bool = false
+var _await_release: bool = false
 
 var _band: Polygon2D
 var _kite_root: Node2D
@@ -63,8 +64,13 @@ var _tail: Line2D
 var _streaks: Array[Line2D] = []
 
 
+func _ready() -> void:
+	super._ready()
+	setup_start(trigger_flag)
+
+
 func _process(delta: float) -> void:
-	if not running and not done and GameState.has_flag(trigger_flag):
+	if not running and not done and not starts_on_prompt() and GameState.has_flag(trigger_flag):
 		var player := get_tree().get_first_node_in_group("player") as Player
 		if player and player.controls_enabled \
 				and absf(player.global_position.x - global_position.x) < trigger_distance:
@@ -103,6 +109,7 @@ func _begin() -> void:
 		_player.face(1)
 		_player.set_pose(&"kite")
 	gusts_held = 0
+	_await_release = true
 	h = 0.35
 	vh = 0.6
 	_set_phase(&"calm", calm_seconds * 0.7)
@@ -221,6 +228,11 @@ func _set_phase(p: StringName, seconds: float) -> void:
 func _holding() -> bool:
 	if MiniGame.autoplay:
 		return h < zone_center
+	# [E] 연 띄우기로 시작한 그 누름은 감기로 치지 않는다(한 번 떼고 나서부터 감는다, #119)
+	if _await_release:
+		if Input.is_action_pressed("interact"):
+			return false
+		_await_release = false
 	return Input.is_action_pressed("interact")
 
 
@@ -302,6 +314,7 @@ func _dropped() -> void:
 
 
 func _held_gust() -> void:
+	dog_react(1.0, 1.2)  # 버티면 하늘이가 쫑긋하고 꼬리를 흔든다(#120)
 	_ribbon_held[gusts_held] = 1.0
 	gusts_held += 1
 	if gusts_held >= gusts:
@@ -323,7 +336,14 @@ func _finish() -> void:
 	await tween.finished
 	if not grants_flag.is_empty():
 		GameState.set_flag(grants_flag)  # 지도 자리가 보인다(MapChase.reveal_flag)
-	await _wait(1.6)
+	# 보상(#119): 카메라가 억새 속에서 반짝이는 지도 쪽으로 옮겨 갔다가 돌아온다
+	var chase := get_tree().get_first_node_in_group("map_chase") as Node2D
+	if chase and chase.has_method("stop_position") and _player:
+		pan_camera(clampf(chase.stop_position(chase.stop_index).x - _player.global_position.x, -700.0, 700.0), 1.1)
+		await _wait(2.2)
+		pan_camera(0.0, 0.9)
+	else:
+		await _wait(1.6)
 	var fade := create_tween().set_parallel()
 	for n in [_kite_root, _string, _band, _tail]:
 		fade.tween_property(n, "modulate:a", 0.0, 0.8)

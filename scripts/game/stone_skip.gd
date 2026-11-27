@@ -325,15 +325,26 @@ func _throw_from(hand: Vector2, n: int, fill: bool) -> void:
 	_stone = _make_stone()
 	_stone.global_position = hand
 	var at := Vector2(hand.x + first_reach, water_y)
+	# 카메라가 돌을 살짝 따라간다(#119). 미니게임에서만(연출 던지기는 그대로).
+	if fill and _player:
+		var reach := first_reach
+		for k in n:
+			reach += hop_lengths[mini(k, hop_lengths.size() - 1)]
+		pan_camera(clampf(reach * 0.45, 0.0, 520.0), 0.4 + 0.25 * n)
 	await _fly(hand, at, 18.0, 0.42)
 	for i in n:
 		touches += 1
-		_ripple(at, 1.0 - 0.15 * i)
+		if fill:
+			dog_react(0.4 + 0.15 * i)  # 튈 때마다 쫑긋(#120)
+		# 미니게임에서는 튈수록 물보라가 커지고 소리가 높아진다(#119)
+		_ripple(at, (0.7 + 0.18 * i) if fill else (1.0 - 0.15 * i))
+		if fill and i >= 2:
+			_spray(at, i)
 		if fill and i < _ghosts.size():
 			var t := create_tween()
 			t.tween_property(_ghosts[i], "default_color", Color(0.97, 0.98, 1.0, 0.95), 0.15)
 			t.tween_property(_ghosts[i], "default_color", Color(0.92, 0.95, 1.0, 0.3), 1.6)
-		_play_sound("sfx_stone_skip_")
+		_play_sound("sfx_stone_skip_", (1.0 + 0.07 * i) if fill else 1.0)
 		var length := hop_lengths[mini(i, hop_lengths.size() - 1)]
 		var height := hop_heights[mini(i, hop_heights.size() - 1)]
 		var next := at + Vector2(length, 0.0)
@@ -348,6 +359,8 @@ func _throw_from(hand: Vector2, n: int, fill: bool) -> void:
 	await sink.finished
 	_stone.queue_free()
 	_stone = null
+	if fill:
+		pan_camera(0.0, 0.8)
 
 
 ## 멈춘 동안에는 흐르지 않는 짧은 숨(동작 사이). 대사·연출 길이를 맞추는 데 쓰지 않는다.
@@ -410,3 +423,20 @@ func _ripple(at: Vector2, strength: float) -> void:
 	tween.tween_property(ring, "scale", Vector2(5.0, 5.0) * (0.6 + 0.4 * strength), 1.1)
 	tween.parallel().tween_property(ring, "modulate:a", 0.0, 1.1)
 	tween.tween_callback(ring.queue_free)
+
+
+## 튈수록 커지는 물보라(셋째 튀기부터): 물방울 몇 개가 튀어 올랐다 떨어진다.
+func _spray(at: Vector2, i: int) -> void:
+	var count := 2 + i
+	for k in count:
+		var drop := _ring(Color(0.95, 0.97, 1.0, 0.9), 3.0, Vector2(3.0, 3.0))
+		drop.name = "Drop"
+		add_child(drop)
+		drop.global_position = at
+		var dx := randf_range(-30.0, 30.0) * (0.6 + 0.2 * i)
+		var up := randf_range(30.0, 55.0) * (0.7 + 0.15 * i)
+		var tw := drop.create_tween()
+		tw.tween_property(drop, "global_position", at + Vector2(dx * 0.5, -up), 0.22).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		tw.tween_property(drop, "global_position", at + Vector2(dx, 0.0), 0.26).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		tw.parallel().tween_property(drop, "modulate:a", 0.0, 0.26)
+		tw.tween_callback(drop.queue_free)

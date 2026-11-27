@@ -15,6 +15,8 @@ var controls_enabled: bool:
 		return _locks.is_empty()
 ## 1 = 오른쪽, -1 = 왼쪽.
 var facing: int = 1
+## 돌아서는 데 걸리는 시간(초). 걸으며 방향을 바꿀 때만(연출용 face()는 바로 돈다).
+const TURN_SECONDS := 0.14
 ## 지금 자세(#98): stand / crouch(쪼그려 앉기) / sit(벤치) / sit_floor(바닥).
 var pose: StringName = &"stand"
 ## 서 있지 않으면 참(쪼그리기·앉기 모두).
@@ -172,7 +174,8 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	if direction != 0.0:
 		facing = 1 if direction > 0.0 else -1
-		_visual.scale.x = facing
+	# 돌아설 때 한 번에 뒤집지 않고 TURN_SECONDS에 걸쳐 돈다(#120 모션 손질: 순간이동처럼 튀었다)
+	_visual.scale.x = move_toward(_visual.scale.x, facing, delta * 2.0 / TURN_SECONDS)
 	_update_steps(delta)
 	_update_idle(delta)
 
