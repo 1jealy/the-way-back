@@ -167,7 +167,7 @@ E로 조사하는 물건·글. **B가 장소 씬에 놓고, 동작은 A가 만�
 
 `Area2D` + `scripts/game/shake_drop.gd`(조사 대상을 이은 것). 집 마당 `Shake_1-6_Apple`(사과나무 밑동 x 5070, 대문 안쪽).
 
-- "[E] 사과나무 흔들기" → 잎이 몇 장 떨어지고(`sfx_tree_shake_`) 사과 하나(`prop_apple`)가 `drop_from`에서 떨어져 땅에 닿고(`sfx_persimmon_drop_`, 신호 `dropped`) 조금 구른다.
+- "[E] 사과나무 흔들기" → 잎이 몇 장 떨어지고(`sfx_tree_shake_`) 사과 하나(`prop_apple`)가 `drop_from`에서 떨어져 땅에 닿고(`sfx_fruit_drop_`, 신호 `dropped`) 조금 구른다.
 - 진행과 상관없다(선택). 조작을 막지 않는다. 한 번만(`one_shot`).
 
 ## 물그림자 (WaterReflection, 장면표 5-2)
