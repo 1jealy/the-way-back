@@ -154,7 +154,6 @@ opens_on_flag = &"station_door_open"
 position = Vector2(3325, 810)
 script = ExtResource("16_xfxxh")
 auto_sit = true
-sit_seconds = 8.0
 tint = Color(0.82, 0.66, 0.74, 1)
 end_sound = "sfx_dog_bark_far_"
 ambience_duck_db = -10.0

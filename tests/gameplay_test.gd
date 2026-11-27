@@ -711,6 +711,23 @@ func _check_bench() -> void:
 	_check(not bench.sitting and _player.controls_enabled, "벤치: 방향키로 일어난다")
 	bench.queue_free()
 	await _wait(0.2)
+	# 자동 앉기(3-3, #118): 기본 6초, 앉자마자 손목을 만지고, 끝나면 일어나 플래그
+	var auto: Area2D = load("res://scripts/game/bench_sit.gd").new()
+	auto.auto_sit = true
+	auto.grants_flag = &"bench_test_sat"
+	_check(auto.sit_seconds <= 8.0, "벤치: 자동 앉기는 짧다(15초에서 줄임) %.1f" % auto.sit_seconds)
+	var touched := [false]
+	_player.wrist_touched.connect(func(): touched[0] = true, CONNECT_ONE_SHOT)
+	_main.current_place().add_child(auto)
+	auto.global_position = Vector2(_player.global_position.x + 20.0, 810.0)
+	_check(await _wait_until(func(): return auto.sitting, 1.0), "벤치: 들어서면 저절로 앉는다")
+	await _wait(2.0)
+	_check(touched[0], "벤치: 앉고 곧 손목을 만진다(3-3 복선)")
+	_check(await _wait_until(func(): return _state.has_flag(&"bench_test_sat") and _player.controls_enabled, auto.sit_seconds + 1.0),
+			"벤치: 다 앉으면 일어나 grants_flag")
+	auto.queue_free()
+	_player.global_position.x -= 300.0
+	await _wait(0.2)
 
 
 ## 2-3 날아간 지도(MapChase): 지나가면 바람 → 덤불 셋에 걸렸다 날아간다 → 마지막 덤불에서 줍는다.
