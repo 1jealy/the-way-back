@@ -283,20 +283,22 @@ def _with_alpha(c: Color, a: int) -> Color:
     return (c[0], c[1], c[2], a)
 
 
-def _village(L: Layer, rng: random.Random, x: float, y: float, body: Color, rim: Color) -> None:
-    """먼 언덕 위 작은 마을: 박공지붕 집 여럿과 뾰족한 첨탑 하나."""
+def _village(L: Layer, rng: random.Random, x: float, ground, body: Color, rim: Color) -> None:
+    """먼 언덕 위 작은 마을: 박공지붕 집 여럿과 뾰족한 첨탑 하나. ground(x) = 그 자리 땅 높이(능선을 따라 앉는다)."""
     cx = x
     for i in range(rng.randint(5, 8)):
         wd, hh = rng.uniform(24, 44), rng.uniform(18, 30)
         roof = rng.uniform(14, 24)
+        y = max(ground(cx), ground(cx + wd)) + 6
         L.poly([(cx + 2, y - hh - 2), (cx + wd / 2 + 2, y - hh - roof - 2), (cx + wd + 2, y - hh - 2)], rim)
-        L.rect(cx, y - hh, cx + wd, y + 4, body)
+        L.rect(cx, y - hh, cx + wd, y + 14, body)
         L.poly([(cx - 3, y - hh), (cx + wd / 2, y - hh - roof), (cx + wd + 3, y - hh)], body)
         if i == 2:  # 첨탑
             tx = cx + wd + 6
-            L.rect(tx, y - 70, tx + 18, y + 4, body)
-            L.poly([(tx - 2 + 2, y - 70), (tx + 9 + 2, y - 128), (tx + 20 + 2, y - 70)], rim)
-            L.poly([(tx - 2, y - 70), (tx + 9, y - 128), (tx + 20, y - 70)], body)
+            ty = max(ground(tx), ground(tx + 20)) + 6
+            L.rect(tx, ty - 70, tx + 18, ty + 14, body)
+            L.poly([(tx - 2 + 2, ty - 70), (tx + 9 + 2, ty - 128), (tx + 20 + 2, ty - 70)], rim)
+            L.poly([(tx - 2, ty - 70), (tx + 9, ty - 128), (tx + 20, ty - 70)], body)
             cx = tx + 22
         cx += wd + rng.uniform(-6, 10)
 
@@ -466,7 +468,7 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     _slope_shade(L, pts, rgba(70, 62, 110, 80), 200, 24)
     for vx in (rng.uniform(600, 1400), rng.uniform(2600, 3600)):
         if vx < w - 400:
-            _village(L, rng, vx, _ridge_y(pts, vx) + 6, body, rgba(*FIELD_RIM, 210))
+            _village(L, rng, vx, lambda gx: _ridge_y(pts, gx), body, rgba(*FIELD_RIM, 210))
     x = 200.0
     while x < w:
         _poplar(L, x, _ridge_y(pts, x) + 8, rng.uniform(60, 90), body, rgba(*FIELD_RIM, 180))
@@ -479,7 +481,7 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
             ty = _ridge_y(pts, tx) + deco.uniform(10, 60)
             r = deco.uniform(8, 14)
             L.ellipse((tx - r, ty - r * 1.6, tx + r, ty + r * 0.3), darker)
-    _village(L, deco, w * 0.62, _ridge_y(pts, w * 0.62) + 6, body, rgba(*FIELD_RIM, 210))
+    _village(L, deco, w * 0.62, lambda gx: _ridge_y(pts, gx), body, rgba(*FIELD_RIM, 210))
     L.haze([("poly", [(-20, 620), (w + 20, 620), (w + 20, 690), (-20, 690)], rgba(*FIELD_HAZE, 120))], 24)
 
     # 구릉: 산울타리 나무 줄, 풍차.
