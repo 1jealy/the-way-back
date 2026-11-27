@@ -496,7 +496,7 @@ def reeds(L: Layer, rng: random.Random, x: float, scale: float, stem: Color, hea
 
 
 # ---------------------------------------------------------------- 1. 산 아래 할아버지 집
-# 늦가을 오후, 감빛·마루 갈색. 빛은 왼쪽 창에서. 방 → 마루·거실 → 마당.
+# 늦가을 오후, 꿀빛·나무 바닥 갈색. 빛은 왼쪽 창에서. 방 → 거실 → 마당(유럽 동화풍 시골집, #136).
 
 def house(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     rng = random.Random("house")
@@ -525,16 +525,16 @@ def house(width: float, markers: dict[str, float]) -> dict[str, Layer]:
 
     w = layer_width(width, "ground")
     layers["ground"] = L = Layer(w)
-    L.rect(-20, 792, yard_x + 10, H, rgba(150, 102, 64))  # 마루
+    L.rect(-20, 792, yard_x + 10, H, rgba(150, 102, 64))  # 나무 바닥
     for y in range(820, H, 34):
         L.line([(-20, y), (yard_x, y)], rgba(122, 82, 52), 2)
     for _ in range(int(yard_x / 90)):
         x, y = rng.uniform(0, yard_x), rng.choice(range(792, H, 34))
         L.line([(x, y + 2), (x, y + 32)], rgba(122, 82, 52), 2)
-    L.rect(-20, 792, yard_x + 10, 800, rgba(176, 124, 80))  # 마루 앞 끝의 밝은 면
+    L.rect(-20, 792, yard_x + 10, 800, rgba(176, 124, 80))  # 바닥 앞 끝의 밝은 면
     L.rect(yard_x, 792, w + 20, H, rgba(178, 150, 108))  # 마당 흙
     pebbles(L, rng, yard_x, w, 800, H, int((w - yard_x) / 8), rgba(160, 132, 96), rgba(196, 170, 128))
-    L.rect(yard_x - 60, 786, yard_x + 120, 812, rgba(150, 146, 140))  # 댓돌
+    L.rect(yard_x - 60, 786, yard_x + 120, 812, rgba(150, 146, 140))  # 문간 돌계단
 
     w = layer_width(width, "props")
     layers["props"] = L = Layer(w)
@@ -555,13 +555,12 @@ def house(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     for gy in range(304, 616, 52):
         L.line([(124, gy), (616, gy)], rgba(170, 136, 100), 2)
     L.haze([("poly", [(124, 304), (616, 304), (1180, 792), (560, 792)], rgba(255, 232, 176, 70))], 22)
-    # 마루 쪽 창호 문
+    # 거실 쪽 유리문(나무 틀에 네 칸 유리)
     for i, x in enumerate(range(2740, 3880, 190)):
-        L.rect(x, 250, x + 170, 740, rgba(232, 218, 188) if i % 2 else rgba(222, 206, 174))
-        for gx in range(x + 20, x + 170, 30):
-            L.line([(gx, 250), (gx, 740)], rgba(176, 146, 112), 2)
-        for gy in range(270, 740, 60):
-            L.line([(x, gy), (x + 170, gy)], rgba(176, 146, 112), 2)
+        L.rect(x, 250, x + 170, 740, rgba(132, 92, 60))
+        for gx0, gx1 in ((x + 14, x + 80), (x + 90, x + 156)):
+            for gy0, gy1 in ((266, 490), (504, 724)):
+                L.rect(gx0, gy0, gx1, gy1, rgba(224, 222, 200) if i % 2 else rgba(214, 214, 196))
     # 1-1 라디오
     x = mk("1-1", 570) + 220
     L.rect(x - 130, 640, x + 130, 792, wood)
@@ -596,30 +595,34 @@ def house(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     L.rect(x + 32, 372, x + 188, 468, rgba(222, 210, 186))
     for hx, hy, r in ((x + 70, 420, 14), (x + 110, 410, 17), (x + 150, 424, 11)):
         L.ellipse((hx - r, hy - r, hx + r, hy + r), rgba(150, 132, 110))
-    # 집 끝: 처마
+    # 집 끝: 지붕 끝
     L.poly([(yard_x - 40, 130), (yard_x + 300, 220), (yard_x + 300, 246), (yard_x - 40, 170)], rgba(74, 70, 74))
-    # 1-6 마당: 흙담, 감나무, 대문
-    L.rect(yard_x + 300, 610, w + 20, 792, rgba(196, 164, 122))
-    L.rect(yard_x + 290, 594, w + 20, 614, rgba(84, 80, 84))
+    # 1-6 마당: 낮은 돌담, 사과나무, 나무 대문
+    L.rect(yard_x + 300, 610, w + 20, 792, rgba(170, 160, 146))
+    L.rect(yard_x + 290, 600, w + 20, 616, rgba(150, 140, 128))
     for _ in range(40):
         sx, sy = rng.uniform(yard_x + 300, w), rng.uniform(620, 780)
-        L.ellipse((sx - 14, sy - 8, sx + 14, sy + 8), rgba(176, 144, 104))
+        L.ellipse((sx - 16, sy - 10, sx + 16, sy + 10), rgba(150, 142, 130))
     tx = mk("1-6", 5190) - 120
     L.poly([(tx - 26, 792), (tx + 26, 792), (tx + 14, 330), (tx - 12, 330)], rgba(96, 70, 52))
     for ang, ln in ((-60, 230), (-115, 260), (-30, 180), (-150, 170), (-85, 200)):
         a = math.radians(ang)
         L.line([(tx, 400), (tx + math.cos(a) * ln, 400 + math.sin(a) * ln)], rgba(96, 70, 52), 9)
-    for _ in range(26):
+    for _ in range(40):  # 잎
+        a, r = rng.uniform(math.pi, math.tau), rng.uniform(40, 250)
+        px, py = tx + math.cos(a) * r, 380 + math.sin(a) * r * 0.8
+        L.ellipse((px - 26, py - 18, px + 26, py + 18), rgba(132, 138, 64, 200))
+    for _ in range(22):  # 사과
         a, r = rng.uniform(math.pi, math.tau), rng.uniform(60, 240)
         px, py = tx + math.cos(a) * r, 380 + math.sin(a) * r * 0.8
-        L.ellipse((px - 11, py - 11, px + 11, py + 11), rgba(238, 128, 40))
+        L.ellipse((px - 11, py - 11, px + 11, py + 11), rgba(200, 52, 42))
     gx = width - 330
     L.rect(gx - 16, 470, gx + 4, 792, dark)
     L.rect(gx + 196, 470, gx + 216, 792, dark)
-    L.poly([(gx - 50, 470), (gx + 250, 470), (gx + 230, 430), (gx - 30, 430)], rgba(84, 80, 84))
+    L.rect(gx - 30, 456, gx + 230, 474, dark)  # 대문 위 나무 가로대
     L.poly([(gx + 4, 500), (gx + 70, 520), (gx + 70, 792), (gx + 4, 792)], rgba(150, 110, 70))  # 열린 문짝
 
-    # 앞: 문틀, 마루 기둥, 감나무 가지
+    # 앞: 문틀, 기둥, 사과나무 가지
     w = layer_width(width, "front")
     layers["front"] = L = Layer(w)
     # 기둥은 하윤을 가리지 않게 가늘고 초점이 나간 듯 흐리게(#90: 60px 진한 기둥이 화면을 갈랐다)
@@ -631,7 +634,7 @@ def house(width: float, markers: dict[str, float]) -> dict[str, Layer]:
         pts = sag(sx, -10, sx - 180, ln, 30, 10)
         L.line(pts, rgba(70, 52, 38), 10 - k)
         px, py = pts[-1]
-        L.ellipse((px - 16, py - 16, px + 16, py + 16), rgba(232, 120, 36))
+        L.ellipse((px - 16, py - 16, px + 16, py + 16), rgba(200, 52, 42))
     return layers
 
 
@@ -1448,36 +1451,40 @@ def prop_map_folded() -> Image.Image:
 
 
 def prop_tractor() -> Image.Image:
-    """2-4 농부와 경운기 실루엣. 왼쪽으로 간다(앞이 왼쪽). 농부는 앞만 본다(고개를 돌리지 않는다)."""
+    """2-4 농부와 낡은 트랙터 실루엣. 왼쪽으로 간다(앞이 왼쪽). 농부는 앞만 본다(고개를 돌리지 않는다)."""
     w, h = 560, 330
     ink = rgba(70, 58, 48, 235)
     L = Layer(w)
     base = h - 4
-    L.ellipse((330, base - 150, 480, base), ink)  # 큰 뒷바퀴
-    L.ellipse((368, base - 112, 442, base - 38), rgba(120, 100, 80, 235))
-    L.ellipse((40, base - 70, 110, base), ink)  # 앞바퀴
-    L.poly([(60, base - 70), (330, base - 110), (340, base - 60), (90, base - 40)], ink)  # 몸통·짐칸 이음
-    L.poly([(30, base - 150), (150, base - 160), (160, base - 70), (40, base - 70)], ink)  # 엔진
-    L.rect(70, base - 200, 86, base - 150, ink)  # 굴뚝
-    L.line([(150, base - 140), (260, base - 210), (300, base - 205)], ink, 8)  # 손잡이
-    L.poly([(250, base - 100), (500, base - 112), (520, base - 40), (260, base - 40)], ink)  # 짐칸
-    # 농부: 짐칸 앞에 앉아 앞(왼쪽)만 본다. 둥근 밀짚모자.
-    L.poly([(272, base - 108), (318, base - 108), (312, base - 200), (276, base - 200)], ink)
-    L.ellipse((276, base - 246, 316, base - 204), ink)
-    L.ellipse((252, base - 240, 340, base - 222), ink)
-    L.line([(282, base - 180), (262, base - 205)], ink, 9)  # 손잡이 잡은 팔
+    L.ellipse((300, base - 190, 490, base), ink)  # 큰 뒷바퀴
+    L.ellipse((350, base - 140, 440, base - 50), rgba(120, 100, 80, 235))
+    L.ellipse((40, base - 100, 140, base), ink)  # 작은 앞바퀴
+    L.ellipse((70, base - 70, 110, base - 30), rgba(120, 100, 80, 235))
+    L.poly([(30, base - 160), (300, base - 170), (310, base - 80), (60, base - 70)], ink)  # 둥근 보닛·몸통
+    L.ellipse((20, base - 180, 90, base - 120), ink)  # 보닛 앞 둥근 코
+    L.rect(110, base - 240, 124, base - 160, ink)  # 굴뚝
+    L.rect(104, base - 248, 130, base - 236, ink)
+    L.poly([(296, base - 150), (330, base - 196), (460, base - 196), (500, base - 150), (480, base - 140), (450, base - 180), (340, base - 180), (316, base - 140)], ink)  # 뒷바퀴 덮개
+    # 농부: 의자에 앉아 앞(왼쪽)만 본다. 챙 넓은 모자.
+    L.poly([(330, base - 150), (376, base - 150), (370, base - 240), (334, base - 240)], ink)
+    L.ellipse((334, base - 286, 374, base - 244), ink)
+    L.ellipse((306, base - 276, 402, base - 258), ink)
+    L.line([(338, base - 220), (250, base - 196)], ink, 9)  # 운전대 잡은 팔
+    L.line([(250, base - 196), (232, base - 170)], ink, 8)  # 운전대 기둥
+    L.ellipse((224, base - 210, 270, base - 190), ink)  # 운전대
     img = L.render()[0]
     return img.crop((0, 0, w, h))
 
 
-def prop_persimmon() -> Image.Image:
-    """1-6 감나무에서 떨어지는 감 하나. 그림 아래 끝이 땅에 닿는 곳."""
-    w, h = 44, 44
+def prop_apple() -> Image.Image:
+    """1-6 사과나무에서 떨어지는 사과 하나. 그림 아래 끝이 땅에 닿는 곳."""
+    w, h = 44, 46
     L = Layer(w)
-    L.ellipse((3, 8, 41, 43), rgba(226, 112, 34))
-    L.ellipse((10, 13, 22, 23), rgba(246, 170, 96, 200))  # 빛
-    L.poly([(14, 10), (22, 4), (30, 10), (22, 13)], rgba(86, 96, 48))  # 꼭지
-    L.line([(22, 6), (24, 0)], rgba(80, 60, 40), 2.5)
+    L.ellipse((3, 10, 25, 45), rgba(196, 48, 40))
+    L.ellipse((19, 10, 41, 45), rgba(196, 48, 40))
+    L.ellipse((8, 15, 18, 26), rgba(236, 128, 104, 200))  # 빛
+    L.line([(22, 14), (25, 2)], rgba(80, 60, 40), 3)  # 꼭지
+    L.poly([(25, 6), (36, 1), (40, 6), (30, 10)], rgba(96, 132, 56))  # 잎
     return L.render()[0].crop((0, 0, w, h))
 
 
@@ -1604,7 +1611,7 @@ def prop_dragonfly() -> Image.Image:
 
 
 PROPS = {"prop_map_folded": prop_map_folded, "prop_key": prop_key, "prop_thicket": prop_thicket,
-         "prop_deer": prop_deer, "prop_heron": prop_heron, "prop_dragonfly": prop_dragonfly, "prop_tractor": prop_tractor, "prop_persimmon": prop_persimmon,
+         "prop_deer": prop_deer, "prop_heron": prop_heron, "prop_dragonfly": prop_dragonfly, "prop_tractor": prop_tractor, "prop_apple": prop_apple,
          "prop_portrait_grandpa": prop_portrait_grandpa, "prop_portrait_hayun": prop_portrait_hayun}
 
 

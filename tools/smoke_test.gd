@@ -365,8 +365,8 @@ func _check_parts() -> void:
 			"부품: 집 1-3 앨범이 펼친 앨범 그림(세 쪽)을 넘긴다 '%s'" % album_art)
 	house_scene.free()
 	var shakes := _find_by_script("house", SHAKE)
-	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Persimmon" and shakes[0][1] < 5300.0,
-			"부품: 집 마당 1-6에 감나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
+	_check(shakes.size() == 1 and String(shakes[0][0]) == "Shake_1-6_Apple" and shakes[0][1] < 5300.0,
+			"부품: 집 마당 1-6에 사과나무 흔들기 하나, 대문 안쪽 %s" % [shakes])
 	_check(chase_ok, "부품: 들판에 날아간 지도(2-3) 하나, 묻히는 덤불이 임시 배경 FIELD_SNAGS 중 하나, 지도 그림이 있다 %s / %s" % [chases, snags])
 	var chain_ok := true
 	for r in required:

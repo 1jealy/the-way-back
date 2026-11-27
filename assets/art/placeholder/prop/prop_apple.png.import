@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bx5mxqdut2wrv"
-path="res://.godot/imported/prop_persimmon.png-784b09ce274acdeabf4dcb65e94a9962.ctex"
+uid="uid://gig1xpwj2so0"
+path="res://.godot/imported/prop_apple.png-66ac5769fba5d2d83c6aeda0f76d1b39.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/placeholder/prop/prop_persimmon.png"
-dest_files=["res://.godot/imported/prop_persimmon.png-784b09ce274acdeabf4dcb65e94a9962.ctex"]
+source_file="res://assets/art/placeholder/prop/prop_apple.png"
+dest_files=["res://.godot/imported/prop_apple.png-66ac5769fba5d2d83c6aeda0f76d1b39.ctex"]
 
 [params]
 
