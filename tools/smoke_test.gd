@@ -352,8 +352,14 @@ func _check_parts() -> void:
 			and tall.position.x <= 4300.0 and tall.position.x + tall.length >= chases[0][1][0] \
 			and tall.front_ratio > 0.0 and tall.front_z > 0 and tall.back_z < 0 \
 			and kite_item.art_z > tall.back_z and kite_item.art_z < 0 and kite_item.art_offset.y < -150.0
+	# 하윤이 통째로 덮이는 깊은 풀숲: 묻힌 지도 덤불(줍는 자리)과 2-3 벽 사이 — 조사·줍기 자리를 덮지 않는다.
+	var deep: Node = field_scene.get_node_or_null("Grass_2-3_Deep")
+	var gate_x: float = field_scene.get_node("Gate_2-3").position.x
+	grass_ok = grass_ok and deep != null and deep.position.x > chases[0][1][0] + 100.0 \
+			and deep.position.x + deep.length < gate_x and deep.front_z > tall.front_z \
+			and deep.height.x - deep.front_root.x > 330.0
 	field_scene.free()
-	_check(grass_ok, "부품: 들판 풀숲 — 길 뒤 낮은 풀은 전체, 키 큰 풀숲은 2-3 지도 구간, 방패연은 풀 끝에 걸쳐 풀 사이에 %s" % [grasses])
+	_check(grass_ok, "부품: 들판 풀숲 — 길 뒤 낮은 풀은 전체, 키 큰 풀숲은 2-3 지도 구간, 방패연은 풀 끝에, 하윤을 덮는 깊은 풀숲은 지도와 벽 사이 %s" % [grasses])
 	var opening := _find_by_script("house", "res://scripts/game/opening.gd")
 	var portraits := _find_by_script("house", "res://scripts/game/funeral_portraits.gd")
 	var find_art: Callable = load("res://scripts/ui/cutscene_player.gd").find_art
