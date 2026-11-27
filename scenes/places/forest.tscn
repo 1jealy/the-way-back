@@ -2,11 +2,14 @@
 
 [ext_resource type="PackedScene" path="res://scenes/places/place_template.tscn" id="1_tpl"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_sky.png" id="2_hekkq"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_horizon.png" id="3_5m1yl"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_far.png" id="3_eqluu"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_mid.png" id="4_1gp4a"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_ground_01.png" id="5_1l7lr"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_hills.png" id="5_44njm"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_ground_02.png" id="6_k6ejp"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_props_01.png" id="7_avhum"]
+[ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_near.png" id="7_b5vwe"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_props_02.png" id="8_5ibt5"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_front_01.png" id="9_8c2du"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/forest/bg_forest_front_02.png" id="10_edoyo"]
@@ -16,13 +19,13 @@
 [ext_resource type="AudioStream" path="res://assets/audio/placeholder/pos_forest_water.ogg" id="14_k6ejp"]
 [ext_resource type="Script" path="res://scripts/game/passage.gd" id="15_5ibt5"]
 [ext_resource type="Script" path="res://scripts/game/gate.gd" id="16_8c2du"]
-[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
-[ext_resource type="Script" path="res://scripts/game/flute_echo.gd" id="flute_script"]
-[ext_resource type="Script" uid="uid://bluqmseo20c52" path="res://scripts/game/memory_scene.gd" id="mem_script"]
-[ext_resource type="Script" path="res://scripts/game/light_motes.gd" id="motes_script"]
-[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
-[ext_resource type="Script" path="res://scripts/game/bench_sit.gd" id="sit_script"]
 [ext_resource type="Script" path="res://scripts/game/clearing_light.gd" id="clearing_script"]
+[ext_resource type="Script" path="res://scripts/game/flute_echo.gd" id="flute_script"]
+[ext_resource type="Script" path="res://scripts/game/keepsake.gd" id="keepsake_script"]
+[ext_resource type="Script" path="res://scripts/game/memory_scene.gd" id="mem_script"]
+[ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
+[ext_resource type="Script" path="res://scripts/game/light_motes.gd" id="motes_script"]
+[ext_resource type="Script" path="res://scripts/game/bench_sit.gd" id="sit_script"]
 
 [node name="Forest" unique_id=2086477153 instance=ExtResource("1_tpl")]
 place_id = &"forest"
@@ -38,16 +41,34 @@ footstep_surface = &"soil"
 texture = ExtResource("2_hekkq")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Horizon" index="0" unique_id=789377582]
+
+[node name="bg_forest_horizon" type="Sprite2D" parent="Layers/Horizon/Art" index="0" unique_id=847591987]
+texture = ExtResource("3_5m1yl")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Far" index="0" unique_id=1607461077]
 
 [node name="bg_forest_far" type="Sprite2D" parent="Layers/Far/Art" index="0" unique_id=2071833613]
 texture = ExtResource("3_eqluu")
 centered = false
 
+[node name="Art" type="Node2D" parent="Layers/Hills" index="0" unique_id=389257417]
+
+[node name="bg_forest_hills" type="Sprite2D" parent="Layers/Hills/Art" index="0" unique_id=566337754]
+texture = ExtResource("5_44njm")
+centered = false
+
 [node name="Art" type="Node2D" parent="Layers/Mid" index="0" unique_id=825047084]
 
 [node name="bg_forest_mid" type="Sprite2D" parent="Layers/Mid/Art" index="0" unique_id=1599037306]
 texture = ExtResource("4_1gp4a")
+centered = false
+
+[node name="Art" type="Node2D" parent="Layers/Near" index="0" unique_id=227666403]
+
+[node name="bg_forest_near" type="Sprite2D" parent="Layers/Near/Art" index="0" unique_id=1471009381]
+texture = ExtResource("7_b5vwe")
 centered = false
 
 [node name="Art" type="Node2D" parent="Layers/Ground" index="0" unique_id=1583224145]
@@ -153,16 +174,10 @@ art = "prop_thicket"
 position = Vector2(4600, 810)
 script = ExtResource("keepsake_script")
 item = &"willow_flute"
-prompt = "피리 줍기"
 art_offset = Vector2(0, -14)
 art_rotation = -8.0
-
-[node name="FluteEcho_4-2" type="Node2D" parent="."]
-position = Vector2(4760, 810)
-script = ExtResource("flute_script")
-grants_flag = &"flute_echo_done"
-entrance_x = 5600.0
-start_prompt = "피리 불기"
+prompt = "피리 줍기"
+lines = PackedStringArray()
 
 [node name="Look_4-2_Light21" type="Area2D" parent="." index="13" unique_id=198308308]
 position = Vector2(5000, 810)
@@ -182,9 +197,9 @@ lines = PackedStringArray()
 position = Vector2(5600, 810)
 script = ExtResource("15_5ibt5")
 to_x = 6000.0
-prompt = "오른쪽 입구로 들어가기"
 fallback_until_flag = &"flute_echo_done"
 fallback_to_x = 4450.0
+prompt = "오른쪽 입구로 들어가기"
 lines = PackedStringArray()
 
 [node name="Gate_4-2_2" type="StaticBody2D" parent="." index="16" unique_id=657761175]
@@ -192,18 +207,25 @@ position = Vector2(5800, 810)
 script = ExtResource("16_8c2du")
 art = "prop_thicket"
 
-[node name="Memory_4-3" type="Node2D" parent="."]
+[node name="FluteEcho_4-2" type="Node2D" parent="." index="17" unique_id=2081235908]
+position = Vector2(4760, 810)
+script = ExtResource("flute_script")
+melody = PackedInt32Array(1, 2, 1, 0)
+grants_flag = &"flute_echo_done"
+start_prompt = "피리 불기"
+
+[node name="Memory_4-3" type="Node2D" parent="." index="18" unique_id=2065875799]
 position = Vector2(6666, 890)
 script = ExtResource("mem_script")
 circle = 3
 art = "mem_pup"
 phrase = "mus_phrase_3"
 
-[node name="Motes_4-1" type="Node2D" parent="."]
+[node name="Motes_4-1" type="Node2D" parent="." index="19" unique_id=561915331]
 position = Vector2(891, 810)
 script = ExtResource("motes_script")
 
-[node name="Moment_4-1_Deer" type="Node2D" parent="."]
+[node name="Moment_4-1_Deer" type="Node2D" parent="." index="20" unique_id=1494499378]
 position = Vector2(1900, 810)
 script = ExtResource("moment_script")
 dog_to = 40.0
@@ -216,14 +238,15 @@ art_seconds = 6.0
 art_z = -12
 art_scale = 0.8
 
-[node name="Sit_4-3" type="Area2D" parent="."]
+[node name="Sit_4-3" type="Area2D" parent="." index="21" unique_id=770991437]
 position = Vector2(6120, 810)
 script = ExtResource("sit_script")
-prompt = "앉기"
-requires_flag = &"map_circle_3"
 pose = &"sit_floor"
+prompt = "앉기"
+lines = PackedStringArray()
+requires_flag = &"map_circle_3"
 
-[node name="Light_4-3" type="Node2D" parent="."]
+[node name="Light_4-3" type="Node2D" parent="." index="22" unique_id=375367050]
 position = Vector2(6120, 810)
 script = ExtResource("clearing_script")
 sit = NodePath("../Sit_4-3")

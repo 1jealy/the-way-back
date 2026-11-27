@@ -17,7 +17,7 @@ const PLACES := [
 	[&"bridge", 4, ["6-1", "6-2", "6-3"]],
 	[&"ferry", 2, ["7-1", "7-2", "7-3", "7-4", "7-5", "7-6", "7-7"]],
 ]
-const LAYERS := ["Sky", "Far", "Mid", "Ground", "Props", "Front"]
+const LAYERS := ["Sky", "Horizon", "Far", "Hills", "Mid", "Near", "Ground", "Props", "Front"]
 
 
 func _initialize() -> void:
