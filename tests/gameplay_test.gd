@@ -622,6 +622,7 @@ func _run() -> void:
 	await _check_album()
 	await _check_reflection()
 	await _check_bank_light()
+	await _check_phrase_game()
 	await _check_motes()
 	await _check_shadow()
 	await _check_cutout()
@@ -1125,6 +1126,64 @@ func _check_bank_light() -> void:
 			"강둑 비추기: 끝나면 손전등을 넣고 다시 선다")
 	game.queue_free()
 	spot.queue_free()
+	_player.global_position.x = px
+
+
+## 휘파람 따라 하기(#145): 선율은 한 곳(WhistleTune), 숲 피리가 그 위에서 돈다.
+func _check_phrase_game() -> void:
+	var tune: Script = load("res://scripts/game/whistle_tune.gd")
+	var field: PackedInt32Array = tune.levels(&"field")
+	var forest: PackedInt32Array = tune.levels(&"forest")
+	_check(field.size() == 3 and forest.size() == 4 and tune.levels(&"riverside").size() == 4 and tune.levels(&"bridge").size() == 5,
+			"휘파람: 소절 길이가 들판 3 · 숲 4 · 강가 4 · 철교 5")
+	var ok := true
+	for id in [&"field", &"forest", &"riverside", &"bridge"]:
+		ok = ok and tune.pitches(id).size() <= 3
+		for lv in tune.levels(id):
+			ok = ok and lv >= 0 and lv <= 2
+	_check(ok, "휘파람: 소절마다 높이는 셋(← E →)뿐이다")
+	var same := true
+	for k in 3:
+		same = same and int(tune.notes(&"forest")[k][0]) == int(tune.notes(&"field")[k][0])
+	_check(same and forest.slice(0, 3) == field, "휘파람: 들판 소절은 숲 소절의 앞 세 음이다(음 높이)")
+	var place: Node2D = _main.current_place()
+	var px := _player.global_position.x
+	var game: Node2D = load("res://scripts/game/flute_echo.gd").new()
+	game.trigger_flag = &"item_test_flute"
+	game.grants_flag = &"phrase_test_done"
+	game.start_prompt = "피리 불기"
+	game.echo_gap = 0.15
+	place.add_child(game)
+	game.global_position = Vector2(px + 60.0, 810.0)
+	game.entrance_x = px + 900.0
+	_check(game.melody == forest, "휘파람: 숲 피리는 숲 소절을 분다")
+	_state.set_flag(&"item_test_flute")
+	_player.global_position.x = px + 80.0
+	await _wait(0.2)
+	await _press(&"interact")
+	_check(await _wait_until(func(): return game.phase == &"play", 4.0) and game.round_length() == 3,
+			"휘파람: 메아리를 듣고 나면 하윤 차례, 첫 소절은 들판에서 배운 세 음")
+	var wrong := 0 if field[0] != 0 else 2
+	for k in 3:
+		await _wait_until(func(): return game.phase == &"play", 4.0)
+		await _press(&"move_left" if wrong == 0 else &"move_right")
+		await _wait(0.1)
+	_check(game.misses >= 3 and game.help and game.played == 0, "휘파람: 틀리면 그 소절을 다시 들려주고, 세 번이면 도움이 켜진다")
+	_check(not _state.has_flag(&"phrase_test_done"), "휘파람: 틀려도 실패 화면 없이 계속한다")
+	var keys := [&"move_left", &"interact", &"move_right"]
+	await _wait_until(func(): return game.phase == &"play", 4.0)
+	for k in 3:
+		await _press(keys[game.melody[k]])
+		await _wait(0.05)
+	_check(await _wait_until(func(): return game.round_index == 1 and game.phase == &"play", 4.0) and game.round_length() == 4,
+			"휘파람: 첫 소절을 맞추면 한 음 더 긴 숲 소절이 들린다")
+	for k in 4:
+		await _press(keys[game.melody[k]])
+		await _wait(0.05)
+	_check(await _wait_until(func(): return game.phase == &"answer", 2.0), "휘파람: 다 맞으면 할아버지 휘파람이 받아 분다")
+	_check(await _wait_until(func(): return _state.has_flag(&"phrase_test_done"), 10.0), "휘파람: 받아 분 뒤 길이 열린다(grants_flag)")
+	await _wait_until(func(): return _player.controls_enabled, 5.0)
+	game.queue_free()
 	_player.global_position.x = px
 
 
