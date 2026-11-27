@@ -38,7 +38,7 @@ SCREEN_W = 1920
 GROUND_Y = 810
 MAX_TILE_W = 8192
 SS = 2  # 2배로 그려 줄여서 가장자리를 부드럽게
-SCROLL = {"sky": 0.1, "far": 0.3, "mid": 0.6, "ground": 1.0, "props": 1.0, "front": 1.25}
+SCROLL = {"sky": 0.1, "horizon": 0.18, "far": 0.3, "hills": 0.45, "mid": 0.6, "near": 0.8, "ground": 1.0, "props": 1.0, "front": 1.25}
 
 Color = tuple[int, int, int, int]
 
@@ -200,96 +200,284 @@ def lerp_color(a: Color, b: Color, t: float) -> Color:
     return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(4))  # type: ignore[return-value]
 
 
-# ---------------------------------------------------------------- 억새 들판
-# 해 기우는 오후. 은빛·금빛 억새, 옅은 하늘색. 해는 오른쪽 낮게, 그림자는 왼쪽으로 길다.
+# ---------------------------------------------------------------- 2. 금빛 들판 (실루엣 화풍, #140)
+# 해 기우는 늦가을 오후. 한 가지 색으로 칠한 실루엣 층을 아홉 장 겹치고, 멀수록 지평선 빛(HAZE)에 녹아든다.
+# 해는 오른쪽 낮게. 해 쪽(위·오른쪽) 가장자리에 밝은 테를 둔다. 유럽 동화풍 시골(#136): 풍차, 먼 마을 첨탑,
+# 둥근 건초더미, 나무 울타리, 산울타리 나무 줄.
 
-# 2-3 지도가 걸리는 억새 덤불(땅 x). field.tscn MapChase_2-3의 position.x + stops와 같아야 한다(스모크 검사가 본다).
+# 2-3 지도가 걸리는 풀 덤불(땅 x). field.tscn MapChase_2-3의 position.x + stops와 같아야 한다(스모크 검사가 본다).
 FIELD_SNAGS = [5000, 5900, 6800]
+
+FIELD_HAZE = (246, 212, 160)   # 지평선 빛. 먼 층은 이 색에 녹아든다.
+FIELD_RIM = (255, 226, 160)    # 해 쪽 테두리
+
+
+def _fog(c: tuple[int, int, int], t: float, a: int = 255) -> Color:
+    """색 c를 지평선 빛에 t만큼 섞는다(대기 원근)."""
+    return rgba(*(round(c[i] + (FIELD_HAZE[i] - c[i]) * t) for i in range(3)), a)
+
+
+def _rim_ridge(L: Layer, pts: list[tuple[float, float]], body: Color, rim: Color, lift: float) -> None:
+    """능선 실루엣. 같은 능선을 lift만큼 위로 올려 테두리 색으로 먼저 깔고 몸을 덮어, 위 가장자리에 빛 테가 남는다."""
+    L.poly([pts[0]] + [(x + lift * 0.6, y - lift) for x, y in pts[1:-1]] + [pts[-1]], rim)
+    L.poly(pts, body)
+
+
+def _ridge_y(pts: list[tuple[float, float]], x: float) -> float:
+    for (xa, ya), (xb, yb) in zip(pts[1:-2], pts[2:-1]):
+        if xa <= x <= xb:
+            return ya + (yb - ya) * (x - xa) / max(xb - xa, 1e-6)
+    return pts[1][1]
+
+
+def _blob_tree(L: Layer, rng: random.Random, x: float, y: float, r: float, body: Color, rim: Color, trunk: bool = True) -> None:
+    """둥근 나무 실루엣: 공 몇 개. 해 쪽(오른쪽 위)에 테를 먼저 깐다."""
+    balls = []
+    for _ in range(rng.randint(3, 5)):
+        ox, oy, rr = rng.uniform(-0.6, 0.6) * r, rng.uniform(-1.4, -0.6) * r, rng.uniform(0.55, 0.85) * r
+        balls.append((x + ox, y + oy, rr))
+    if trunk:
+        L.poly([(x - r * 0.08, y + 2), (x + r * 0.08, y + 2), (x + r * 0.05, y - r * 0.8), (x - r * 0.05, y - r * 0.8)], body)
+    for bx, by, rr in balls:
+        d = max(1.5, rr * 0.09)
+        L.ellipse((bx - rr + d, by - rr - d, bx + rr + d, by + rr - d), rim)
+    for bx, by, rr in balls:
+        L.ellipse((bx - rr, by - rr, bx + rr, by + rr), body)
+
+
+def _poplar(L: Layer, x: float, y: float, h: float, body: Color, rim: Color) -> None:
+    """키 큰 미루나무(포플러) 한 그루: 길쭉한 불꽃 모양."""
+    wd = h * 0.16
+    pts = [(x - wd * 0.15, y), (x - wd, y - h * 0.35), (x - wd * 0.7, y - h * 0.75), (x, y - h), (x + wd * 0.7, y - h * 0.75), (x + wd, y - h * 0.35), (x + wd * 0.15, y)]
+    L.poly([(px + 3, py - 3) for px, py in pts], rim)
+    L.poly(pts, body)
+
+
+def _windmill(L: Layer, x: float, y: float, s: float, body: Color, rim: Color, angle: float) -> None:
+    """풍차: 위가 좁은 탑, 둥근 모자, 날개 넷(살만 보이게)."""
+    L.poly([(x - 26 * s + 3, y), (x + 26 * s + 3, y), (x + 15 * s + 3, y - 120 * s - 3), (x - 15 * s + 3, y - 120 * s - 3)], rim)
+    L.poly([(x - 26 * s, y), (x + 26 * s, y), (x + 15 * s, y - 120 * s), (x - 15 * s, y - 120 * s)], body)
+    L.ellipse((x - 20 * s, y - 140 * s, x + 20 * s, y - 108 * s), body)
+    hx, hy = x - 4 * s, y - 124 * s
+    for k in range(4):
+        a = angle + k * math.pi / 2
+        ex, ey = hx + math.cos(a) * 96 * s, hy + math.sin(a) * 96 * s
+        L.line([(hx, hy), (ex, ey)], body, 4 * s)
+        nx, ny = -math.sin(a), math.cos(a)  # 날개 천(살 옆의 좁은 판)
+        L.poly([(hx + math.cos(a) * 22 * s, hy + math.sin(a) * 22 * s),
+                (ex, ey), (ex + nx * 16 * s, ey + ny * 16 * s),
+                (hx + math.cos(a) * 22 * s + nx * 16 * s, hy + math.sin(a) * 22 * s + ny * 16 * s)], _with_alpha(body, 150))
+
+
+def _with_alpha(c: Color, a: int) -> Color:
+    return (c[0], c[1], c[2], a)
+
+
+def _village(L: Layer, rng: random.Random, x: float, y: float, body: Color, rim: Color) -> None:
+    """먼 언덕 위 작은 마을: 박공지붕 집 여럿과 뾰족한 첨탑 하나."""
+    cx = x
+    for i in range(rng.randint(5, 8)):
+        wd, hh = rng.uniform(24, 44), rng.uniform(18, 30)
+        roof = rng.uniform(14, 24)
+        L.poly([(cx + 2, y - hh - 2), (cx + wd / 2 + 2, y - hh - roof - 2), (cx + wd + 2, y - hh - 2)], rim)
+        L.rect(cx, y - hh, cx + wd, y + 4, body)
+        L.poly([(cx - 3, y - hh), (cx + wd / 2, y - hh - roof), (cx + wd + 3, y - hh)], body)
+        if i == 2:  # 첨탑
+            tx = cx + wd + 6
+            L.rect(tx, y - 70, tx + 18, y + 4, body)
+            L.poly([(tx - 2 + 2, y - 70), (tx + 9 + 2, y - 128), (tx + 20 + 2, y - 70)], rim)
+            L.poly([(tx - 2, y - 70), (tx + 9, y - 128), (tx + 20, y - 70)], body)
+            cx = tx + 22
+        cx += wd + rng.uniform(-6, 10)
+
+
+def _hay_bale(L: Layer, x: float, y: float, r: float, body: Color, lit: Color, shadow: Color) -> None:
+    """둥근 건초더미(옆에서 본 원통). 해 쪽이 밝고 그림자는 왼쪽으로 길다."""
+    L.poly([(x - r, y), (x + r * 0.6, y), (x - r * 4.2, y + r * 0.35), (x - r * 4.6, y + r * 0.2)], shadow)
+    L.ellipse((x - r, y - r * 1.9, x + r, y + 2), body)
+    L.ellipse((x - r * 0.15, y - r * 1.75, x + r * 0.95, y - r * 0.1), lit)
+    L.ellipse((x + r * 0.1, y - r * 1.45, x + r * 0.7, y - r * 0.45), _with_alpha(body, 120))
+
+
+def _grass_tuft(L: Layer, rng: random.Random, x: float, base: float, scale: float, stem: Color, tip: Color, n: int) -> None:
+    """들풀 한 포기: 휘어진 잎 여럿 + 끝의 밝은 이삭. 바람에 왼쪽으로 눕는다."""
+    for _ in range(n):
+        bx = x + rng.gauss(0, 34 * scale)
+        h = rng.uniform(150, 320) * scale
+        lean = rng.uniform(-90, -15) * scale
+        pts = [(bx + lean * (i / 10) ** 2, base - h * i / 10) for i in range(11)]
+        L.line(pts, stem, max(1.4, 3.0 * scale))
+        if rng.random() < 0.7:  # 이삭(밀 이삭처럼 낟알 몇)
+            tx, ty = pts[-1]
+            for k in range(5):
+                L.ellipse((tx + lean * 0.04 * k - 4 * scale, ty + k * 7 * scale - 5 * scale,
+                           tx + lean * 0.04 * k + 4 * scale, ty + k * 7 * scale + 5 * scale), tip)
 
 
 def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     rng = random.Random("field")
     layers: dict[str, Layer] = {}
 
-    # 하늘: 위는 옅은 하늘색, 지평선은 바랜 금빛. 해는 오른쪽 낮게.
+    # 하늘: 위는 맑은 파랑, 지평선은 금빛. 해는 오른쪽 낮게, 빛살이 퍼진다.
     w = layer_width(width, "sky")
+    sun_x, sun_y = w * 0.8, 600
     sky = vertical_gradient(w, [
-        (0.0, (122, 162, 204)), (0.35, (168, 196, 220)),
-        (0.58, (226, 214, 184)), (0.70, (240, 206, 150)), (1.0, (236, 196, 140)),
+        (0.0, (96, 136, 190)), (0.3, (150, 182, 214)), (0.5, (214, 210, 196)),
+        (0.6, (244, 216, 172)), (0.7, (250, 206, 150)), (1.0, (240, 186, 128)),
     ])
-    add_glow(sky, w * 0.82, 600, 900, (255, 222, 160), 0.55)
-    add_glow(sky, w * 0.82, 600, 160, (255, 240, 205), 0.8)
+    add_glow(sky, sun_x, sun_y, 1300, (255, 214, 150), 0.5)
+    add_glow(sky, sun_x, sun_y, 260, (255, 238, 200), 0.85)
     layers["sky"] = L = Layer(w, sky)
-    L.ellipse((w * 0.82 - 34, 566, w * 0.82 + 34, 634), rgba(255, 246, 222))
-    clouds: list[tuple] = []
-    for _ in range(9):
-        cx, cy = rng.uniform(0, w), rng.uniform(170, 470)
-        cw, ch = rng.uniform(260, 700), rng.uniform(14, 34)
-        clouds.append(("ellipse", (cx - cw / 2, cy - ch / 2, cx + cw / 2, cy + ch / 2), rgba(255, 240, 226, 120)))
-    L.blur_groups.append((clouds, 10))
+    rays = []
+    for k in range(9):  # 구름 사이로 퍼지는 빛살
+        a = math.radians(196 + k * 15 + rng.uniform(-4, 4))
+        a2 = a + math.radians(rng.uniform(3, 6))
+        ln = rng.uniform(900, 1500)
+        rays.append(("poly", [(sun_x, sun_y), (sun_x + math.cos(a) * ln, sun_y + math.sin(a) * ln),
+                              (sun_x + math.cos(a2) * ln, sun_y + math.sin(a2) * ln)], rgba(255, 236, 196, 46)))
+    L.haze(rays, 18)
+    for _ in range(7):  # 뭉게구름: 아랫면이 해빛에 물든다
+        cx, cy = rng.uniform(0, w), rng.uniform(170, 430)
+        cw = rng.uniform(320, 620)
+        body, lit = [], []
+        for _ in range(rng.randint(5, 8)):
+            ox, r = rng.uniform(-0.45, 0.45) * cw, rng.uniform(0.12, 0.22) * cw
+            oy = rng.uniform(-0.6, 0.0) * r
+            body.append(("ellipse", (cx + ox - r, cy + oy - r * 0.62, cx + ox + r, cy + oy + r * 0.62), rgba(250, 238, 226, 200)))
+            lit.append(("ellipse", (cx + ox - r * 0.9, cy + oy + r * 0.05, cx + ox + r * 0.95, cy + oy + r * 0.62), rgba(255, 206, 160, 170)))
+        L.blur_groups.append((body, 2.5))
+        L.haze(lit, 4)
+    L.ellipse((sun_x - 40, sun_y - 40, sun_x + 40, sun_y + 40), rgba(255, 250, 232))
 
-    # 먼 산: 두 겹. 멀수록 하늘색에 묻힌다.
+    # 지평선: 아주 먼 산맥. 거의 하늘색에 묻힌다.
+    w = layer_width(width, "horizon")
+    layers["horizon"] = L = Layer(w)
+    pts = ridge(rng, w, 470, 170, waves=4)
+    _rim_ridge(L, pts, _fog((104, 126, 184), 0.5), rgba(*FIELD_RIM, 200), 2)
+    L.haze([("poly", [(-20, 560), (w + 20, 560), (w + 20, 640), (-20, 640)], rgba(*FIELD_HAZE, 150))], 30)
+
+    # 먼 산 + 언덕 위 마을.
     w = layer_width(width, "far")
     layers["far"] = L = Layer(w)
-    L.poly(ridge(rng, w, 560, 70), rgba(160, 172, 190))
-    L.poly(ridge(rng, w, 615, 55), rgba(132, 142, 160))
+    body = _fog((104, 92, 132), 0.36)
+    pts = ridge(rng, w, 575, 95, waves=3)
+    _rim_ridge(L, pts, body, rgba(*FIELD_RIM, 210), 2.5)
+    for vx in (rng.uniform(600, 1400), rng.uniform(2600, 3600)):
+        if vx < w - 400:
+            _village(L, rng, vx, _ridge_y(pts, vx) + 6, body, rgba(*FIELD_RIM, 210))
+    x = 200.0
+    while x < w:
+        _poplar(L, x, _ridge_y(pts, x) + 8, rng.uniform(60, 90), body, rgba(*FIELD_RIM, 180))
+        x += rng.uniform(150, 600)
+    L.haze([("poly", [(-20, 620), (w + 20, 620), (w + 20, 690), (-20, 690)], rgba(*FIELD_HAZE, 120))], 24)
 
-    # 중간: 완만한 언덕, 나무 덩어리, 멀리까지 이어진 전봇대 줄(2-1).
+    # 구릉: 산울타리 나무 줄, 풍차.
+    w = layer_width(width, "hills")
+    layers["hills"] = L = Layer(w)
+    body = _fog((126, 104, 70), 0.28)
+    rim = rgba(*FIELD_RIM, 220)
+    pts = ridge(rng, w, 640, 60, waves=3)
+    _rim_ridge(L, pts, body, rim, 3)
+    x = 80.0
+    while x < w:  # 밭 경계의 나무 줄
+        run = rng.uniform(300, 700)
+        tx = x
+        while tx < min(x + run, w):
+            _blob_tree(L, rng, tx, _ridge_y(pts, tx) + 6, rng.uniform(14, 22), body, rim, trunk=False)
+            tx += rng.uniform(22, 36)
+        x += run + rng.uniform(250, 700)
+    mill_x = w * 0.55
+    _windmill(L, mill_x, _ridge_y(pts, mill_x) + 6, 0.8, body, rim, 0.35)
+    L.haze([("poly", [(-20, 680), (w + 20, 680), (w + 20, 730), (-20, 730)], rgba(*FIELD_HAZE, 110))], 20)
+
+    # 가운데 언덕: 나무 덩어리, 건초더미, 멀리까지 이어진 전봇대 줄(2-1).
     w = layer_width(width, "mid")
     layers["mid"] = L = Layer(w)
-    hill = ridge(rng, w, 672, 34, waves=3)
-    L.poly(hill, rgba(168, 150, 98))
-
-    def hill_y(x: float) -> float:
-        for (xa, ya), (xb, yb) in zip(hill[1:-2], hill[2:-1]):
-            if xa <= x <= xb:
-                return ya + (yb - ya) * (x - xa) / (xb - xa)
-        return 672.0
-
+    body = _fog((150, 112, 58), 0.12)
+    rim = rgba(*FIELD_RIM, 230)
+    hill = ridge(rng, w, 692, 34, waves=3)
+    _rim_ridge(L, hill, body, rim, 3)
+    for k in range(int(w / 60)):  # 밭이랑 결: 언덕을 비스듬히 지나는 밝은 줄
+        x = rng.uniform(0, w)
+        y = _ridge_y(hill, x) + rng.uniform(8, 40)
+        L.line([(x, y), (x + rng.uniform(60, 160), y + rng.uniform(2, 8))], _fog((186, 150, 90), 0.2, 150), 2)
     x = rng.uniform(100, 400)
     while x < w:
-        y = hill_y(x)
-        for _ in range(rng.randint(2, 4)):
-            r = rng.uniform(26, 48)
-            ox = rng.uniform(-40, 40)
-            L.ellipse((x + ox - r, y - r * 1.5, x + ox + r, y + r * 0.4), rgba(112, 108, 72))
-        x += rng.uniform(500, 1400)
+        _blob_tree(L, rng, x, _ridge_y(hill, x) + 6, rng.uniform(34, 54), _fog((96, 80, 46), 0.1), rim)
+        x += rng.uniform(600, 1500)
+    x = rng.uniform(300, 900)
+    while x < w:
+        for k in range(rng.randint(1, 3)):
+            bx = x + k * rng.uniform(50, 90)
+            _hay_bale(L, bx, _ridge_y(hill, bx) + 14, rng.uniform(13, 18), _fog((196, 150, 78), 0.18),
+                      _fog((240, 200, 120), 0.1), _fog((120, 92, 56), 0.2, 120))
+        x += rng.uniform(700, 1600)
     tops = []
     for x in range(160, w, 300):
-        y = hill_y(x) + 4
-        L.line([(x, y), (x, y - 92)], rgba(96, 88, 70), 3)
-        L.line([(x - 10, y - 84), (x + 10, y - 84)], rgba(96, 88, 70), 2)
+        y = _ridge_y(hill, x) + 4
+        L.line([(x, y), (x, y - 92)], _fog((96, 82, 64), 0.2), 3)
+        L.line([(x - 10, y - 84), (x + 10, y - 84)], _fog((96, 82, 64), 0.2), 2)
         tops.append((x, y - 84))
     for (xa, ya), (xb, yb) in zip(tops, tops[1:]):
-        L.line(sag(xa, ya, xb, yb, 10), rgba(96, 88, 70, 170), 1.2)
+        L.line(sag(xa, ya, xb, yb, 10), _fog((96, 82, 64), 0.2, 170), 1.2)
 
-    # 땅: 하윤 뒤의 억새밭 + 흙길. 하윤 발은 y = 810, 흙길 위.
+    # 가까운 밭: 금빛 들풀이 물결치는 띠와 나무 울타리.
+    w = layer_width(width, "near")
+    layers["near"] = L = Layer(w)
+    body = rgba(186, 132, 54)
+    band = ridge(rng, w, 738, 12, step=30)
+    _rim_ridge(L, band, body, rgba(*FIELD_RIM, 240), 4)
+    for _ in range(int(w / 5)):  # 들풀 결: 끝이 해빛에 빛난다
+        x = rng.uniform(0, w)
+        y0 = _ridge_y(band, x) + rng.uniform(2, 50)
+        h = rng.uniform(14, 40)
+        lean = rng.uniform(-10, -3)
+        L.line([(x, y0), (x + lean, y0 - h)], lerp_color(_fog((150, 108, 52), 0.05), rgba(250, 222, 150), rng.random() ** 1.5), rng.uniform(1.2, 2.2))
+    fence_dark, fence_lit = rgba(104, 78, 52), rgba(196, 150, 96)
+    x = rng.uniform(200, 600)
+    while x < w:  # 나무 울타리(끊어졌다 이어진다)
+        run = rng.uniform(500, 1200)
+        posts = [x + i * 70 for i in range(int(run / 70))]
+        for px in posts:
+            y = _ridge_y(band, px) + 22
+            L.rect(px - 4, y - 46, px + 4, y, fence_dark)
+            L.rect(px + 1, y - 46, px + 4, y, fence_lit)
+        if len(posts) > 1:
+            for dy in (36, 18):
+                L.line([(px, _ridge_y(band, px) + 22 - dy) for px in posts], fence_dark, 3)
+        x += run + rng.uniform(400, 1400)
+
+    # 땅: 하윤이 걷는 흙길. 하윤 발은 y = 810, 흙길 위.
     w = layer_width(width, "ground")
     layers["ground"] = L = Layer(w)
-    L.poly(ridge(rng, w, 728, 10, step=40), rgba(200, 172, 108))  # 억새밭 바탕
-    L.poly([(-20, 792), (w + 20, 792), (w + 20, H), (-20, H)], rgba(150, 126, 86))  # 길 아래 흙
+    L.poly(ridge(rng, w, 770, 6, step=40), rgba(196, 148, 72))  # 길 뒤 들풀
+    L.poly([(-20, 792), (w + 20, 792), (w + 20, H), (-20, H)], rgba(150, 118, 78))
     path_top = [(float(x), 792 + rng.uniform(-3, 3)) for x in range(-20, w + 40, 60)]
     path_bot = [(float(x), 872 + rng.uniform(-6, 6)) for x in range(w + 40, -40, -60)]
-    L.poly(path_top + path_bot, rgba(186, 158, 118))  # 흙길
-    L.poly([(-20, 872), (w + 20, 872), (w + 20, H), (-20, H)], rgba(170, 142, 92))  # 길 앞 풀
-    # 억새밭 결: 위로 뻗은 획, 오른쪽(해 쪽) 끝이 밝다
-    for _ in range(int(w / 9)):
+    L.poly(path_top + path_bot, rgba(198, 164, 118))  # 흙길(해빛에 밝다)
+    L.poly([(-20, 872), (w + 20, 872), (w + 20, H), (-20, H)], rgba(150, 104, 46))  # 길 앞 풀밭
+    L.under([("poly", [(-20, 975), (w + 20, 975), (w + 20, H + 60), (-20, H + 60)], rgba(112, 72, 30))], 40)
+    for _ in range(int(w / 3)):  # 길 앞 풀: 아래로 갈수록 크고 어둡고, 끝이 빛난다
         x = rng.uniform(0, w)
-        y0 = rng.uniform(745, 795)
-        h = rng.uniform(18, 60)
-        lean = rng.uniform(-14, -4)
-        c = lerp_color(rgba(176, 148, 92), rgba(236, 214, 160), rng.random())
-        L.line([(x, y0), (x + lean, y0 - h)], c, rng.uniform(1.2, 2.4))
-    for _ in range(int(w / 30)):  # 길 앞 풀
+        y0 = rng.uniform(878, 1090)
+        t = (y0 - 878) / 212
+        h = 14 + t * 46 + rng.uniform(0, 14)
+        lean = rng.uniform(-14, -3) * (1 + t)
+        c = lerp_color(rgba(196, 140, 60), rgba(110, 70, 30), t * 0.8 + rng.uniform(0, 0.2))
+        L.line([(x, y0), (x + lean, y0 - h)], c, 1.4 + t * 1.6)
+        if rng.random() < 0.25:
+            L.line([(x + lean * 0.8, y0 - h * 0.8), (x + lean, y0 - h)], rgba(252, 220, 140), 1.4 + t)
+    for _ in range(int(w / 8)):
         x = rng.uniform(0, w)
-        y0 = rng.uniform(880, 1080)
-        L.line([(x, y0), (x - rng.uniform(4, 12), y0 - rng.uniform(10, 26))], rgba(150, 124, 78), 2)
-    for _ in range(int(w / 40)):  # 흙길 자국
+        y0 = rng.uniform(772, 796)
+        L.line([(x, y0), (x + rng.uniform(-12, -3), y0 - rng.uniform(16, 46))],
+               lerp_color(rgba(170, 120, 56), rgba(252, 224, 150), rng.random() ** 1.3), rng.uniform(1.2, 2.4))
+    for _ in range(int(w / 40)):  # 바퀴 자국
         x = rng.uniform(0, w)
-        y = rng.uniform(800, 866)
-        L.line([(x, y), (x + rng.uniform(20, 70), y + rng.uniform(-1, 1))], rgba(168, 140, 102, 140), 2)
+        y = rng.choice((818, 846)) + rng.uniform(-3, 3)
+        L.line([(x, y), (x + rng.uniform(60, 180), y + rng.uniform(-1, 1))], rgba(170, 138, 98, 150), 3)
 
-    # 하윤 뒤 물건: 전봇대(그림자는 왼쪽으로 길게), 버스 정류장(2-5, 3시 17분에 멈춘 시계).
+    # 하윤 뒤 물건: 전봇대(그림자는 왼쪽으로 길게), 버스 정류장(2-5, 3시 17분에 멈춘 시계), 지도가 걸리는 풀 덤불.
     w = layer_width(width, "props")
     layers["props"] = L = Layer(w)
     stop_x = markers.get("2-5", width * 0.8)
@@ -298,27 +486,28 @@ def field(width: float, markers: dict[str, float]) -> dict[str, Layer]:
     tops = []
     for x in pole_xs:
         base = 792
-        shadows.append(("poly", [(x - 9, base), (x + 9, base), (x - 470, base + 34), (x - 500, base + 34)], rgba(70, 50, 30, 110)))
-        L.poly([(x - 9, base), (x + 9, base), (x + 6, base - 560), (x - 6, base - 560)], rgba(92, 78, 62))
-        L.poly([(x + 2, base), (x + 9, base), (x + 6, base - 560), (x + 2, base - 560)], rgba(150, 120, 86))  # 해 쪽 면
-        L.line([(x - 46, base - 520), (x + 46, base - 520)], rgba(80, 68, 54), 7)
+        shadows.append(("poly", [(x - 9, base), (x + 9, base), (x - 470, base + 34), (x - 500, base + 34)], rgba(70, 44, 24, 110)))
+        L.poly([(x - 9, base), (x + 9, base), (x + 6, base - 560), (x - 6, base - 560)], rgba(88, 68, 52))
+        L.poly([(x + 2, base), (x + 9, base), (x + 6, base - 560), (x + 2, base - 560)], rgba(214, 160, 96))  # 해 쪽 면
+        L.line([(x - 46, base - 520), (x + 46, base - 520)], rgba(80, 62, 48), 7)
         tops.append((x, base - 520))
     for (xa, ya), (xb, yb) in zip(tops, tops[1:]):
         for dx in (-40, 40):
-            L.line(sag(xa + dx, ya, xb + dx, yb, 46), rgba(70, 60, 50, 200), 2)
+            L.line(sag(xa + dx, ya, xb + dx, yb, 46), rgba(70, 56, 46, 200), 2)
     L.blur_groups.append((shadows, 3))
     bus_stop(L, stop_x, 792, shadows)
-    # 2-3 날아간 지도가 걸리는 억새 덤불 셋(하윤 뒤). 자리는 MapChase_2-3의 stops와 같다.
     snag_rng = random.Random("field_snags")
     for x in FIELD_SNAGS:
-        reed_clump(L, snag_rng, x, 0.62, base=800)
+        _grass_tuft(L, snag_rng, x, 800, 0.62, rgba(170, 126, 60), rgba(246, 214, 140), 16)
 
-    # 앞: 억새 덤불. 하윤 앞을 지나간다. 듬성듬성, 낮게.
+    # 앞: 가까운 들풀 덤불. 초점이 나간 듯 흐린 실루엣(하윤을 가리지 않게 듬성듬성).
     w = layer_width(width, "front")
     layers["front"] = L = Layer(w)
     x = rng.uniform(300, 700)
     while x < w:
-        reed_clump(L, rng, x, rng.uniform(0.7, 1.25))
+        tuft = Layer(w)
+        _grass_tuft(tuft, rng, x, H + 10, rng.uniform(0.8, 1.3), rgba(96, 62, 30, 235), rgba(150, 100, 44, 235), rng.randint(10, 16))
+        L.under(tuft.shapes, 4)
         x += rng.uniform(900, 1900)
     return layers
 
@@ -333,11 +522,11 @@ def sag(xa: float, ya: float, xb: float, yb: float, depth: float, n: int = 16) -
 
 def bus_stop(L: Layer, cx: float, base: float, shadows: list[tuple]) -> None:
     """시골 버스 정류장: 비스듬한 지붕, 뒷벽, 벤치, 시간표, 멈춘 시계(3:17)."""
-    wall, dark, roof = rgba(150, 132, 108), rgba(96, 82, 66), rgba(120, 72, 56)
+    wall, dark, roof = rgba(176, 140, 100), rgba(96, 70, 50), rgba(150, 66, 48)
     left, right = cx - 260, cx + 260
     shadows.append(("poly", [(left, base), (right, base), (right - 600, base + 40), (left - 600, base + 40)], rgba(70, 50, 30, 100)))
     L.poly([(left + 20, base), (right - 20, base), (right - 20, base - 300), (left + 20, base - 300)], wall)  # 뒷벽
-    L.poly([(right - 120, base - 290), (right - 30, base - 290), (right - 30, base - 60), (right - 120, base - 60)], rgba(178, 160, 132))  # 햇빛 든 벽
+    L.poly([(right - 120, base - 290), (right - 30, base - 290), (right - 30, base - 60), (right - 120, base - 60)], rgba(236, 196, 140))  # 햇빛 든 벽
     for px in (left + 24, right - 24):
         L.poly([(px - 8, base), (px + 8, base), (px + 8, base - 340), (px - 8, base - 340)], dark)
     L.poly([(left - 40, base - 330), (right + 50, base - 360), (right + 50, base - 380), (left - 40, base - 352)], roof)

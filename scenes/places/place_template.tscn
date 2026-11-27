@@ -11,13 +11,25 @@ script = ExtResource("1_place")
 z_index = -40
 scroll_scale = Vector2(0.1, 1)
 
+[node name="Horizon" type="Parallax2D" parent="Layers"]
+z_index = -35
+scroll_scale = Vector2(0.18, 1)
+
 [node name="Far" type="Parallax2D" parent="Layers"]
 z_index = -30
 scroll_scale = Vector2(0.3, 1)
 
+[node name="Hills" type="Parallax2D" parent="Layers"]
+z_index = -25
+scroll_scale = Vector2(0.45, 1)
+
 [node name="Mid" type="Parallax2D" parent="Layers"]
 z_index = -20
 scroll_scale = Vector2(0.6, 1)
+
+[node name="Near" type="Parallax2D" parent="Layers"]
+z_index = -15
+scroll_scale = Vector2(0.8, 1)
 
 [node name="Ground" type="Node2D" parent="Layers"]
 z_index = -10

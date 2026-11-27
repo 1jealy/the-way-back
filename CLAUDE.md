@@ -40,9 +40,12 @@
 ```text
 <Place>  (place.gd)
 ├─ Layers
-│  ├─ Sky    Parallax2D  scroll 0.1   z -40   하늘
-│  ├─ Far    Parallax2D  scroll 0.3   z -30   먼 산·먼 숲
-│  ├─ Mid    Parallax2D  scroll 0.6   z -20   중간 풍경
+│  ├─ Sky     Parallax2D  scroll 0.1   z -40   하늘
+│  ├─ Horizon Parallax2D  scroll 0.18  z -35   (있으면) 지평선의 아주 먼 산맥
+│  ├─ Far     Parallax2D  scroll 0.3   z -30   먼 산·먼 숲
+│  ├─ Hills   Parallax2D  scroll 0.45  z -25   (있으면) 구릉·먼 나무 줄
+│  ├─ Mid     Parallax2D  scroll 0.6   z -20   중간 풍경
+│  ├─ Near    Parallax2D  scroll 0.8   z -15   (있으면) 길 바로 뒤의 밭·울타리
 │  ├─ Ground Node2D      scroll 1     z -10   하윤이 걷는 땅
 │  ├─ Props  Node2D      scroll 1     z -5    하윤 뒤에 있는 물건(정류장, 벤치)
 │  └─ Front  Parallax2D  scroll 1.25  z 10    하윤 앞을 지나가는 것(들풀, 나무 기둥)
@@ -57,6 +60,8 @@
 - 루트에서 정하는 값: `place_id`, `display_name`, `next_place`, `width`(장면표의 화면 길이 × 1920), `greybox`, `footstep_surface`(발소리 바닥), `footstep_changes`(`{x: 바닥}`, 그 x부터 바닥이 바뀜).
 - 장소 소리는 장소 씬 `Sound/` 아래에 둔다(`Ambience` = 환경음, 그 밖 `AudioStreamPlayer2D` = 자리 소리). 버스는 씬에 적지 않는다 — `main`이 들어올 때 `Ambience` 버스로 보낸다(에디터에는 코드로 만든 버스가 없어 씬에 적으면 Master로 바뀐다).
 - `greybox = true`면 `place.gd`가 회색 네모 배경을 만든다. 그림이 들어오면 끈다.
+- `Horizon`·`Hills`·`Near`는 깊이를 더 줄 때만 쓰는 층이다(#140). 그림 이름 `bg_<place>_horizon|hills|near`.
+- **실루엣 화풍 배경**(#140, 금빛 들판이 시범): 일러스트 담당 없이 `tools/placeholder_art.py`가 그린다. 한 가지 색 실루엣 층을 겹치고, 멀수록 지평선 빛(`FIELD_HAZE`)에 섞고(`_fog`), 해 쪽 위 가장자리에 밝은 테(`_rim_ridge`)를 둔다. 층 사이에 흐린 안개 띠.
 - 패럴랙스 층의 내용 폭은 `1920 + (width - 1920) × scroll` 이상이어야 끝까지 덮인다.
 
 ## 물리 층
