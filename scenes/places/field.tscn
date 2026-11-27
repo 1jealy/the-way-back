@@ -24,10 +24,16 @@
 [ext_resource type="Script" path="res://scripts/game/memory_scene.gd" id="mem_script"]
 [ext_resource type="Script" path="res://scripts/game/moment.gd" id="moment_script"]
 [ext_resource type="Script" path="res://scripts/game/tractor_pass.gd" id="tractor_script"]
+[ext_resource type="Script" path="res://scripts/game/grass_field.gd" id="grass_script"]
 
 [node name="Field" unique_id=1157741106 instance=ExtResource("1_tpl")]
 place_id = &"field"
 display_name = "금빛 들판"
+footstep_changes = {
+250.0: &"grass",
+8850.0: &"dirt",
+9800.0: &"grass"
+}
 next_place = "res://scenes/places/station.tscn"
 width = 11520.0
 greybox = false
@@ -168,7 +174,9 @@ reveal_flag = &"kite_flown"
 [node name="Keepsake_2-3_Kite" type="Area2D" parent="." index="11" unique_id=1191755309]
 position = Vector2(5300, 810)
 script = ExtResource("keepsake_script")
-art_offset = Vector2(40, -78)
+art_offset = Vector2(40, -200)
+art_rotation = -18.0
+art_z = -1
 art_rotation = -18.0
 prompt = "연 꺼내기"
 lines = PackedStringArray()
@@ -199,3 +207,78 @@ art_seconds = 4.5
 art_z = 5
 art_count = 4
 art_bob = 30.0
+
+[node name="Grass_2-1_Verge" type="Node2D" parent="."]
+position = Vector2(0, 810)
+script = ExtResource("grass_script")
+length = 11520.0
+density = 55.0
+back_z = -4
+back_root = Vector2(-22, -14)
+height = Vector2(26, 70)
+blade_width = Vector2(3.5, 6)
+taper = 120.0
+seed_text = "verge"
+
+[node name="Grass_2-1_Tall" type="Node2D" parent="."]
+position = Vector2(250, 810)
+script = ExtResource("grass_script")
+length = 8600.0
+density = 105.0
+front_ratio = 0.55
+front_sparse = 1.0
+front_tint = Color(0.86, 0.78, 0.7, 1)
+back_z = -2
+front_z = 3
+back_root = Vector2(-14, 4)
+front_root = Vector2(50, 260)
+height = Vector2(150, 270)
+blade_width = Vector2(5, 9)
+taper = 450.0
+sway_px = 12.0
+push_radius = 110.0
+push_px = 46.0
+seed_text = "tall"
+cover_band = Vector2(-40, 120)
+
+[node name="Grass_2-6_Tall" type="Node2D" parent="."]
+position = Vector2(9800, 810)
+script = ExtResource("grass_script")
+length = 1500.0
+density = 105.0
+front_ratio = 0.55
+front_sparse = 1.0
+front_tint = Color(0.86, 0.78, 0.7, 1)
+back_z = -2
+front_z = 3
+back_root = Vector2(-14, 4)
+front_root = Vector2(50, 260)
+height = Vector2(150, 270)
+blade_width = Vector2(5, 9)
+taper = 450.0
+sway_px = 12.0
+push_radius = 110.0
+push_px = 46.0
+seed_text = "tall26"
+cover_band = Vector2(-40, 120)
+
+[node name="Grass_2-3_Deep" type="Node2D" parent="."]
+position = Vector2(6080, 810)
+script = ExtResource("grass_script")
+length = 820.0
+density = 150.0
+front_ratio = 1.0
+front_sparse = 1.0
+front_tint = Color(0.8, 0.72, 0.64, 1)
+front_z = 4
+front_root = Vector2(50, 250)
+height = Vector2(400, 480)
+blade_width = Vector2(8, 14)
+clump = Vector2i(6, 12)
+stalk_ratio = 0.15
+taper = 260.0
+sway_px = 16.0
+push_radius = 120.0
+push_px = 50.0
+front_push = 0.55
+seed_text = "deep"
