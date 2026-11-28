@@ -822,9 +822,7 @@ func _check_kite_fly(place: Node2D, chase: Node2D) -> void:
 	await _press(&"interact")
 	_check(_state.has_flag(&"item_kite"), "연: E로 주우면 item_kite")
 	_check(_player.is_locked_by(&"pickup") and _player.get_node("Visual/Rig").is_gesturing(), "연: 주울 때 하윤이 숙여서 집는다(#114)")
-	game.calm_seconds = 0.4
-	game.warn_seconds = 0.2
-	game.gust_seconds = 0.6
+	game.echo_gap = 0.2
 	_check(await _wait_until(func(): return not item.get_node("Art").visible, 4.0), "연: 주운 방패연 그림은 떠올라 사라진다")
 	await _wait_until(func(): return _player.controls_enabled, 3.0)
 	await _wait(0.3)
@@ -832,25 +830,31 @@ func _check_kite_fly(place: Node2D, chase: Node2D) -> void:
 	await _press(&"interact")
 	_check(await _wait_until(func(): return game.running, 2.0), "연: [E] 연 띄우기로 그 자리에서 시작한다")
 	_check(_player.is_locked_by(&"minigame") and _player.pose == &"kite", "연: 하윤이 멈추고 두 손으로 연줄을 잡는다")
-	_check(game.has_key_hint(), "연: 처음에는 손 옆에 [E] 꾹 누르면 감기")
-	var half: float = game.zone_high() - game.zone_low()
+	_check(game.phrase_id == &"field" and game.melody.size() == 3, "연: 들판 소절(세 음)을 따라 한다(#146)")
+	_check(await _wait_until(func(): return game.phase == &"play", 4.0) and game.has_key_hint(),
+			"연: 휘파람을 듣고 나면 손 옆에 [← E →] 낮게 · 가운데 · 높게")
+	var keys := [&"move_left", &"interact", &"move_right"]
+	var wrong: int = (game.melody[0] + 1) % 3
 	for k in 3:
-		game.h = 0.0
-		game.vh = -1.0
+		await _wait_until(func(): return game.phase == &"play", 4.0)
+		await _press(keys[wrong])
 		await _wait(0.1)
-	_check(game.misses >= 3 and game.help, "연: 연이 세 번 땅까지 내려오면 도움이 켜진다")
-	_check(is_equal_approx(game.zone_high() - game.zone_low(), half * 2.0), "연: 도움이 켜지면 노을빛 띠가 두 배로 넓어진다")
+	_check(game.misses >= 3 and game.help, "연: 틀린 높이로 세 번 띄우면 도움이 켜진다")
 	_check(not _state.has_flag(&"kite_flown"), "연: 어긋나도 실패 화면이 없고 계속한다")
-	var auto: Script = load("res://scripts/game/minigame.gd")
-	auto.autoplay = true
-	await _wait(0.4)
-	_check(not game.has_key_hint(), "연: 한 번 감으면 키 안내가 사라진다")
+	await _wait_until(func(): return game.phase == &"play", 4.0)
+	await _press(keys[game.melody[0]])
+	await _wait(0.6)
+	_check(game.played == 1 and not game.has_key_hint() and absf(game.h - game.LEVEL_H[game.melody[0]]) < 0.12,
+			"연: 맞는 높이를 고르면 연이 그 높이로 가고 키 안내가 사라진다 (h %.2f)" % game.h)
+	for k in range(1, 3):
+		await _press(keys[game.melody[k]])
+		await _wait(0.1)
+	_check(await _wait_until(func(): return game.phase == &"answer", 2.0), "연: 세 음을 다 맞히면 할아버지가 받아 분다")
 	var flown := await _wait_until(func(): return _state.has_flag(&"kite_flown"), 15.0)
-	_check(flown and game.gusts_held == 3, "연: 돌풍 셋을 버티면 kite_flown (%d)" % game.gusts_held)
+	_check(flown, "연: 받아 분 뒤 연이 높이 올라 kite_flown")
 	_check(not chase.buried, "연: 연이 높이 오르면 억새 속 지도가 보인다")
-	_check(await _wait_until(func(): return _player.controls_enabled, 6.0) and _player.pose == &"stand",
+	_check(await _wait_until(func(): return _player.controls_enabled, 8.0) and _player.pose == &"stand",
 			"연: 연을 거두면 다시 선다")
-	auto.autoplay = false
 
 
 ## 2-4 경운기(TractorPass): 다가오면 하윤이 멈춰 비켜서고, 가까이 오면 "안녕하세요",

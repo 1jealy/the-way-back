@@ -168,9 +168,7 @@ func _run() -> void:
 	await _walk_to(kite_item.global_position.x)
 	await _press(&"interact")
 	_check(await _wait_flag(&"item_kite", 2.0), "들판: 방패연을 줍는다(item_kite)")
-	kite_game.calm_seconds = 0.6
-	kite_game.warn_seconds = 0.3
-	kite_game.gust_seconds = 0.8
+	kite_game.echo_gap = 0.25
 	var autoplay_script: Script = load("res://scripts/game/minigame.gd")
 	autoplay_script.autoplay = true
 	await _wait_until(func(): return _player.controls_enabled, 4.0)
@@ -178,7 +176,7 @@ func _run() -> void:
 	await _press(&"interact")
 	_check(await _wait_until(func(): return kite_game.running, 4.0), "들판: 연을 주우고 [E] 연 띄우기로 그 자리에서 띄운다")
 	_check(not _player.controls_enabled, "들판: 연을 날리는 동안 하윤은 걷지 않는다")
-	_check(await _wait_flag(&"kite_flown", 20.0), "들판: 돌풍 세 번을 버티면 연이 높이 오른다(kite_flown)")
+	_check(await _wait_flag(&"kite_flown", 20.0), "들판: 휘파람 세 음을 연으로 따라 하면 연이 높이 오른다(kite_flown)")
 	_check(not chase.buried, "들판: 연이 오르면 지도가 다시 보인다")
 	_check(await _wait_until(func(): return _player.controls_enabled, 8.0), "들판: 연을 거두면 다시 걷는다")
 	autoplay_script.autoplay = false
