@@ -414,7 +414,7 @@ func _check_parts() -> void:
 func _find_by_script(place_id: String, script_path: String) -> Array:
 	var place: Node = load("res://scenes/places/%s.tscn" % place_id).instantiate()
 	var out := []
-	for node in place.get_children():
+	for node in place.find_children("*", "", true, false):  # 층 안에 둔 것도(집 영정은 뒷벽 층, #151)
 		if _script_path(node) == script_path:
 			out.append([node.name, node.position.x if node is Node2D else 0.0])
 	place.free()
@@ -478,6 +478,19 @@ func _check_house_puzzle(main: Node, player: CharacterBody2D) -> void:
 		elif player.controls_enabled:
 			break
 	_check(state.has_flag(&"has_map"), "집: 서랍을 열면 지도를 얻는다(has_map)")
+	# 아래층 원근(#151): 바닥·천장 평면, 옆벽, 빛줄기, 가구 층(깊이 0.95)이 장소 끝까지 덮는다
+	var room: Node = place.get_node_or_null("Room")
+	var furn: Parallax2D = place.get_node_or_null("Layers/Furniture")
+	var furn_w := 0.0
+	if furn:
+		for sp in furn.get_children():
+			if sp is Sprite2D and sp.texture and not sp.centered:
+				furn_w = maxf(furn_w, sp.position.x + sp.texture.get_width())
+	_check(room != null and room.get_node("Floor").material.get_shader_parameter("plane_tex") != null
+			and room.get_node("Ceiling").material.get_shader_parameter("plane_tex") != null
+			and room.find_children("Shaft_*").size() == 3 and room.find_children("EndWall_*").size() == 3
+			and furn != null and furn_w >= 1920.0 + (place.width - 1920.0) * furn.scroll_scale.x,
+			"집: 아래층 원근 — 바닥·천장 평면, 옆벽 셋, 빛줄기 셋, 가구 층이 끝까지 덮는다 (가구 폭 %d)" % int(furn_w))
 	# 다락(#151): 아래층과 벽으로 나뉘고 카메라도 그 구역 안에 머문다
 	var cam: Camera2D = player.get_node("Camera")
 	await _wait(0.2)

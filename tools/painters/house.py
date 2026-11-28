@@ -226,7 +226,7 @@ def attic_ground(c: Ink, rng, lm: LightMap, mk):
     # 뒷벽: 세로 판자
     c.planks_v(rng, 0, 0, W, FLOOR, ATTIC_WALL, step=72, jitter=12)
     # 바닥
-    c.planks_h(rng, 0, FLOOR, W, 1080, (176, 120, 76, 255), rows=6)
+    _attic_floor(c, rng)
     c.rect(0, FLOOR - 16, W, FLOOR, (150, 100, 62, 255))  # 걸레받이
     # 비스듬한 지붕 밑면(왼쪽·오른쪽), 판자를 비스듬히
     roof = (150, 100, 66, 255)
@@ -276,12 +276,31 @@ def attic_ground(c: Ink, rng, lm: LightMap, mk):
     lm.add([(1440, 560), (1700, 560), (1300, 1080), (700, 1080)], 0.25, 60)  # 빛줄기가 닿는 쪽 전체
 
 
+def _attic_floor(c: Ink, rng):
+    """다락 바닥: 판자가 화면 안쪽으로 뻗어 소실점(960, 210)으로 모인다(아래층 바닥과 같은 원근, 카메라가 서 있어 그림으로)."""
+    base = (176, 120, 76, 255)
+    s0, s1 = (FLOOR - 210) / 600, (1080 - 210) / 600
+    X = lambda p, s: (p - 960) * s + 960  # noqa: E731
+    Y = lambda s: 210 + 600 * s  # noqa: E731
+    p = -1200.0
+    while p < 3200:
+        w = 96
+        col = mix(base, dark(base, 0.14) if rng.random() < 0.5 else lite(base, 0.1), rng.uniform(0.15, 0.85))
+        c.poly([(X(p, s0), FLOOR), (X(p + w, s0), FLOOR), (X(p + w, s1), 1080), (X(p, s1), 1080)], col, lw=1.4, lc=dark(base, 0.45))
+        inv = rng.uniform(1.0 / s1, 1.0 / s0)
+        while inv < 1.0 / s0:
+            s = 1.0 / inv
+            c.stroke([(X(p, s), Y(s)), (X(p + w, s), Y(s))], 1.2, dark(base, 0.4))
+            inv += rng.uniform(0.15, 0.3)
+        p += w
+
+
 def attic_props(c: Ink, rng, lm: LightMap, mk):
     W = ATTIC_W
     # ---- 왼쪽 큰 책장(지붕 밑까지)
     sx0, sx1 = 0, 470
     shelf = (150, 98, 60, 255)
-    c.rect(sx0 - 10, 40, sx1, FLOOR + 6, shelf)
+    c.rect(sx0 - 10, 40, sx1, FLOOR + 6, shelf, cast=True)
     c.rect(sx0, 60, sx1 - 24, FLOOR - 10, dark(shelf, 0.45), line=False)  # 책장 안쪽 그늘
     ys = [60, 230, 400, 570, FLOOR - 10]
     for y in ys[1:-1]:
@@ -306,8 +325,7 @@ def attic_props(c: Ink, rng, lm: LightMap, mk):
     clock_face(c, 760, 210, 48)
     c.rect(726, 262, 794, 520, (150, 98, 60, 255))
     c.rect(738, 276, 782, 500, (212, 188, 150, 255), lw=1.6)
-    c.stroke([(760, 276), (752, 452)], 2.2, (180, 140, 70, 255))
-    c.ellipse(736, 440, 768, 472, (214, 170, 80, 255), lw=1.8)
+    c.rect(738, 276, 782, 500, (60, 44, 34, 90), line=False)  # 추는 따로 흔들린다(room_house_pendulum_attic)
 
     # ---- 빨랫줄에 매단 종이(그림·쪽지)
     rope = [(940, 128), (1160, 152), (1420, 132)]
@@ -323,6 +341,7 @@ def attic_props(c: Ink, rng, lm: LightMap, mk):
 
     # ---- 가족사진 액자(1-4): 서랍장 위 벽에 비스듬히
     fx = mk("1-4", 1080.0)
+    c.casters.append([(fx - 70, 250), (fx + 70, 250), (fx + 70, 420), (fx - 70, 420)])
     frame(c, fx - 70, 250, fx + 70, 420, family_photo, wood=(120, 80, 50, 255))
     c.stroke([(fx - 40, 252), (fx, 214), (fx + 40, 252)], 1.6, (90, 64, 44, 255))  # 거는 줄
     c.ellipse(fx - 5, 208, fx + 5, 218, (180, 150, 90, 255), lw=1.2)
@@ -330,7 +349,7 @@ def attic_props(c: Ink, rng, lm: LightMap, mk):
     # ---- 서랍장 + 위에 둘둘 만 침낭(가죽 띠)
     dx0, dx1 = 960, 1220
     chest = (196, 150, 98, 255)
-    c.rect(dx0, 520, dx1, FLOOR + 4, chest)
+    c.rect(dx0, 520, dx1, FLOOR + 4, chest, cast=True)
     for k in range(3):
         y = 540 + k * 82
         c.rect(dx0 + 16, y, dx1 - 16, y + 70, lite(chest, 0.12), lw=1.8)
@@ -351,7 +370,7 @@ def attic_props(c: Ink, rng, lm: LightMap, mk):
     top_y = 600
     c.rect(tx - 190, top_y + 22, tx - 168, FLOOR + 6, desk)
     c.rect(tx + 168, top_y + 22, tx + 190, FLOOR + 6, desk)
-    c.rect(tx - 176, top_y + 22, tx + 176, top_y + 108, lite(desk, 0.08))
+    c.rect(tx - 176, top_y + 22, tx + 176, top_y + 108, lite(desk, 0.08), cast=True)
     c.rect(tx - 90, top_y + 34, tx + 90, top_y + 96, lite(desk, 0.2), lw=2)  # 서랍
     c.rect(tx - 22, top_y + 58, tx + 22, top_y + 70, (200, 160, 80, 255), lw=1.4)  # 손잡이
     c.ellipse(tx - 5, top_y + 74, tx + 5, top_y + 86, (60, 40, 30, 255), line=False)  # 열쇠 구멍
@@ -395,387 +414,6 @@ def attic_front(c: Ink, rng):
     c.stroke([(-20, 960), (300, 940)], 6, (200, 80, 90, 255))
     c.stroke([(140, 950), (118, 910), (150, 920), (140, 950), (170, 912), (176, 940)], 4, (200, 80, 90, 255))
     box(c, 1720, 930, 1960, 1100, (160, 116, 76, 255), top=36)
-
-
-# ================================================================ 아래층 (1920~6670)
-
-
-def downstairs_ground(c: Ink, rng, lm: LightMap, mk):
-    x0, x1 = ATTIC_W, YARD_X
-    # 위 벽(회반죽) + 아래 징두리 판자
-    c.rect(x0, CEIL, x1, WAIN, PLASTER, line=False)
-    # 벽지: 옅은 세로 줄무늬와 작은 꽃무늬
-    def stripes(d, t):
-        x = x0
-        while x < x1:
-            d.rectangle([*t([(x, CEIL)])[0], *t([(x + 14, WAIN)])[0]], fill=alpha(dark(PLASTER, 0.1), 34))
-            x += 46
-    c.glaze(stripes, (x0, CEIL, x1, WAIN))
-
-    def sprigs(d, t):
-        for yy in range(int(CEIL) + 40, int(WAIN) - 20, 70):
-            for xx in range(int(x0) + 23 + (yy // 70 % 2) * 23, int(x1), 92):
-                q = t([(xx - 4, yy - 4), (xx + 4, yy + 4)])
-                d.ellipse([*q[0], *q[1]], fill=alpha((196, 120, 96), 60))
-    c.glaze(sprigs, (x0, CEIL, x1, WAIN))
-    c.planks_v(rng, x0, WAIN, x1, BASE, WAINSCOT, step=110, jitter=0, grain_n=3)
-    c.rect(x0, WAIN - 8, x1, WAIN + 10, lite(WAINSCOT, 0.15))   # 띠(징두리 위 턱)
-    c.rect(x0, BASE, x1, FLOOR, dark(WAINSCOT, 0.25))             # 걸레받이
-    # 천장 보
-    c.rect(x0, 0, x1, CEIL, (164, 116, 76, 255), line=False)
-    c.planks_v(rng, x0, 0, x1, CEIL - 30, (170, 122, 80, 255), step=90, jitter=6, grain_n=1)
-    c.rect(x0, CEIL - 34, x1, CEIL, BEAM)
-    c.rect(x0, CEIL - 10, x1, CEIL, dark(BEAM, 0.3), line=False)
-    # 바닥
-    c.planks_h(rng, x0, FLOOR, x1, 1080, FLOORC, rows=6)
-    # 기둥(방 나눔)
-    for px in (x0, 3040, 3960, 4860, 5700):
-        w = 44 if px != x0 else 70
-        c.rect(px, 0, px + w, FLOOR, BEAM)
-        c.rect(px + w - 10, CEIL, px + w, FLOOR, dark(BEAM, 0.3), line=False)
-        c.stroke([(px + 8, CEIL + 10), (px + 8, FLOOR - 10)], 2, lite(BEAM, 0.3))
-    # 창(빛은 왼쪽에서): 거실 큰 창, 책장 쪽 창, 복도 창
-    window(c, 2060, 230, 2440, 540, 3, 2, curtain=(178, 64, 54, 255))
-    window(c, 4500, 250, 4760, 520, 2, 2, curtain=(96, 128, 92, 255))
-    window(c, 6020, 260, 6200, 500, 2, 2)
-    # 현관문(열림): 문틀 안은 바깥(구멍), 밝은 빛이 쏟아진다
-    dx0, dx1 = 6500, 6660
-    c.erase([(dx0, 200), (dx1, 200), (dx1, FLOOR + 30), (dx0, FLOOR + 30)], keep=0)
-    c.rect(dx0 - 22, 180, dx1 + 10, 200, BEAM)
-    c.rect(dx0 - 22, 200, dx0, FLOOR + 6, BEAM)
-    c.rect(dx1, 200, dx1 + 10, FLOOR + 6, BEAM)
-    c.poly([(dx0 - 22, 206), (dx0 - 150, 160), (dx0 - 150, FLOOR + 40), (dx0 - 22, FLOOR + 6)], (120, 84, 54, 255))  # 안쪽으로 열린 문
-    c.poly([(dx0 - 40, 240), (dx0 - 132, 210), (dx0 - 132, 420), (dx0 - 40, 440)], (220, 236, 230, 170))  # 문 위 유리
-    c.ellipse(dx0 - 128, 520, dx0 - 112, 536, (210, 170, 80, 255), lw=1.2)
-    c.rect(dx0 - 30, FLOOR + 4, dx1 + 40, FLOOR + 18, (170, 160, 150, 255))  # 문턱 돌
-    # 집 바깥벽 끝(마당 쪽에서 보이는 두께)
-    c.rect(dx1 + 10, 0, YARD_X + 30, FLOOR + 6, (200, 176, 140, 255))
-    c.rect(dx1 + 10, 0, YARD_X + 30, 30, BEAM)
-
-    # 빛 지도: 아래층은 왼쪽 창에서 든다
-    for wx0, wy0, wx1, wy1, k in ((2060, 230, 2440, 540, 1.0), (4500, 250, 4760, 520, 0.8), (6020, 260, 6200, 500, 0.6)):
-        lm.glow((wx0 + wx1) / 2, (wy0 + wy1) / 2, (wx1 - wx0) * 1.1, 360, 0.35 * k)
-        lm.add([(wx0, wy0), (wx1, wy0), (wx1, wy1), (wx0, wy1)], 0.45, 14)
-        leaf_shadow(lm, rng, wx0, wy0, wx1, wy1, 10)
-        # 바닥 빛 웅덩이: 오른쪽 아래로 늘어진 창 모양
-        dx = (wx1 - wx0)
-        lm.add([(wx0 + 220, 840), (wx1 + 260, 840), (wx1 + 420, 1000), (wx0 + 380, 1000)], 0.75 * k, 10)
-        # 벽에 비친 빛(창 오른쪽으로 비스듬히)
-        lm.add([(wx1 + 40, wy0 + 120), (wx1 + 40 + dx * 0.7, wy0 + 200), (wx1 + 40 + dx * 0.7, wy1 + 160), (wx1 + 40, wy1 + 60)], 0.35 * k, 18)
-    lm.add([(x0, -40), (x1, -40), (x1, 210), (x0, 210)], -0.28, 70)  # 천장 쪽은 어둑하게
-    lm.add([(x0, 960), (x1, 960), (x1, 1120), (x0, 1120)], -0.15, 60)
-    lm.glow(6580, 600, 260, 420, 0.7)  # 현관문 빛
-    lm.add([(6500, 820), (6660, 820), (6420, 1080), (6000, 1080)], 0.6, 24)
-    lm.glow(5100, 140, 500, 200, -0.25)  # 계단 위 어둠
-
-
-def downstairs_props(c: Ink, rng, lm: LightMap, mk):
-    # ---------- 거실: 러그, 안락의자, 라디오, 벽 선반
-    rug = (168, 70, 58, 255)
-    c.poly([(2080, 830), (2720, 830), (2800, 930), (2000, 930)], rug)
-    c.poly([(2100, 840), (2700, 840), (2770, 920), (2030, 920)], None, lw=2, lc=(222, 176, 104, 255))
-    for k in range(1, 8):
-        t = k / 8
-        c.stroke([(2080 + 640 * t, 834), (2000 + 800 * t, 926)], 1.4, dark(rug, 0.2))
-    for x in range(2004, 2800, 14):  # 술
-        c.stroke([(x, 930), (x - 2, 942)], 1.4, (222, 196, 150, 255))
-    # 라디오(장식장 위)
-    rx = 2710
-    cab = (138, 90, 56, 255)
-    c.rect(rx - 110, 640, rx + 110, FLOOR + 4, cab)
-    c.rect(rx - 96, 660, rx + 96, 760, lite(cab, 0.1), lw=1.8)
-    c.ellipse(rx - 6, 700, rx + 6, 712, (210, 170, 90, 255), lw=1.2)
-    c.rect(rx - 120, 628, rx + 120, 642, lite(cab, 0.2))
-    radio = (176, 120, 70, 255)
-    c.poly([(rx - 90, 628), (rx - 90, 560), (rx - 70, 530), (rx + 70, 530), (rx + 90, 560), (rx + 90, 628)], radio)
-    c.rrect(rx - 74, 552, rx + 10, 616, 8, (224, 206, 164, 255), lw=1.6)  # 스피커 천
-    for k in range(5):
-        c.stroke([(rx - 68 + k * 16, 558), (rx - 68 + k * 16, 610)], 1.2, dark((224, 206, 164, 255), 0.2))
-    c.rrect(rx + 24, 556, rx + 74, 582, 4, (246, 226, 170, 255), lw=1.4)  # 눈금창
-    c.stroke([(rx + 44, 558), (rx + 44, 580)], 1.4, (180, 60, 40, 255))
-    for cx in (rx + 34, rx + 64):
-        c.ellipse(cx - 10, 590, cx + 10, 610, (110, 72, 44, 255), lw=1.4)
-    c.stroke([(rx + 60, 530), (rx + 96, 440)], 2, (90, 90, 90, 255))  # 안테나
-    # 안락의자(창 앞, 하윤이 깨어나는 자리 뒤)
-    ch = (122, 96, 120, 255)
-    c.rrect(2180, 560, 2420, 720, 30, ch)  # 등받이
-    c.rrect(2160, 680, 2440, 780, 18, lite(ch, 0.12))
-    c.rrect(2140, 640, 2200, 780, 18, dark(ch, 0.1))
-    c.rrect(2400, 640, 2460, 780, 18, dark(ch, 0.1))
-    for x in (2170, 2420):
-        c.rect(x, 780, x + 16, FLOOR + 8, (90, 60, 40, 255))
-    c.poly([(2230, 600), (2330, 590), (2350, 660), (2240, 668)], (236, 222, 190, 255), lw=1.6)  # 뜨개 덮개
-    # 벽 선반 + 접시·작은 그림
-    c.rect(2520, 330, 2900, 346, WOOD)
-    for k, x in enumerate((2540, 2620, 2700, 2790)):
-        if k == 2:
-            frame(c, x, 238, x + 70, 330, landscape, mat=False)
-        else:
-            c.ellipse(x, 262, x + 62, 324, (236, 232, 222, 255), lw=1.8)
-            c.ellipse(x + 12, 274, x + 50, 312, (110, 140, 176, 255), lw=1.2)
-    # 등(천장 갓등)
-    for lx in (2500, 3500, 4400, 5900):
-        c.stroke([(lx, CEIL), (lx, 200)], 2, (80, 60, 44, 255))
-        c.poly([(lx - 44, 236), (lx + 44, 236), (lx + 18, 196), (lx - 18, 196)], (214, 168, 90, 255))
-        c.ellipse(lx - 10, 230, lx + 10, 246, (255, 240, 200, 255), lw=1.2)
-
-    # ---------- 1-2 영정 자리: 흰 천 덮은 낮은 장, 백합, 초 둘 (사진은 게임이 그린다)
-    px = mk("1-2", 3260.0)
-    c.rect(px - 230, 270, px + 230, 286, WOOD)  # 사진 아래 선반 턱
-    cab = (120, 80, 50, 255)
-    c.rect(px - 210, 640, px + 210, FLOOR + 4, cab)
-    c.poly([(px - 220, 626), (px + 220, 626), (px + 230, 700), (px + 200, 690), (px + 170, 712), (px - 170, 712), (px - 200, 690), (px - 230, 700)],
-           (246, 242, 232, 255))  # 흰 천
-    for x in (px - 150, px + 150):
-        c.rect(x - 10, 560, x + 10, 626, (250, 246, 236, 255), lw=1.6)
-        c.rect(x - 16, 618, x + 16, 630, (200, 170, 100, 255), lw=1.4)
-        c.poly([(x, 538), (x + 6, 552), (x, 562), (x - 6, 552)], (255, 214, 120, 255), lw=1.0)
-        lm.glow(x, 550, 50, 50, 0.4, 20)
-    vase(c, px, 626, 70, (238, 236, 230, 255))
-    for k, (dx, dy) in enumerate(((-26, -100), (8, -122), (30, -92))):
-        c.stroke([(px, 560), (px + dx, 560 + dy + 26)], 2, (110, 140, 80, 255))
-        lily(c, px + dx, 560 + dy + 14, 0.8)
-
-    # ---------- 식탁 + 흰 백합 한 송이
-    tx = 3640
-    c.rect(tx - 160, 650, tx + 160, 668, lite(WOOD, 0.15))
-    c.rect(tx - 150, 668, tx - 134, FLOOR + 6, WOOD)
-    c.rect(tx + 134, 668, tx + 150, FLOOR + 6, WOOD)
-    c.poly([(tx - 120, 650), (tx + 130, 650), (tx + 120, 690), (tx - 110, 690)], (240, 236, 224, 255), lw=1.6)  # 식탁보
-    vase(c, tx + 40, 650, 56, (220, 234, 238, 255))
-    c.stroke([(tx + 40, 600), (tx + 56, 540)], 2, (110, 140, 80, 255))
-    lily(c, tx + 58, 536, 0.75)
-    c.ellipse(tx - 90, 636, tx - 30, 652, (236, 232, 222, 255), lw=1.4)  # 빈 접시
-    chair_ladder(c, tx - 250, FLOOR + 6, 0.85, (150, 104, 66, 255))
-    # 안쪽 문간(현관 쪽)과 검은 구두 줄
-    c.rect(3800, 300, 3940, FLOOR, (92, 64, 50, 255))
-    c.rect(3800, 290, 3940, 304, BEAM)
-    c.rect(3790, 300, 3804, FLOOR, BEAM)
-    c.rect(3936, 300, 3950, FLOOR, BEAM)
-    lm.add([(3800, 300), (3940, 300), (3940, FLOOR), (3800, FLOOR)], -0.35, 10)
-    c.poly([(3700, FLOOR + 12), (4000, FLOOR + 12), (4020, FLOOR + 52), (3680, FLOOR + 52)], (120, 100, 80, 255))  # 신발 깔개
-    for k in range(5):  # 검은 구두 줄(조문객)
-        sx = 3710 + k * 60
-        sole = FLOOR + 44
-        c.poly([(sx, sole), (sx + 4, sole - 20), (sx + 20, sole - 24), (sx + 34, sole - 16), (sx + 52, sole - 10), (sx + 54, sole)],
-               (36, 32, 36, 255), lw=1.4)
-        c.stroke([(sx + 8, sole - 18), (sx + 22, sole - 20)], 2, (140, 140, 150, 255))
-        c.stroke([(sx + 2, sole - 2), (sx + 52, sole - 2)], 2, (80, 70, 70, 255))
-
-    # ---------- 1-3 책장과 앨범
-    bx0, bx1 = 4000, 4280
-    shelf = (130, 84, 52, 255)
-    c.rect(bx0, 300, bx1, FLOOR + 4, shelf)
-    c.rect(bx0 + 14, 314, bx1 - 14, FLOOR - 10, dark(shelf, 0.45), line=False)
-    for y in (420, 540, 660, FLOOR - 10):
-        c.rect(bx0 + 10, y - 10, bx1 - 10, y, lite(shelf, 0.15), lw=1.6)
-        book_row(c, rng, bx0 + 18, bx1 - 20, y - 10, 70, 104)
-    c.rect(bx0 - 8, 290, bx1 + 8, 306, lite(shelf, 0.2))
-    c.ellipse(bx0 + 30, 236, bx0 + 90, 290, (130, 160, 110, 255))  # 화분
-    c.rect(bx0 + 40, 262, bx0 + 80, 292, (190, 110, 70, 255))
-    # 앨범 탁자 + 앨범
-    ax = mk("1-3", 4140.0) + 220
-    c.rect(ax - 110, 700, ax + 110, 716, lite(WOOD, 0.1))
-    c.rect(ax - 96, 716, ax - 84, FLOOR + 6, WOOD)
-    c.rect(ax + 84, 716, ax + 96, FLOOR + 6, WOOD)
-    c.poly([(ax - 70, 700), (ax + 60, 700), (ax + 70, 684), (ax - 60, 684)], (120, 60, 46, 255))
-    c.poly([(ax - 66, 684), (ax + 56, 684), (ax + 60, 678), (ax - 60, 678)], (240, 230, 206, 255), lw=1.2)
-    # 흔들의자
-    rk = (156, 104, 64, 255)
-    c.rect(4540, 600, 4556, 780, rk)
-    for k in range(4):
-        c.rect(4556, 610 + k * 40, 4610, 620 + k * 40, rk, lw=1.4)
-    c.rect(4540, 700, 4700, 716, lite(rk, 0.15))
-    c.rect(4680, 716, 4694, 790, rk)
-    c.stroke([(4500, 790), (4560, 800), (4660, 800), (4740, 786)], 6, rk)
-    c.poly([(4566, 640), (4650, 660), (4640, 700), (4560, 700)], (214, 196, 150, 255), lw=1.4)  # 숄
-
-    # ---------- 다락 계단: 오른쪽 아래(5480)에서 왼쪽 위(4900, 천장 구멍)로
-    st = (170, 116, 72, 255)
-    n = 11
-    foot_x, top_x = 5480.0, 4920.0
-    top_y = CEIL
-    c.rect(4880, 0, 5140, CEIL + 6, (36, 26, 22, 255))  # 천장 구멍(다락으로)
-    lm.add([(4880, 0), (5140, 0), (5140, CEIL), (4880, CEIL)], 0.3, 20)
-    for k in range(n):
-        x = foot_x - (foot_x - top_x) * (k + 1) / n
-        y = FLOOR - (FLOOR - top_y) * (k + 1) / n
-        sx = (foot_x - top_x) / n
-        c.rect(x, y, x + sx + 6, y + 14, lite(st, 0.2), lw=1.6)  # 디딤판
-        c.rect(x + 4, y + 14, x + sx + 2, y + (FLOOR - top_y) / n, dark(st, 0.18), lw=1.4)  # 챌판
-    c.poly([(foot_x + 40, FLOOR + 6), (top_x - 10, top_y - 10), (top_x + 40, top_y - 10), (foot_x + 80, FLOOR + 6)], st)  # 옆판
-    # 난간
-    rail = [(foot_x + 70, FLOOR - 190), (top_x + 40, top_y - 160)]
-    c.stroke(rail, 10, (120, 78, 48, 255))
-    for k in range(0, n, 2):
-        t = (k + 0.5) / n
-        x = foot_x + 60 + (top_x + 30 - foot_x - 60) * t
-        yb = FLOOR + (top_y - FLOOR) * t
-        c.stroke([(x, yb - 20), (x, yb - 190)], 5, (140, 92, 58, 255))
-    c.rect(foot_x + 50, FLOOR - 230, foot_x + 86, FLOOR + 6, (120, 78, 48, 255))  # 엄지기둥
-    c.ellipse(foot_x + 44, FLOOR - 252, foot_x + 92, FLOOR - 222, (130, 86, 54, 255))
-    # 괘종시계
-    gx = 5600
-    c.rect(gx, 360, gx + 80, FLOOR + 6, (110, 70, 44, 255))
-    c.rect(gx + 12, 470, gx + 68, 720, (200, 176, 140, 255), lw=1.6)
-    c.stroke([(gx + 40, 470), (gx + 40, 680)], 2, (190, 150, 70, 255))
-    c.ellipse(gx + 26, 670, gx + 54, 698, (210, 170, 80, 255), lw=1.4)
-    c.poly([(gx - 8, 360), (gx + 88, 360), (gx + 70, 330), (gx + 10, 330)], (110, 70, 44, 255))
-    clock_face(c, gx + 40, 410, 28, (110, 70, 44, 255))
-
-    # ---------- 복도: 외투걸이(할아버지 모자·외투), 우산꽂이, 작은 탁자, 액자들
-    hx = 5820
-    c.rect(hx, 260, hx + 14, FLOOR + 6, (100, 66, 42, 255))
-    c.rect(hx - 50, FLOOR - 4, hx + 64, FLOOR + 8, (100, 66, 42, 255))
-    for dx in (-30, 44):
-        c.stroke([(hx + 7, 290), (hx + dx, 320)], 4, (100, 66, 42, 255))
-    coat = (96, 84, 72, 255)
-    c.poly([(hx - 30, 320), (hx + 44, 320), (hx + 70, 600), (hx + 30, 640), (hx - 20, 630), (hx - 54, 590)], coat)
-    c.stroke([(hx + 7, 330), (hx + 4, 620)], 1.6, dark(coat, 0.3))
-    hat = (150, 120, 80, 255)
-    c.poly([(hx - 50, 300), (hx + 64, 300), (hx + 48, 290), (hx + 40, 256), (hx - 26, 256), (hx - 34, 290)], hat)  # 할아버지 모자
-    c.rect(hx - 30, 280, hx + 44, 290, (90, 64, 44, 255), line=False)
-    c.rrect(5940, 700, 5990, FLOOR + 6, 8, (90, 110, 120, 255))  # 우산꽂이
-    c.stroke([(5956, 700), (5948, 600), (5936, 590)], 4, (40, 40, 50, 255))
-    c.rect(6260, 640, 6420, 656, WOOD)  # 작은 탁자
-    c.rect(6270, 656, 6282, FLOOR + 6, WOOD)
-    c.rect(6398, 656, 6410, FLOOR + 6, WOOD)
-    c.ellipse(6300, 624, 6360, 644, (200, 180, 140, 255), lw=1.4)  # 열쇠 그릇
-    for fx0, fy0, fw, fh in ((6260, 300, 90, 110), (6370, 330, 70, 80)):
-        frame(c, fx0, fy0, fx0 + fw, fy0 + fh, landscape)
-
-
-def yard_ground(c: Ink, rng, lm: LightMap, w):
-    x0 = YARD_X
-    dirt = (196, 160, 112, 255)
-    c.rect(x0, FLOOR - 6, w, 1080, dirt, line=False)
-    # 마당 흙: 가로 결, 그늘진 자국, 풀 포기, 낙엽
-    for _ in range(int((w - x0) / 6)):
-        x, y = rng.uniform(x0, w), rng.uniform(FLOOR, 1080)
-        ln = rng.uniform(20, 80) * (1 + (y - FLOOR) / 300)
-        c.stroke([(x, y), (x + ln, y + rng.uniform(-1, 1))], 1.2, alpha(dark(dirt, 0.25), 70))
-    # 디딤돌 길(문간 → 대문)
-    for k in range(8):
-        sx = x0 + 60 + k * 150 + rng.uniform(-10, 10)
-        sy = 840 + (k % 2) * 30
-        c.ellipse(sx, sy, sx + 120, sy + 40, (182, 176, 166, 255), lw=1.6)
-        c.ellipse(sx + 14, sy + 6, sx + 80, sy + 20, (214, 208, 196, 255), line=False)
-    for _ in range(int((w - x0) / 5)):  # 낙엽
-        x, y = rng.uniform(x0, w), rng.uniform(FLOOR + 4, 1076)
-        col = rng.choice([(214, 110, 50, 255), (232, 170, 70, 255), (186, 70, 46, 255), (200, 60, 50, 255)])
-        a = rng.uniform(0, math.tau)
-        s = rng.uniform(5, 10)
-        c.poly([(x + math.cos(a) * s, y + math.sin(a) * s * 0.45), (x + math.cos(a + 2.2) * s * 0.7, y + math.sin(a + 2.2) * s * 0.3),
-                (x + math.cos(a + 4.1) * s * 0.7, y + math.sin(a + 4.1) * s * 0.3)], col, lw=0.8)
-    lm.add([(x0, 0), (w + 40, 0), (w + 40, 1080), (x0, 1080)], 0.32, 30)  # 바깥은 환하다
-
-
-def yard_props(c: Ink, rng, lm: LightMap, mk, w):
-    x0 = YARD_X
-    # 낮은 돌담(뒤쪽)
-    stone = (176, 166, 150, 255)
-    c.rect(x0 + 30, 640, w + 20, FLOOR + 4, stone, line=False)
-    y = 640
-    row = 0
-    while y < FLOOR:
-        h = rng.uniform(34, 48)
-        x = x0 + 30 - (row % 2) * 40
-        while x < w + 20:
-            sw = rng.uniform(60, 120)
-            c.rrect(x + 2, y + 2, x + sw - 2, min(FLOOR + 4, y + h) - 2, 10,
-                    mix(stone, rng.choice([(150, 140, 126, 255), (200, 190, 174, 255), (168, 160, 140, 255)]), rng.uniform(0.2, 0.8)), lw=1.8)
-            x += sw
-        y += h
-        row += 1
-    c.rect(x0 + 20, 626, w + 20, 646, (150, 140, 124, 255))  # 담 위 갓돌
-    for _ in range(int((w - x0) / 30)):  # 담 위 이끼·덩굴
-        x = rng.uniform(x0 + 40, w)
-        c.ellipse(x - 20, 620, x + 20, 640, (120, 130, 70, 255), line=False)
-    # 화분 몇(문간)
-    for k, (px, col) in enumerate(((6730, (220, 90, 70, 255)), (6800, (240, 200, 90, 255)))):
-        c.poly([(px - 26, 760), (px + 26, 760), (px + 20, FLOOR + 6), (px - 20, FLOOR + 6)], (180, 100, 64, 255))
-        for j in range(6):
-            a = j / 6 * math.tau
-            c.ellipse(px + math.cos(a) * 16 - 10, 740 + math.sin(a) * 10 - 10, px + math.cos(a) * 16 + 10, 740 + math.sin(a) * 10 + 10, col, lw=1.2)
-    # 장작더미
-    for k in range(9):
-        lx = 6880 + (k % 3) * 44 + (k // 3) * 20
-        ly = 776 - (k // 3) * 40
-        c.ellipse(lx, ly, lx + 44, ly + 40, (190, 150, 100, 255), lw=1.6)
-        c.ellipse(lx + 12, ly + 10, lx + 32, ly + 30, (150, 110, 70, 255), lw=1.0)
-    # 사과나무(1-6): 굵은 줄기와 가지, 단풍 든 잎 덩어리, 빨간 사과
-    tx = mk("1-6", 7110.0) - 120
-    bark = (110, 78, 56, 255)
-    c.poly([(tx - 34, FLOOR + 6), (tx - 20, 560), (tx - 60, 380), (tx - 30, 376), (tx + 4, 520), (tx + 40, 360),
-            (tx + 70, 370), (tx + 26, 560), (tx + 36, FLOOR + 6)], bark)
-    c.stroke([(tx - 10, 760), (tx - 4, 600)], 2, dark(bark, 0.3))
-    leaf_cols = [(214, 150, 66), (196, 110, 54), (232, 186, 90), (170, 130, 60), (150, 140, 70)]
-    blobs = []
-    for _ in range(120):
-        a = rng.uniform(0, math.tau)
-        rr = rng.uniform(0, 1) ** 0.5
-        bx = tx + math.cos(a) * 270 * rr
-        by = 300 + math.sin(a) * 150 * rr
-        r = rng.uniform(26, 50)
-        blobs.append((bx, by, r))
-    blobs.sort(key=lambda b: b[1])
-    for bx, by, r in blobs:
-        col = mix(rng.choice(leaf_cols) + (255,), (110, 70, 60, 255), max(0.0, (by - 260) / 400))
-        c.ellipse(bx - r, by - r * 0.8, bx + r, by + r * 0.8, col, lw=1.6)
-        c.ellipse(bx - r * 0.6, by - r * 0.7, bx + r * 0.4, by - r * 0.1, lite(col, 0.3), line=False)
-    for _ in range(26):
-        a = rng.uniform(0, math.tau)
-        rr = rng.uniform(0.2, 1)
-        ax, ay = tx + math.cos(a) * 240 * rr, 320 + math.sin(a) * 120 * rr
-        c.ellipse(ax - 12, ay - 12, ax + 12, ay + 12, (200, 44, 40, 255), lw=1.6)
-        c.ellipse(ax - 6, ay - 8, ax - 1, ay - 3, (255, 200, 180, 255), line=False)
-    for _ in range(5):  # 떨어진 사과
-        ax = tx + rng.uniform(-200, 200)
-        c.ellipse(ax - 10, 870 + rng.uniform(0, 60), ax + 10, 890 + rng.uniform(0, 60), (190, 40, 40, 255), lw=1.4)
-    lm.glow(tx, 520, 300, 160, -0.3)  # 나무 그늘
-    lm.add([(tx - 220, FLOOR + 10), (tx + 260, FLOOR + 10), (tx + 300, FLOOR + 80), (tx - 240, FLOOR + 80)], -0.35, 24)
-    # 나무 대문(1-6, 반쯤 열림)과 기둥
-    gx = 7220
-    post = (120, 84, 56, 255)
-    for x in (gx - 120, gx + 120):
-        c.rect(x - 18, 520, x + 18, FLOOR + 10, post)
-        c.poly([(x - 26, 520), (x + 26, 520), (x, 494)], dark(post, 0.1))
-    c.rect(gx - 150, 520, gx + 150, 540, post)  # 위 가로대
-    gate = (164, 120, 78, 255)
-    c.poly([(gx + 102, 590), (gx + 220, 640), (gx + 220, 830), (gx + 102, FLOOR + 6)], gate)  # 바깥으로 열린 문짝
-    for k in range(1, 4):
-        t = k / 4
-        c.stroke([(gx + 102 + 118 * t, 590 + 50 * t), (gx + 102 + 118 * t, FLOOR + 6 + 24 * t)], 1.6, dark(gate, 0.3))
-    c.stroke([(gx + 102, 690), (gx + 220, 720)], 6, dark(gate, 0.15))
-    # 대문 너머 길
-    lm.glow(gx + 300, 700, 400, 260, 0.2)
-
-
-def front_layer(width: float, rng) -> Image.Image:
-    """앞 층(scroll 1.25): 다락 앞 물건, 거실 화분, 마당 사과나무 가지. 모두 흐리게(기둥은 하윤을 가려 뺐다)."""
-    w = pa.layer_width(width, "front")
-    c = Ink(w)
-    attic_front(c, rng)
-
-    def fx(world_x):  # 그 자리가 화면 가운데일 때 앞 층 x
-        return pa.layer_x(world_x, "front")
-
-    # 거실 맨 앞 화분(큰 잎)
-    px = fx(2600) - 820
-    for k in range(9):
-        a = math.radians(-160 + k * 18)
-        c.poly([(px, 1080), (px + math.cos(a) * 260 - 30, 1080 + math.sin(a) * 300), (px + math.cos(a) * 300, 1080 + math.sin(a) * 320 + 30)],
-               (70, 100, 64, 255), lw=2)
-    c.poly([(px - 70, 1090), (px + 70, 1090), (px + 54, 990), (px - 54, 990)], (160, 90, 60, 255))
-    # 마당 맨 앞 사과나무 가지
-    ax = fx(7000) - 400
-    c.stroke([(ax - 400, -20), (ax - 120, 60), (ax + 240, 40)], 22, (90, 64, 46, 255))
-    for _ in range(30):
-        bx, by = ax - 360 + rng.uniform(0, 640), rng.uniform(0, 140)
-        r = rng.uniform(26, 46)
-        c.ellipse(bx - r, by - r * 0.7, bx + r, by + r * 0.7, rng.choice([(196, 110, 54, 255), (224, 168, 80, 255), (170, 120, 60, 255)]), lw=1.6)
-    img = c.finish()
-    return ink.soften(img, 7.0)
 
 
 # ================================================================ 바깥(창으로·마당에서 보이는 것)
@@ -854,51 +492,85 @@ def mid_build(c: Ink, w, rng):
 # ================================================================ 그리기
 
 
+def _attic_only(img: Image.Image) -> Image.Image:
+    """다락 그림이 아래층(x 1920~)으로 삐져나간 선(지붕 판자 이음 등)을 지운다."""
+    img.paste((0, 0, 0, 0), (int(ATTIC_W), 0, img.width, img.height))
+    return img
+
+
+def _save(img: Image.Image, name: str) -> None:
+    out = pa.OUT_DIR / "house" / f"{name}.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out, optimize=True)
+    print(f"{out.relative_to(pa.ROOT)}  {img.width}x{img.height}  {out.stat().st_size // 1024} KB")
+
+
 def paint(width: float, markers: dict[str, float]) -> dict:
+    import house_down as D
     rng = random.Random("house-ink")
     mk = markers.get
     layers = {}
 
     layers["sky"] = ink.as_layer(sky_layer(width, rng), pa.layer_width(width, "sky"))
-    for name in ("horizon", "near"):  # 이 집에서는 쓰지 않는 층(투명)
-        w = pa.layer_width(width, name)
-        layers[name] = ink.as_layer(Image.new("RGBA", (w, 1080), (0, 0, 0, 0)), w)
+    w = pa.layer_width(width, "horizon")  # 이 집에서는 쓰지 않는 층(투명)
+    layers["horizon"] = ink.as_layer(Image.new("RGBA", (w, 1080), (0, 0, 0, 0)), w)
     layers["far"] = ink.as_layer(back_layer("far", width, rng, far_build), pa.layer_width(width, "far"))
     layers["hills"] = ink.as_layer(back_layer("hills", width, rng, hills_build), pa.layer_width(width, "hills"))
     layers["mid"] = ink.as_layer(back_layer("mid", width, rng, mid_build), pa.layer_width(width, "mid"))
 
-    # 땅(벽·바닥)과 물건은 같은 빛 지도를 쓴다.
+    # ---- 다락(카메라가 움직이지 않는 한 화면): 땅·물건 층에 정면 그림으로
     gw = pa.layer_width(width, "ground")
     lm = LightMap(gw, 0.62)
     g = Ink(gw)
     attic_ground(g, rng, lm, mk)
-    downstairs_ground(g, rng, lm, mk)
-    yard_ground(g, rng, lm, gw)
     p = Ink(pa.layer_width(width, "props"))
     attic_props(p, rng, lm, mk)
-    downstairs_props(p, rng, lm, mk)
-    yard_props(p, rng, lm, mk, gw)
+    ink.drop_shadow(lm, p.casters, -30, 14, 14, 0.3)  # 다락 빛은 오른쪽 창: 그림자는 왼쪽으로
+    for x0_, x1_ in ((-10, 470), (520, 900), (960, 1220), (1330, 1460), (1740, 1920)):
+        lm.add([(x0_ - 40, FLOOR), (x1_ - 40, FLOOR), (x1_ - 140, FLOOR + 60), (x0_ - 140, FLOOR + 60)], -0.35, 16)  # 바닥에 닿는 그림자
     L = lm.array()
-    ground = ink.light(g.finish(), L, SUN, SHADE)
-    props = ink.light(p.finish(), L, SUN, SHADE)
-
-    # 빛줄기(물건 층 위, 하윤 뒤): 다락 오른쪽 창 → 왼쪽 아래, 아래층 창들 → 오른쪽 아래
+    ground = ink.light(_attic_only(g.finish()), L, SUN, SHADE)
+    props = ink.light(_attic_only(p.finish()), L, SUN, SHADE)
+    props = ink.rim_light(props, p.casters, 4, -4, (255, 226, 170), 0.45)  # 다락 빛은 오른쪽 창에서
     beams = [
         ([(1440, 200), (1700, 200), (1130, 1080), (700, 1080)], 0.9),
         ([(1500, 230), (1580, 230), (1000, 1080), (880, 1080)], 0.6),
-        ([(2060, 230), (2440, 230), (2860, 1000), (2420, 1000)], 0.55),
-        ([(4500, 250), (4760, 250), (5080, 1000), (4800, 1000)], 0.45),
-        ([(6020, 260), (6200, 260), (6420, 980), (6240, 980)], 0.35),
-        ([(6500, 200), (6660, 200), (6620, 1080), (6300, 1080)], 0.5),
     ]
     props.alpha_composite(ink.rays(props.width, beams))
     ink.motes(props, rng, 900, [(1440, 200), (1700, 200), (1130, 1080), (700, 1080)])
-    ink.motes(props, rng, 500, [(2060, 230), (2440, 230), (2860, 1000), (2420, 1000)])
     ink.bokeh(props, rng, 14, 1100, 1750, 150, 700)
-    ink.bokeh(props, rng, 10, 2100, 2900, 200, 700)
-    ink.bokeh(props, rng, 8, 6300, 6700, 200, 800)
-
     layers["ground"] = ink.as_layer(ground, gw)
     layers["props"] = ink.as_layer(props, pa.layer_width(width, "props"))
-    layers["front"] = ink.as_layer(front_layer(width, rng), pa.layer_width(width, "front"))
+
+    # ---- 아래층·마당: 깊이 판들
+    near, wall_glow = D.wall_layer(width, mk, rng)
+    layers["near"] = ink.as_layer(near, pa.layer_width(width, "near"))
+    _save(wall_glow.resize((wall_glow.width // 4, wall_glow.height // 4), Image.LANCZOS), "room_house_wallglow")
+    furn, canopy, fw = D.furniture_layer(width, mk, rng)
+    _save(furn, "room_house_furniture")
+    _save(canopy, "room_house_canopy")
+    floor, floor_glow = D.floor_texture(mk, rng)
+    _save(floor, "room_house_floor")
+    _save(floor_glow, "room_house_floor_glow")
+    _save(D.ceiling_texture(rng), "room_house_ceiling")
+    _save(D.endwall_texture(True, rng), "room_house_endwall_door")
+    _save(D.endwall_texture(False, rng), "room_house_endwall")
+    for name, (_wx0, wy0, _wx1, wy1, col) in zip(("living", "study"), D.WINDOWS[:2]):
+        h = wy1 - wy0 + 120
+        _save(D.curtain(col, h, False), f"room_house_curtain_{name}_l")
+        _save(D.curtain(col, h, True), f"room_house_curtain_{name}_r")
+    _save(D.pendulum(230, 16), "room_house_pendulum")
+    _save(D.pendulum(170, 18), "room_house_pendulum_attic")
+    fl, fl_glow = D.flame()
+    _save(fl, "room_house_flame")
+    _save(fl_glow, "room_house_flame_glow")
+
+    # ---- 맨 앞: 다락 앞 물건(정면) + 아래층(깊이 1.25)
+    fw_ = pa.layer_width(width, "front")
+    fc = Ink(fw_)
+    attic_front(fc, rng)
+    front = ink.soften(fc.finish(), 7.0)
+    down = ink.to_plane(D.front_world(width, mk, rng), D.FRONT_S, fw_)
+    front.alpha_composite(ink.soften(down, 5.0))
+    layers["front"] = ink.as_layer(front, fw_)
     return layers

@@ -56,6 +56,7 @@ class Ink:
         self.d = ImageDraw.Draw(self.img)
         self.lc = LINE
         self.lw = 2.4
+        self.casters: list[list[tuple[float, float]]] = []  # 그림자·가장자리 빛을 만들 모양(cast=True로 그린 것)
 
     # ------------------------------------------------------------ 기본 도형
     @staticmethod
@@ -65,9 +66,11 @@ class Ink:
     def _visible(self, xs) -> bool:
         return max(xs) >= -40 and min(xs) <= self.w + 40
 
-    def poly(self, pts, fill=None, line=True, lw=None, lc=None):
+    def poly(self, pts, fill=None, line=True, lw=None, lc=None, cast=False):
         if not self._visible([p[0] for p in pts]):
             return
+        if cast:
+            self.casters.append(list(pts))
         if fill is not None:
             if len(fill) == 4 and fill[3] < 255:
                 self.glaze(lambda d, s: d.polygon(s(pts), fill=fill), _bbox(pts))
@@ -76,14 +79,42 @@ class Ink:
         if line:
             self.stroke(list(pts) + [pts[0]], lw, lc)
 
-    def rect(self, x0, y0, x1, y1, fill=None, line=True, lw=None, lc=None):
-        self.poly([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], fill, line, lw, lc)
+    def rect(self, x0, y0, x1, y1, fill=None, line=True, lw=None, lc=None, cast=False):
+        self.poly([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], fill, line, lw, lc, cast)
 
-    def rrect(self, x0, y0, x1, y1, r, fill=None, line=True, lw=None, lc=None):
-        self.poly(round_rect_pts(x0, y0, x1, y1, r), fill, line, lw, lc)
+    def rrect(self, x0, y0, x1, y1, r, fill=None, line=True, lw=None, lc=None, cast=False):
+        self.poly(round_rect_pts(x0, y0, x1, y1, r), fill, line, lw, lc, cast)
 
-    def ellipse(self, x0, y0, x1, y1, fill=None, line=True, lw=None, lc=None):
-        self.poly(ellipse_pts(x0, y0, x1, y1), fill, line, lw, lc)
+    def grad(self, pts, c0, c1, axis: str = "y", line=True, lw=None, lc=None, cast=False, power: float = 1.0):
+        """그라데이션 칠: c0(위·왼쪽) → c1(아래·오른쪽). 부피가 보이게 쓴다."""
+        if not self._visible([p[0] for p in pts]):
+            return
+        if cast:
+            self.casters.append(list(pts))
+        bx0, by0, bx1, by1 = _bbox(pts)
+        X0, Y0 = max(0, int(bx0 * S)), max(0, int(by0 * S))
+        X1, Y1 = min(self.img.width, int(math.ceil(bx1 * S)) + 1), min(self.img.height, int(math.ceil(by1 * S)) + 1)
+        if X1 <= X0 or Y1 <= Y0:
+            return
+        w, h = X1 - X0, Y1 - Y0
+        mask = Image.new("L", (w, h), 0)
+        ImageDraw.Draw(mask).polygon([(x * S - X0, y * S - Y0) for x, y in pts], fill=255)
+        if axis == "y":
+            t = np.linspace(0, 1, h, dtype=np.float32)[:, None].repeat(w, 1)
+        else:
+            t = np.linspace(0, 1, w, dtype=np.float32)[None, :].repeat(h, 0)
+        t = t ** power
+        a, b = np.array(c0[:3], np.float32), np.array(c1[:3], np.float32)
+        rgb = a + (b - a) * t[:, :, None]
+        tile = np.concatenate([rgb, np.full((h, w, 1), 255, np.float32)], axis=2).astype(np.uint8)
+        g = Image.fromarray(tile, "RGBA")
+        g.putalpha(mask)
+        self.img.alpha_composite(g, dest=(X0, Y0))
+        if line:
+            self.stroke(list(pts) + [pts[0]], lw, lc)
+
+    def ellipse(self, x0, y0, x1, y1, fill=None, line=True, lw=None, lc=None, cast=False):
+        self.poly(ellipse_pts(x0, y0, x1, y1), fill, line, lw, lc, cast)
 
     def stroke(self, pts, lw=None, lc=None):
         """선(둥근 끝). lc의 알파가 255보다 작으면 합성한다."""
@@ -194,6 +225,59 @@ def _bbox(pts, pad: float = 0.0):
     return (min(xs) - pad, min(ys) - pad, max(xs) + pad, max(ys) + pad)
 
 
+def caster_mask(casters, width: int, height: int = H) -> np.ndarray:
+    """cast=True로 그린 모양들의 가림막(0~1, 1배)."""
+    m = Image.new("L", (width, height), 0)
+    d = ImageDraw.Draw(m)
+    for pts in casters:
+        d.polygon(pts, fill=255)
+    return np.asarray(m, np.float32) / 255.0
+
+
+def drop_shadow(lm: "LightMap", casters, dx: float, dy: float, blur: float, amount: float):
+    """빛 반대쪽으로 비켜 깐 흐린 그림자(물건이 벽에 드리우는 그림자)."""
+    for pts in casters:
+        lm.add([(x + dx, y + dy) for x, y in pts], -amount, blur)
+
+
+def rim_light(img: Image.Image, casters, dx: int = -4, dy: int = -4, color=(255, 230, 180), strength: float = 0.55, blur: float = 1.2):
+    """빛 쪽(dx, dy) 가장자리를 밝힌다: 모양 안이면서 빛 쪽 이웃이 모양 밖인 자리."""
+    m = caster_mask(casters, img.width, img.height)
+    sh = np.zeros_like(m)
+    h, w = m.shape
+    ys0, ys1 = max(0, dy), h + min(0, dy)
+    xs0, xs1 = max(0, dx), w + min(0, dx)
+    sh[ys0:ys1, xs0:xs1] = m[ys0 - dy:ys1 - dy, xs0 - dx:xs1 - dx]
+    edge = np.clip(m - sh, 0, 1)
+    edge = np.asarray(Image.fromarray((edge * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(blur)), np.float32) / 255.0
+    edge *= m
+    arr = np.asarray(img).astype(np.float32) / 255.0
+    c = np.array(color, np.float32) / 255.0
+    k = (edge * strength)[:, :, None]
+    arr[:, :, :3] = 1 - (1 - arr[:, :, :3]) * (1 - c * k)
+    return Image.fromarray((np.clip(arr, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
+
+
+def to_plane(img: Image.Image, s: float, out_w: int, vp=(960.0, 210.0)) -> Image.Image:
+    """세계 크기(하윤 줄, 깊이 1)로 그린 그림을 깊이 s의 층 그림으로: 소실점을 축으로 s배.
+    층 좌표 u = s·p + 960(1-s), y = s·y + 210(1-s) — Parallax2D(scroll s)와 RoomPerspective가 쓰는 셈과 같다."""
+    w, h = round(img.width * s), round(img.height * s)
+    scaled = img.resize((w, h), Image.LANCZOS)
+    out = Image.new("RGBA", (out_w, H), (0, 0, 0, 0))
+    ox, oy = round(vp[0] * (1 - s)), round(vp[1] * (1 - s))
+    out.alpha_composite(scaled.crop((max(0, -ox), max(0, -oy), min(w, out_w - ox), min(h, H - oy))), dest=(max(0, ox), max(0, oy)))
+    return out
+
+
+def plane_noise(width: int, height: int, seed: int, scale: float, amount: float) -> np.ndarray:
+    """큰 얼룩(회반죽·흙 결): 1 ± amount. 작게 만들어 늘려 부드럽다."""
+    rng = np.random.default_rng(seed)
+    sw, sh = max(2, int(width / scale)), max(2, int(height / scale))
+    small = rng.random((sh, sw)).astype(np.float32)
+    img = Image.fromarray((small * 255).astype(np.uint8)).resize((width, height), Image.BICUBIC).filter(ImageFilter.GaussianBlur(scale * 0.3))
+    return 1 + (np.asarray(img, np.float32) / 255.0 - 0.5) * 2 * amount
+
+
 def round_rect_pts(x0, y0, x1, y1, r, n: int = 5):
     r = min(r, (x1 - x0) / 2, (y1 - y0) / 2)
     pts = []
@@ -217,9 +301,10 @@ class LightMap:
 
     Q = 4
 
-    def __init__(self, width: int, base: float):
+    def __init__(self, width: int, base: float, height: int = H):
         self.w = width
-        self.img = Image.new("F", (math.ceil(width / self.Q), math.ceil(H / self.Q)), base)
+        self.h = height
+        self.img = Image.new("F", (math.ceil(width / self.Q), math.ceil(height / self.Q)), base)
         self.adds: list[tuple[Image.Image, float]] = []
 
     def _q(self, pts):
@@ -240,7 +325,7 @@ class LightMap:
         a = np.asarray(self.img, np.float32).copy()
         for m, amount in self.adds:
             a += np.asarray(m, np.float32) / 255.0 * amount
-        img = Image.fromarray(a, "F").resize((self.w, H), Image.BILINEAR)
+        img = Image.fromarray(a, "F").resize((self.w, self.h), Image.BILINEAR)
         return np.asarray(img, np.float32)
 
 
@@ -284,8 +369,8 @@ def bokeh(img: Image.Image, rng: random.Random, n: int, x0, x1, y0, y1, color=(2
     for _ in range(n):
         x, y, rr = rng.uniform(x0, x1), rng.uniform(y0, y1), rng.uniform(*r)
         al = int(rng.uniform(*a))
-        d.ellipse((x - rr, y - rr, x + rr, y + rr), fill=color + (al,), outline=color + (min(255, al + 26),), width=2)
-    over = over.filter(ImageFilter.GaussianBlur(1.6))
+        d.ellipse((x - rr, y - rr, x + rr, y + rr), fill=color + (al,), outline=color + (min(255, al + 10),), width=2)
+    over = over.filter(ImageFilter.GaussianBlur(3.0))
     img.alpha_composite(over)
     return img
 
