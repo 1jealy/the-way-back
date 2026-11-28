@@ -574,7 +574,6 @@ def paint(width: float, markers: dict[str, float]) -> dict:
     _save(floor, "room_house_floor")
     _save(floor_glow, "room_house_floor_glow")
     _save(D.ceiling_texture(rng), "room_house_ceiling")
-    _save(D.endwall_texture(True, rng), "room_house_endwall_door")
     _save(D.endwall_texture(False, rng), "room_house_endwall")
     for name, (_wx0, wy0, _wx1, wy1, col) in zip(("living", "study"), D.WINDOWS[:2]):
         h = wy1 - wy0 + 120

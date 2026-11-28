@@ -33,7 +33,6 @@
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/room_house_floor_glow.png" id="t_floor_glow"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/room_house_ceiling.png" id="t_ceiling"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/room_house_endwall.png" id="t_endwall"]
-[ext_resource type="Texture2D" path="res://assets/art/placeholder/house/room_house_endwall_door.png" id="t_endwall_door"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/room_house_furniture.png" id="t_furniture"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/room_house_canopy.png" id="t_canopy"]
 [ext_resource type="Texture2D" path="res://assets/art/placeholder/house/room_house_wallglow.png" id="t_wallglow"]
@@ -400,27 +399,6 @@ s_to = 1.0
 tex_to = 0.4462
 strips = 24
 
-[node name="EndWall_Door" type="Polygon2D" parent="Room"]
-z_index = -9
-z_as_relative = false
-texture = ExtResource("t_endwall_door")
-script = ExtResource("sc_plane")
-p = 6670.0
-s_from = 0.8
-s_to = 1.0
-tex_to = 0.4462
-strips = 24
-
-[node name="EndWall_DoorFront" type="Polygon2D" parent="Room"]
-z_index = 8
-z_as_relative = false
-texture = ExtResource("t_endwall_door")
-script = ExtResource("sc_plane")
-p = 6670.0
-s_from = 1.0
-s_to = 1.45
-tex_from = 0.4462
-strips = 24
 
 [node name="Shaft_0" type="Polygon2D" parent="Room"]
 z_index = -7

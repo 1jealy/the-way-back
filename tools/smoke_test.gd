@@ -488,9 +488,9 @@ func _check_house_puzzle(main: Node, player: CharacterBody2D) -> void:
 				furn_w = maxf(furn_w, sp.position.x + sp.texture.get_width())
 	_check(room != null and room.get_node("Floor").material.get_shader_parameter("plane_tex") != null
 			and room.get_node("Ceiling").material.get_shader_parameter("plane_tex") != null
-			and room.find_children("Shaft_*").size() == 3 and room.find_children("EndWall_*").size() == 3
+			and room.find_children("Shaft_*").size() == 3 and room.find_children("EndWall_*").size() == 1
 			and furn != null and furn_w >= 1920.0 + (place.width - 1920.0) * furn.scroll_scale.x,
-			"집: 아래층 원근 — 바닥·천장 평면, 옆벽 셋, 빛줄기 셋, 가구 층이 끝까지 덮는다 (가구 폭 %d)" % int(furn_w))
+			"집: 아래층 원근 — 바닥·천장 평면, 왼쪽 옆벽, 빛줄기 셋, 가구 층이 끝까지 덮는다 (가구 폭 %d)" % int(furn_w))
 	# 다락(#151): 아래층과 벽으로 나뉘고 카메라도 그 구역 안에 머문다
 	var cam: Camera2D = player.get_node("Camera")
 	await _wait(0.2)

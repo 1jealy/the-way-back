@@ -460,11 +460,59 @@ def apple_tree(c: Ink, rng, x, base, h=640, apples=18):
         c.grad(ink.ellipse_pts(ax - rr, ay - rr, ax + rr, ay + rr * 0.95), (236, 74, 60, 255), (150, 26, 32, 255), lw=1.4)
         c.ellipse(ax - rr * 0.55, ay - rr * 0.6, ax - rr * 0.15, ay - rr * 0.25, (255, 220, 200, 255), line=False)
 
+# ---------------------------------------------------------------- 현관 문간 (#151)
+
+
+def doorway(c: Ink, x, base, h=600, open_out=True):
+    """집 끝 문간(맨 앞 깊이에 세운다): 바깥벽 모서리 기둥(회반죽 + 모서리 돌) + 문틀 + 바깥으로 열린 나무문 + 위 처마.
+    x = 문간 가운데(세계 x), base = 바닥. 하윤은 이 뒤로 지나간다."""
+    plaster = (226, 206, 172, 255)
+    stone = (178, 168, 150, 255)
+    wood = (118, 80, 52, 255)
+    # 바깥벽 모서리(문 왼쪽): 두꺼운 벽 끝, 모서리 돌이 번갈아
+    wx0, wx1 = x - 120, x - 40
+    c.grad([(wx0, base - h - 120), (wx1, base - h - 120), (wx1, base), (wx0, base)], lite(plaster, 0.1), dark(plaster, 0.18), axis="x", lw=1.8)
+    y = base
+    k = 0
+    while y > base - h - 110:
+        hh = 46 if k % 2 else 38
+        w = 54 if k % 2 else 34
+        c.grad(ink.round_rect_pts(wx1 - w, y - hh, wx1 + 4, y - 3, 5), lite(stone, 0.15), dark(stone, 0.2), lw=1.4)
+        y -= hh
+        k += 1
+    # 문틀(두꺼운 나무 테)
+    c.grad([(wx1, base - h), (wx1 + 22, base - h), (wx1 + 22, base), (wx1, base)], lite(wood, 0.2), dark(wood, 0.2), axis="x", lw=1.6)
+    # 처마: 지붕 끝이 문 위로 나와 있다(기와 줄)
+    roof = (150, 70, 52, 255)
+    ey = base - h - 120
+    c.grad([(wx0 - 60, ey - 30), (x + 260, ey - 30), (x + 290, ey + 40), (wx0 - 40, ey + 40)], lite(roof, 0.15), dark(roof, 0.2), lw=1.8)
+    for k in range(int((x + 290 - wx0 + 40) / 34)):
+        xx = wx0 - 40 + k * 34
+        c.stroke([(xx, ey + 40), (xx + 6, ey + 52)], 3, dark(roof, 0.3))
+        c.ellipse(xx - 2, ey + 30, xx + 30, ey + 52, mix(roof, dark(roof, 0.2), 0.5), lw=1.2)
+    c.grad([(wx0 - 40, ey + 40), (x + 290, ey + 40), (x + 290, ey + 56), (wx0 - 40, ey + 56)], dark(wood, 0.1), dark(wood, 0.35), lw=1.4)
+    # 위 문틀(인방)
+    c.grad([(wx0, base - h - 24), (x + 120, base - h - 24), (x + 120, base - h), (wx0, base - h)], lite(wood, 0.25), wood, lw=1.6)
+    # 오른쪽 문틀
+    c.grad([(x + 104, base - h), (x + 120, base - h), (x + 120, base), (x + 104, base)], lite(wood, 0.15), dark(wood, 0.2), axis="x", lw=1.4)
+    # 안쪽(집 안)으로 열린 문짝: 왼쪽 문틀 경첩에서 화면 앞쪽으로 돌아 짧아 보인다 — 마당 쪽 하윤·손전등을 가리지 않게
+    if open_out:
+        hx = wx1 + 22
+        dw = 96
+        door = (140, 96, 62, 255)
+        top_a, top_b = base - h + 6, base - h + 6 - 18
+        c.grad([(hx - dw, top_b), (hx, top_a), (hx, base), (hx - dw, base + 30)], dark(door, 0.2), lite(door, 0.15), axis="x", lw=1.8)
+        for t in (0.33, 0.66):
+            c.stroke([(hx - dw * t, top_a - 18 * t + 6), (hx - dw * t, base + 30 * t - 6)], 1.4, dark(door, 0.3))
+        c.poly([(hx - dw + 12, top_b + 40), (hx - 14, top_a + 40), (hx - 14, top_a + 200), (hx - dw + 12, top_b + 200)], (214, 232, 230, 200), lw=1.4)
+        c.ellipse(hx - dw + 10, base - h * 0.48, hx - dw + 22, base - h * 0.48 + 12, (214, 176, 90, 255), lw=1.2)
+
 OBJECTS = {
     "armchair": (armchair, 420, 340), "side_table": (side_table, 200, 360), "yarn_basket": (yarn_basket, 160, 140),
     "ladder_chair": (ladder_chair, 200, 380), "dining_table": (dining_table, 420, 260), "rocking_chair": (rocking_chair, 320, 420),
     "newspapers": (newspapers, 140, 90),
     "apple": (lambda c, x, b: apple_tree_canopy(c, __import__("random").Random(3), x, b - 200), 640, 420),
+    "doorway": (lambda c, x, b: doorway(c, x, b), 700, 800),
     "tree": (lambda c, x, b: apple_tree(c, __import__("random").Random(7), x, b), 900, 700),
     "plant": (lambda c, x, b: potted_plant(c, x, b, __import__("random").Random(5)), 520, 360),
 }

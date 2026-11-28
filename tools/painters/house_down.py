@@ -658,6 +658,10 @@ def front_world(width: float, mk, rng) -> Image.Image:
     import house_objects as O
     for px in (2700, 4300, 5880):  # 큰 화분(화면 아래 가장자리에서 잎이 올라온다)
         O.potted_plant(c, px, FLOOR_W + 60, rng, 1.0)
+    # 현관 문간: 집 끝 바깥벽 모서리 + 문틀 + 바깥으로 열린 문 + 처마(맨 앞 깊이, 하윤이 이 뒤로 지나 마당으로 나간다).
+    # 옆벽을 원근으로 세웠더니 카메라가 바로 옆이라 얇은 띠로만 보였다.
+    O.doorway(c, YARD_X - 46, FLOOR_W)
+
     # 마당 사과나무 가지(화면 위에서 늘어진다): 나무와 같은 잎 뭉치
     ax = mk("1-6", 7110.0) + 40
     O._limb(c, ax - 460, -30, ax - 120, 40, 26, 16, bend=20)
