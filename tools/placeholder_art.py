@@ -2175,6 +2175,7 @@ def painter_for(place_id: str):
     if path.exists():
         import importlib.util
         sys.path.insert(0, str(ROOT / "tools"))
+        sys.path.insert(0, str(ROOT / "tools/painters"))  # 그리기 파일끼리 나눠 쓰는 도구(ink.py, #151)
         spec = importlib.util.spec_from_file_location(f"painters_{place_id}", path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)

@@ -10,3 +10,6 @@ export_credentials.cfg
 # OS
 .DS_Store
 Thumbs.db
+
+# 파이썬
+__pycache__/

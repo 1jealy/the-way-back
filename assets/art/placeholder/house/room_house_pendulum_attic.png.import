@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://8ngw3r2rl7c5"
-path="res://.godot/imported/bg_house_front.png-4674152e724476abcc35205eeea401bf.ctex"
+uid="uid://byme31bftpunb"
+path="res://.godot/imported/room_house_pendulum_attic.png-36c72cec1330c2663f86d1d790a33e14.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/placeholder/house/bg_house_front.png"
-dest_files=["res://.godot/imported/bg_house_front.png-4674152e724476abcc35205eeea401bf.ctex"]
+source_file="res://assets/art/placeholder/house/room_house_pendulum_attic.png"
+dest_files=["res://.godot/imported/room_house_pendulum_attic.png-36c72cec1330c2663f86d1d790a33e14.ctex"]
 
 [params]
 
