@@ -369,7 +369,7 @@ def bokeh(img: Image.Image, rng: random.Random, n: int, x0, x1, y0, y1, color=(2
     for _ in range(n):
         x, y, rr = rng.uniform(x0, x1), rng.uniform(y0, y1), rng.uniform(*r)
         al = int(rng.uniform(*a))
-        d.ellipse((x - rr, y - rr, x + rr, y + rr), fill=color + (al,), outline=color + (min(255, al + 10),), width=2)
+        d.ellipse((x - rr, y - rr, x + rr, y + rr), fill=color + (al,))
     over = over.filter(ImageFilter.GaussianBlur(3.0))
     img.alpha_composite(over)
     return img
@@ -387,8 +387,8 @@ def motes(img: Image.Image, rng: random.Random, n: int, area_pts, color=(255, 24
         x, y = rng.uniform(min(xs), max(xs)), rng.uniform(min(ys), max(ys))
         if not (0 <= x < img.width and 0 <= y < img.height) or mask.getpixel((int(x), int(y))) == 0:
             continue
-        r = rng.uniform(0.8, 2.2)
-        d.ellipse((x - r, y - r, x + r, y + r), fill=color + (int(rng.uniform(90, 220)),))
+        r = rng.uniform(0.6, 1.5)
+        d.ellipse((x - r, y - r, x + r, y + r), fill=color + (int(rng.uniform(60, 170)),))
     img.alpha_composite(over.filter(ImageFilter.GaussianBlur(0.6)))
     return img
 

@@ -173,7 +173,7 @@ def _wall_things(c: Ink, rng, lm: LightMap, mk):
 
     # ---------- 1-2 영정 자리(사진은 게임이 그린다): 선반 턱, 흰 천 덮은 낮은 장, 초(불꽃은 따로), 백합
     px = mk("1-2", 3260.0)
-    c.rect(px - 230, 268, px + 230, 284, WOOD, cast=True)
+    c.rect(px - 210, 506, px + 210, 520, WOOD, cast=True)  # 사진 아래 선반 턱
     cab = (120, 80, 50, 255)
     c.grad([(px - 210, 640), (px + 210, 640), (px + 210, FLOOR_W), (px - 210, FLOOR_W)], cab, dark(cab, 0.3), cast=True)
     c.grad([(px - 220, 626), (px + 220, 626), (px + 230, 700), (px + 200, 690), (px + 170, 714), (px - 170, 714), (px - 200, 690), (px - 230, 700)],
@@ -353,6 +353,7 @@ def wall_layer(width: float, mk, rng) -> tuple[Image.Image, Image.Image]:
 
 def furniture_layer(width: float, mk, rng) -> tuple[Image.Image, Image.Image, int]:
     import house as H
+    import house_objects as O
     c = Ink(WORLD_W)
     lm = LightMap(WORLD_W, 0.72)
     # 매단 등(천장에서)
@@ -360,43 +361,22 @@ def furniture_layer(width: float, mk, rng) -> tuple[Image.Image, Image.Image, in
         c.stroke([(lx, CEIL_W - 10), (lx, 200)], 2, (80, 60, 44, 255))
         c.grad([(lx - 46, 238), (lx + 46, 238), (lx + 18, 198), (lx - 18, 198)], (232, 186, 104, 255), (176, 120, 60, 255), cast=True)
         c.ellipse(lx - 12, 230, lx + 12, 248, (255, 244, 210, 255), lw=1.2)
-    # 거실: 안락의자, 옆 탁자와 스탠드, 털실 바구니
-    ch = (124, 96, 124, 255)
-    c.grad(ink.round_rect_pts(2170, 540, 2430, 720, 34), lite(ch, 0.2), dark(ch, 0.2), cast=True)
-    c.grad(ink.round_rect_pts(2150, 670, 2450, 780, 20), lite(ch, 0.25), dark(ch, 0.15), cast=True)
-    c.grad(ink.round_rect_pts(2120, 626, 2190, 786, 20), lite(ch, 0.1), dark(ch, 0.3), axis="x", cast=True)
-    c.grad(ink.round_rect_pts(2410, 626, 2480, 786, 20), lite(ch, 0.15), dark(ch, 0.25), axis="x", cast=True)
-    for k in range(3):  # 단추 자국
-        c.ellipse(2230 + k * 70 - 4, 600, 2230 + k * 70 + 4, 608, dark(ch, 0.3), line=False)
-    for x in (2160, 2420):
-        c.rect(x, 786, x + 18, FLOOR_W, (90, 60, 40, 255), cast=True)
-    c.grad([(2230, 580), (2330, 570), (2350, 650), (2240, 658)], (240, 228, 200, 255), (210, 196, 166, 255), lw=1.6)  # 뜨개 덮개
-    for k in range(4):
-        c.stroke([(2236 + k * 26, 578), (2244 + k * 26, 654)], 1.0, (200, 180, 150, 255))
-    c.grad([(2520, 690), (2620, 690), (2620, 704), (2520, 704)], lite(WOOD, 0.2), WOOD, cast=True)  # 옆 탁자
-    c.rect(2564, 704, 2576, FLOOR_W, WOOD, cast=True)
-    c.rect(2530, 790, 2610, FLOOR_W, WOOD)
-    c.stroke([(2560, 690), (2560, 560)], 3, (90, 80, 70, 255))
-    c.grad([(2522, 560), (2598, 560), (2582, 510), (2538, 510)], (246, 222, 170, 255), (220, 180, 120, 255), cast=True)
-    lm.glow(2560, 560, 120, 90, 0.35, 40)
-    c.grad(ink.round_rect_pts(2650, 740, 2740, FLOOR_W, 14), (186, 140, 90, 255), (140, 100, 62, 255), cast=True)  # 바구니
-    for k in range(4):
-        c.stroke([(2650, 752 + k * 14), (2740, 752 + k * 14)], 1.2, (120, 86, 54, 255))
-    for x, col in ((2670, (200, 80, 70, 255)), (2700, (110, 140, 180, 255)), (2722, (230, 200, 110, 255))):
-        c.ellipse(x - 16, 716, x + 16, 748, col, lw=1.4)
+    # 거실: 안락의자, 옆 탁자와 작은 스탠드, 털실 바구니
+    O.armchair(c, 2300, FLOOR_W)
+    O.side_table(c, 2560, FLOOR_W)
+    lm.glow(2546, FLOOR_W - 300, 110, 80, 0.35, 40)
+    O.yarn_basket(c, 2700, FLOOR_W)
 
     # 식탁(1-2) + 흰 백합 한 송이 + 의자 둘
     tx = 3640
-    c.grad([(tx - 170, 640), (tx + 170, 640), (tx + 170, 660), (tx - 170, 660)], lite(WOOD, 0.25), WOOD, cast=True)
-    for lx in (tx - 156, tx + 140):
-        c.grad([(lx, 660), (lx + 16, 660), (lx + 16, FLOOR_W), (lx, FLOOR_W)], lite(WOOD, 0.15), dark(WOOD, 0.2), axis="x", cast=True)
-    c.grad([(tx - 130, 640), (tx + 140, 640), (tx + 128, 690), (tx - 118, 690)], (246, 242, 232, 255), (216, 210, 200, 255), cast=True)
-    H.vase(c, tx + 40, 640, 56, (220, 234, 238, 255))
-    c.stroke([(tx + 40, 590), (tx + 56, 530)], 2, (110, 140, 80, 255))
-    H.lily(c, tx + 58, 526, 0.75)
-    c.ellipse(tx - 90, 626, tx - 30, 642, (236, 232, 222, 255), lw=1.4)
-    H.chair_ladder(c, tx - 270, FLOOR_W, 0.85, (150, 104, 66, 255))
-    H.chair_ladder(c, tx + 190, FLOOR_W, 0.85, (150, 104, 66, 255))
+    O.ladder_chair(c, tx - 230, FLOOR_W, facing=1)
+    O.dining_table(c, tx, FLOOR_W)
+    top = FLOOR_W - 175
+    H.vase(c, tx + 40, top - 10, 56, (220, 234, 238, 255))
+    c.stroke([(tx + 40, top - 60), (tx + 56, top - 120)], 2, (110, 140, 80, 255))
+    H.lily(c, tx + 58, top - 124, 0.75)
+    O.ell(c, tx - 70, top - 12, 32, 7, (236, 232, 222, 255), lw=1.4)
+    O.ladder_chair(c, tx + 230, FLOOR_W, facing=-1)
 
     # 1-3 앨범 낮은 탁자와 앨범, 흔들의자, 쌓인 신문
     ax = mk("1-3", 4140.0) + 220
@@ -406,17 +386,8 @@ def furniture_layer(width: float, mk, rng) -> tuple[Image.Image, Image.Image, in
     c.grad([(ax - 72, 694), (ax + 62, 694), (ax + 72, 676), (ax - 62, 676)], (140, 70, 52, 255), (110, 54, 42, 255), cast=True)
     c.poly([(ax - 66, 676), (ax + 58, 676), (ax + 62, 670), (ax - 62, 670)], (242, 232, 208, 255), lw=1.2)
     c.stroke([(ax + 30, 672), (ax + 40, 696)], 2, (200, 60, 60, 255))  # 책갈피 끈
-    rk = (156, 104, 64, 255)
-    rx = 4560
-    c.grad([(rx, 590), (rx + 18, 590), (rx + 18, 780), (rx, 780)], lite(rk, 0.2), rk, axis="x", cast=True)
-    for k in range(4):
-        c.rect(rx + 18, 604 + k * 40, rx + 76, 616 + k * 40, rk, lw=1.4, cast=True)
-    c.grad([(rx, 690), (rx + 170, 690), (rx + 170, 708), (rx, 708)], lite(rk, 0.25), rk, cast=True)
-    c.rect(rx + 150, 708, rx + 166, 790, rk, cast=True)
-    c.stroke([(rx - 50, 790), (rx + 20, FLOOR_W), (rx + 130, FLOOR_W), (rx + 200, 784)], 7, rk)
-    c.grad([(rx + 22, 630), (rx + 110, 650), (rx + 100, 700), (rx + 20, 700)], (220, 200, 156, 255), (186, 164, 120, 255), lw=1.4)
-    for k in range(5):
-        c.rect(4760, FLOOR_W - 14 - k * 12, 4840, FLOOR_W - k * 12, (236, 230, 214, 255) if k % 2 else (220, 214, 196, 255), lw=1.2, cast=True)
+    O.rocking_chair(c, 4640, FLOOR_W)
+    O.newspapers(c, 4800, FLOOR_W)
 
     # 복도: 우산꽂이, 낮은 의자
     c.grad(ink.round_rect_pts(5940, 690, 5992, FLOOR_W, 8), (110, 136, 148, 255), (70, 90, 100, 255), axis="x", cast=True)
@@ -463,26 +434,11 @@ def furniture_layer(width: float, mk, rng) -> tuple[Image.Image, Image.Image, in
 
 
 def _apple_canopy(rng, tx) -> Image.Image:
-    """사과나무 잎 덩어리(따로 그려 살랑이게). 세계 크기, 둘레 여백 40px."""
+    """사과나무 잎 덩어리(따로 그려 살랑이게). 세계 크기, 둘레 여백."""
+    import house_objects as O
     W, Hh = 700, 420
     c = Ink(W, Hh)
-    cx, cy = W / 2, 230
-    leaf_cols = [(214, 150, 66), (196, 110, 54), (232, 186, 90), (170, 130, 60), (150, 140, 70)]
-    blobs = []
-    for _ in range(130):
-        a = rng.uniform(0, math.tau)
-        rr = rng.uniform(0, 1) ** 0.5
-        blobs.append((cx + math.cos(a) * 250 * rr, cy + math.sin(a) * 140 * rr, rng.uniform(24, 46)))
-    blobs.sort(key=lambda b: b[1])
-    for bx, by, r in blobs:
-        base = mix(rng.choice(leaf_cols) + (255,), (110, 70, 60, 255), max(0.0, (by - 190) / 360))
-        c.grad(ink.ellipse_pts(bx - r, by - r * 0.8, bx + r, by + r * 0.8), lite(base, 0.3), dark(base, 0.15), lw=1.4)
-    for _ in range(28):
-        a = rng.uniform(0, math.tau)
-        rr = rng.uniform(0.2, 1)
-        ax, ay = cx + math.cos(a) * 230 * rr, cy + 20 + math.sin(a) * 110 * rr
-        c.grad(ink.ellipse_pts(ax - 12, ay - 12, ax + 12, ay + 12), (232, 70, 60, 255), (170, 30, 34, 255), lw=1.6)
-        c.ellipse(ax - 6, ay - 8, ax - 1, ay - 3, (255, 210, 190, 255), line=False)
+    O.apple_tree_canopy(c, rng, W / 2, 230, 270, 150, 16)
     return c.finish()
 
 
@@ -602,26 +558,30 @@ def floor_texture(mk, rng) -> tuple[Image.Image, Image.Image]:
 
 
 def ceiling_texture(rng) -> Image.Image:
-    """천장 그림: 가로 = p, 세로 = 화면 줄 0 ~ 120(깊이 1.87 ~ 0.8). 보가 화면 안쪽으로 뻗는다. 마당 위는 비운다."""
+    """천장 그림: 가로 = p, 세로 = 화면 줄 0 ~ 120(깊이 1.87 ~ 0.8). 판자와 보는 벽과 나란히 놓여
+    깊이마다 한 줄씩(가까울수록 간격이 넓다) — 화면 안쪽으로 뻗은 선은 너무 급하게 기울어 어지러웠다. 마당 위는 비운다."""
     rows = 120
     c = Ink(P_W, rows)
     X = lambda p: p - P0  # noqa: E731
+    Y = lambda s: VP_Y - CEIL_K * s  # noqa: E731
+    x0, x1 = X(ROOM_X0), X(YARD_X)
     board = (150, 104, 68, 255)
-    x = X(ROOM_X0)
-    while x < X(YARD_X):
-        col = mix(board, dark(board, 0.12) if rng.random() < 0.5 else lite(board, 0.06), rng.uniform(0.2, 0.8))
-        c.rect(x, 0, min(x + 70, X(YARD_X)), rows, col, line=False)
-        c.stroke([(x, 0), (x, rows)], 1.2, dark(board, 0.4))
-        x += 70
-    for p in np.arange(ROOM_X0 + 140, YARD_X - 60, 330):
-        c.grad([(X(p), 0), (X(p + 40), 0), (X(p + 40), rows), (X(p), rows)], (120, 80, 52, 255), (80, 52, 34, 255), axis="x", lw=1.6)
-        c.rect(X(p + 40), 0, X(p + 52), rows, (60, 40, 28, 255), line=False)  # 보 옆면(그늘)
-    lm = LightMap(P_W, 0.6, rows)
-    lm.add([(0, -40), (P_W, -40), (P_W, 40), (0, 40)], -0.25, 30)  # 앞(화면 위)은 더 어둡다
+    c.grad([(x0, 0), (x1, 0), (x1, rows), (x0, rows)], dark(board, 0.3), board, line=False)
+    inv = 1.0 / 0.8
+    k = 0
+    while inv > 1.0 / 1.9:
+        s = 1.0 / inv
+        y = Y(s)
+        if k % 5 == 4:  # 굵은 보(아래 면이 보인다)
+            c.grad([(x0, y - 9 * s), (x1, y - 9 * s), (x1, y + 4), (x0, y + 4)], (120, 80, 52, 255), (78, 50, 32, 255), lw=1.4)
+        else:
+            c.stroke([(x0, y), (x1, y)], 1.2, dark(board, 0.45))
+        inv -= 0.075
+        k += 1
+    lm = LightMap(P_W, 0.62, rows)
     for wx0, wy0, wx1, wy1, _c in WINDOWS:
-        lm.glow(X((wx0 + wx1) / 2 + 200), 100, 400, 50, 0.3)
-    img = ink.light(c.finish(), lm.array(), SUN, SHADE)
-    return img
+        lm.glow(X((wx0 + wx1) / 2 + 200), 110, 420, 40, 0.25)
+    return ink.light(c.finish(), lm.array(), SUN, SHADE)
 
 
 def endwall_texture(door: bool, rng) -> Image.Image:
@@ -631,9 +591,9 @@ def endwall_texture(door: bool, rng) -> Image.Image:
     c = Ink(W, Hh)
     t = lambda s: (1.25 - 1.0 / s) / (1.25 - 1.0 / 1.45) * W  # noqa: E731
     v = lambda h: Hh - h  # 바닥에서 높이 h(세계 px) → 세로 자리  # noqa: E731
-    c.grad([(0, 0), (W, 0), (W, v(232)), (0, v(232))], dark(PLASTER, 0.25), dark(PLASTER, 0.08), axis="x", line=False)
+    c.grad([(0, 0), (W, 0), (W, v(232)), (0, v(232))], dark(PLASTER, 0.42), dark(PLASTER, 0.22), axis="x", line=False)
     c.rect(0, 0, W, 34, BEAM, line=False)
-    c.rect(0, v(232), W, v(30), dark(WAINSCOT, 0.1), line=False)
+    c.rect(0, v(232), W, v(30), dark(WAINSCOT, 0.3), line=False)
     for k in range(1, 8):
         xx = W * k / 8
         c.stroke([(xx, v(232)), (xx, v(30))], 1.4, dark(WAINSCOT, 0.4))
@@ -696,26 +656,17 @@ def flame() -> tuple[Image.Image, Image.Image]:
 def front_world(width: float, mk, rng) -> Image.Image:
     """맨 앞 층에 얹을 것(세계 크기로 그려 1.25배): 천장 앞 보, 낮은 화분·바구니, 사과나무 가지."""
     c = Ink(WORLD_W)
-    beam = (78, 50, 34, 255)
-    c.grad([(ROOM_X0, CEIL_W - 6), (YARD_X, CEIL_W - 6), (YARD_X, CEIL_W + 40), (ROOM_X0, CEIL_W + 40)], (96, 62, 40, 255), (60, 38, 26, 255))
-    for px in (2700, 4300, 5880):  # 큰 화분(잎이 화면 아래 가장자리에서 올라온다)
-        for k in range(9):
-            a = math.radians(-150 + k * 16)
-            col = (64, 96, 60, 255) if k % 2 else (84, 116, 70, 255)
-            c.grad([(px, FLOOR_W + 20), (px + math.cos(a) * 170 - 20, FLOOR_W + 20 + math.sin(a) * 190), (px + math.cos(a) * 200, FLOOR_W + 30 + math.sin(a) * 200)],
-                   lite(col, 0.2), dark(col, 0.2), lw=1.6)
-        c.grad([(px - 54, FLOOR_W + 40), (px + 54, FLOOR_W + 40), (px + 44, FLOOR_W - 30), (px - 44, FLOOR_W - 30)], (176, 100, 64, 255), (130, 74, 48, 255), axis="x")
+    import house_objects as O
+    for px in (2700, 4300, 5880):  # 큰 화분(화면 아래 가장자리에서 잎이 올라온다)
+        O.potted_plant(c, px, FLOOR_W + 60, rng, 1.0)
     # 마당 사과나무 가지(위에서 늘어진다)
     ax = mk("1-6", 7110.0) + 40
-    c.stroke([(ax - 420, -20), (ax - 160, 50), (ax + 160, 30)], 20, (90, 64, 46, 255))
-    for _ in range(36):
-        bx, by = ax - 380 + rng.uniform(0, 600), rng.uniform(0, 130)
-        r = rng.uniform(22, 40)
-        col = rng.choice([(196, 110, 54, 255), (224, 168, 80, 255), (170, 120, 60, 255)])
-        c.grad(ink.ellipse_pts(bx - r, by - r * 0.7, bx + r, by + r * 0.7), lite(col, 0.25), dark(col, 0.2), lw=1.4)
-    for _ in range(6):
-        bx, by = ax - 300 + rng.uniform(0, 460), rng.uniform(60, 150)
-        c.ellipse(bx - 12, by - 12, bx + 12, by + 12, (200, 44, 40, 255), lw=1.4)
+    c.stroke([(ax - 420, -20), (ax - 160, 40), (ax + 160, 20)], 18, (90, 64, 46, 255))
+    blobs = [(ax - 360 + k * 70 + rng.uniform(-20, 20), 50 + rng.uniform(-20, 40), rng.uniform(36, 56)) for k in range(10)]
+    O.leaf_mass(c, rng, blobs, [(176, 154, 72, 255), (226, 198, 104, 255), (108, 98, 54, 255)])
+    for _ in range(5):
+        bx, by = ax - 300 + rng.uniform(0, 460), rng.uniform(70, 120)
+        c.grad(ink.ellipse_pts(bx - 11, by - 11, bx + 11, by + 11), (232, 70, 60, 255), (160, 28, 32, 255), lw=1.4)
     img = c.finish()
     lm = LightMap(WORLD_W, 0.55)
     img = ink.light(img, lm.array(), SUN, SHADE)

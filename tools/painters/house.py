@@ -393,17 +393,38 @@ def attic_props(c: Ink, rng, lm: LightMap, mk):
     box(c, 1750, 560, 1930, FLOOR + 6, (186, 138, 90, 255), top=40)
     box(c, 1780, 420, 1930, 560, (204, 160, 108, 255), top=30)
     c.poly([(1530, FLOOR + 4), (1590, 640), (1610, 646), (1556, FLOOR + 4)], (96, 66, 46, 255))  # 세운 액자 다리
-    # ---- 바닥 뚜껑문(열려 있음)과 사다리 끝
-    hx0, hx1 = 1600, 1820
-    c.poly([(hx0, 830), (hx1, 830), (hx1 + 26, 874), (hx0 - 26, 874)], (40, 28, 24, 255))
-    c.poly([(hx0 - 26, 874), (hx1 + 26, 874), (hx1 + 26, 884), (hx0 - 26, 884)], (110, 72, 46, 255))
-    c.poly([(hx1 + 8, 828), (hx1 + 8, 690), (hx1 + 40, 676), (hx1 + 40, 820)], (160, 108, 66, 255))  # 열린 뚜껑
-    rail = (176, 122, 76, 255)
-    for x in (hx0 + 40, hx1 - 56):  # 사다리 기둥: 구멍에서 올라와 위가 둥글게 꺾인다
-        c.poly([(x, 870), (x, 650), (x + 8, 628), (x + 26, 622), (x + 26, 642), (x + 18, 650), (x + 18, 870)], rail)
-    for y in (680, 740, 800, 852):
-        c.rect(hx0 + 58, y, hx1 - 56, y + 12, lite(rail, 0.12) if y < 830 else dark(rail, 0.4), lw=1.6)
-    lm.glow(1710, 850, 160, 40, -0.5, blur=20)  # 구멍 속은 어둡게
+    # ---- 바닥 뚜껑문(열려 있음)과 사다리 끝: 바닥 원근(소실점 960, 210)에 맞춘 네모 구멍
+    X = lambda p, s: (p - 960) * s + 960  # noqa: E731
+    Y = lambda s: 210 + 600 * s  # noqa: E731
+    pa_, pb_ = 1600, 1780
+    sb, sf = 1.0, 1.12  # 구멍 뒤 끝·앞 끝 깊이
+    hole = [(X(pa_, sb), Y(sb)), (X(pb_, sb), Y(sb)), (X(pb_, sf), Y(sf)), (X(pa_, sf), Y(sf))]
+    c.grad(hole, (24, 18, 16, 255), (58, 40, 30, 255), lw=2)
+    c.poly([(X(pa_, sb), Y(sb)), (X(pb_, sb), Y(sb)), (X(pb_, sb) - 6, Y(sb) + 22), (X(pa_, sb) + 6, Y(sb) + 22)], (96, 66, 46, 255), lw=1.4)  # 구멍 안 뒷벽
+    c.poly([(X(pa_, sf) - 6, Y(sf)), (X(pb_, sf) + 6, Y(sf)), (X(pb_, sf) + 6, Y(sf) + 8), (X(pa_, sf) - 6, Y(sf) + 8)], (150, 104, 66, 255), lw=1.4)  # 앞 테
+    # 열린 뚜껑: 왼쪽 끝 경첩에서 뒤집혀 바닥에 누웠다(구멍 왼쪽 옆)
+    lid = (164, 112, 70, 255)
+    w_ = pb_ - pa_
+    lid_pts = [(X(pa_ - w_, sb), Y(sb)), (X(pa_, sb), Y(sb)), (X(pa_, sf), Y(sf)), (X(pa_ - w_, sf), Y(sf))]
+    c.grad(lid_pts, lite(lid, 0.2), dark(lid, 0.1), lw=1.8)
+    for k in range(1, 4):
+        pp = pa_ - w_ + w_ * k / 4
+        c.stroke([(X(pp, sb), Y(sb) + 1), (X(pp, sf), Y(sf) - 1)], 1.4, dark(lid, 0.3))
+    c.poly([(X(pa_ - w_, sf), Y(sf)), (X(pa_, sf), Y(sf)), (X(pa_, sf), Y(sf) + 8), (X(pa_ - w_, sf), Y(sf) + 8)], dark(lid, 0.3), lw=1.2)
+    ring_x = X(pa_ - w_ * 0.5, (sb + sf) / 2)
+    c.ellipse(ring_x - 9, Y((sb + sf) / 2) - 5, ring_x + 9, Y((sb + sf) / 2) + 5, None, lw=2, lc=(90, 80, 70, 255))
+    # 사다리: 구멍 안에서 올라와 위가 둥글게 꺾인 두 기둥, 가로대(구멍 안은 어둡게)
+    rail = (182, 128, 80, 255)
+    top_y = Y(sb) - 170
+    xs = (X(pa_ + 34, 1.06), X(pb_ - 40, 1.06))
+    for i, rung_y in enumerate((top_y + 30, top_y + 80, top_y + 130, Y(sb) + 16, Y(sb) + 52)):
+        col = lite(rail, 0.1) if rung_y < Y(sb) else dark(rail, 0.5)
+        c.rect(xs[0] + 8, rung_y, xs[1] - 8, rung_y + 11, col, lw=1.4)
+    for x in xs:
+        c.grad([(x - 8, top_y + 10), (x + 8, top_y + 10), (x + 8, Y(sf) - 4), (x - 8, Y(sf) - 4)], lite(rail, 0.2), dark(rail, 0.15), axis="x", lw=1.6, cast=True)
+        c.poly([(x - 8, top_y + 12), (x - 6, top_y - 6), (x + 6, top_y - 16), (x + 22, top_y - 16), (x + 22, top_y - 4), (x + 8, top_y + 4), (x + 8, top_y + 12)], lite(rail, 0.2), lw=1.4)
+        c.rect(x - 8, Y(sb) + 2, x + 8, Y(sf) - 4, (60, 42, 32, 200), line=False)  # 구멍 속 기둥은 그늘
+    lm.add(hole, -0.4, 12)
 
 
 def attic_front(c: Ink, rng):
@@ -537,8 +558,8 @@ def paint(width: float, markers: dict[str, float]) -> dict:
         ([(1500, 230), (1580, 230), (1000, 1080), (880, 1080)], 0.6),
     ]
     props.alpha_composite(ink.rays(props.width, beams))
-    ink.motes(props, rng, 900, [(1440, 200), (1700, 200), (1130, 1080), (700, 1080)])
-    ink.bokeh(props, rng, 14, 1100, 1750, 150, 700)
+    ink.motes(props, rng, 260, [(1440, 200), (1700, 200), (1130, 1080), (700, 1080)])
+    ink.bokeh(props, rng, 6, 1150, 1700, 180, 600, r=(10, 26), a=(10, 26))
     layers["ground"] = ink.as_layer(ground, gw)
     layers["props"] = ink.as_layer(props, pa.layer_width(width, "props"))
 
@@ -571,6 +592,6 @@ def paint(width: float, markers: dict[str, float]) -> dict:
     attic_front(fc, rng)
     front = ink.soften(fc.finish(), 7.0)
     down = ink.to_plane(D.front_world(width, mk, rng), D.FRONT_S, fw_)
-    front.alpha_composite(ink.soften(down, 5.0))
+    front.alpha_composite(ink.soften(down, 2.5))
     layers["front"] = ink.as_layer(front, fw_)
     return layers

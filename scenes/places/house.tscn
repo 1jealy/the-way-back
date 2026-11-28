@@ -71,7 +71,7 @@ shader_parameter/rows = 120.0
 
 [sub_resource type="ShaderMaterial" id="mat_dapple"]
 shader = ExtResource("sh_dapple")
-shader_parameter/strength = 0.45
+shader_parameter/strength = 0.22
 
 [sub_resource type="ShaderMaterial" id="mat_curtain_a"]
 shader = ExtResource("sh_sway")
@@ -398,6 +398,7 @@ p = 1920.0
 s_from = 0.8
 s_to = 1.0
 tex_to = 0.4462
+strips = 24
 
 [node name="EndWall_Door" type="Polygon2D" parent="Room"]
 z_index = -9
@@ -408,6 +409,7 @@ p = 6670.0
 s_from = 0.8
 s_to = 1.0
 tex_to = 0.4462
+strips = 24
 
 [node name="EndWall_DoorFront" type="Polygon2D" parent="Room"]
 z_index = 8
@@ -418,9 +420,10 @@ p = 6670.0
 s_from = 1.0
 s_to = 1.45
 tex_from = 0.4462
+strips = 24
 
 [node name="Shaft_0" type="Polygon2D" parent="Room"]
-z_index = -4
+z_index = -7
 z_as_relative = false
 script = ExtResource("sc_shaft")
 win_from = 2060.0
@@ -429,10 +432,10 @@ win_top = 234.0
 win_bottom = 490.0
 reach = 300.0
 floor_s = 1.2
-strength = 0.3
+strength = 0.42
 
 [node name="Shaft_1" type="Polygon2D" parent="Room"]
-z_index = -4
+z_index = -7
 z_as_relative = false
 script = ExtResource("sc_shaft")
 win_from = 4500.0
@@ -441,10 +444,10 @@ win_top = 250.0
 win_bottom = 474.0
 reach = 300.0
 floor_s = 1.2
-strength = 0.26
+strength = 0.36
 
 [node name="Shaft_2" type="Polygon2D" parent="Room"]
-z_index = -4
+z_index = -7
 z_as_relative = false
 script = ExtResource("sc_shaft")
 win_from = 6020.0
@@ -453,4 +456,4 @@ win_top = 258.0
 win_bottom = 442.0
 reach = 300.0
 floor_s = 1.2
-strength = 0.2
+strength = 0.3

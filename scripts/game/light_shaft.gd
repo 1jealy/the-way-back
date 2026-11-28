@@ -27,6 +27,7 @@ func _ready() -> void:
 	var mat := CanvasItemMaterial.new()
 	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	material = mat
+	texture = _soft_texture()
 	if dust > 0:
 		_dust = CPUParticles2D.new()
 		_dust.amount = dust
@@ -53,6 +54,17 @@ func _ready() -> void:
 		add_child(_dust)
 
 
+## 가장자리가 부드럽게 사라지는 빛(가로: 가운데 진하고 양옆 0, 세로: 아래로 옅어짐). 딱 자른 네모는 유리판처럼 보였다.
+static func _soft_texture() -> Texture2D:
+	var img := Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	for y in 64:
+		for x in 64:
+			var u := absf(x / 63.0 * 2.0 - 1.0)
+			var a := pow(clampf(1.0 - u, 0.0, 1.0), 1.4) * (1.0 - smoothstep(0.75, 1.0, y / 63.0))
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	return ImageTexture.create_from_image(img)
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	var breathe := 0.86 + 0.1 * sin(_t * 0.45 + _phase) + 0.04 * sin(_t * 1.7 + _phase * 2.0)
@@ -68,6 +80,8 @@ func update_view(room: RoomPerspective) -> void:
 	var top := Color(light_color, strength)
 	var bottom := Color(light_color, 0.0)
 	vertex_colors = PackedColorArray([top, top, bottom, bottom])
+	var ts := texture.get_size()
+	uv = PackedVector2Array([Vector2(0, 0), Vector2(ts.x, 0), Vector2(ts.x, ts.y), Vector2(0, ts.y)])
 	if _dust:
 		var c := (ta + tb + ba + bb) * 0.25
 		_dust.position = c - global_position
