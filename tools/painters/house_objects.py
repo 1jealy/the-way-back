@@ -345,11 +345,127 @@ def potted_plant(c: Ink, x, base, rng, s=1.0):
     ell(c, x, base - 94 * s, 60 * s, O_ / 2 + 3, (70, 50, 36, 255), lw=1.2)
 
 
+
+# ---------------------------------------------------------------- 사과나무 (#151, 다시)
+#
+# 공·바위·빵 같던 덩어리 대신 나무 구조를 그대로 그린다:
+#   줄기(밑동이 퍼지고 껍질 결) → 굵은 가지 셋 → 잔가지(재귀) → 가지 끝마다 잎 뭉치.
+#   잎 뭉치 = 그늘색 바탕 덩어리 + 작은 잎 수백 장(뭉치 안에서 빛 쪽은 밝고 반대쪽은 어둡게, 아래 뭉치일수록 어둡게).
+#   뭉치 사이로 가지와 하늘이 비친다. 사과는 뭉치 아래쪽에 매달려 잎에 조금씩 가린다.
+
+BARK = (112, 80, 58, 255)
+LEAF_SHADE = (104, 110, 58, 255)
+LEAF_MID = (160, 158, 72, 255)
+LEAF_LIT = (214, 204, 110, 255)
+LEAF_WARM = (206, 146, 64, 255)
+
+
+def _limb(c: Ink, x0, y0, x1, y1, w0, w1, col=BARK, bend=0.0):
+    """끝이 가는 가지 한 토막. bend만큼 옆으로 휜다(빛 쪽 왼편이 밝다). 이음매는 둥근 마디로 감춘다."""
+    ang = math.atan2(y1 - y0, x1 - x0)
+    nx, ny = -math.sin(ang), math.cos(ang)
+    left, right = [], []
+    for k in range(9):
+        t = k / 8
+        off = math.sin(math.pi * t) * bend
+        px, py = x0 + (x1 - x0) * t + nx * off, y0 + (y1 - y0) * t + ny * off
+        w = w0 + (w1 - w0) * t
+        left.append((px + nx * w / 2, py + ny * w / 2))
+        right.append((px - nx * w / 2, py - ny * w / 2))
+    c.grad(left + right[::-1], lite(col, 0.18), dark(col, 0.28), axis="x", lw=1.6)
+    c.ellipse(x1 - w1 / 2, y1 - w1 / 2, x1 + w1 / 2, y1 + w1 / 2, mix(col, dark(col, 0.28), 0.5), line=False)
+
+
+def _branches(c: Ink, rng, x, y, ang, ln, w, depth, tips, mids):
+    x1, y1 = x + math.cos(ang) * ln, y + math.sin(ang) * ln
+    c.ellipse(x - w / 2, y - w / 2, x + w / 2, y + w / 2, mix(BARK, dark(BARK, 0.28), 0.4), line=False)  # 갈라지는 마디
+    _limb(c, x, y, x1, y1, w, w * 0.7, bend=rng.uniform(-0.12, 0.12) * ln)
+    mids.append(((x + x1) / 2, (y + y1) / 2, w))
+    if depth == 0:
+        tips.append((x1, y1, w))
+        return
+    n = 2 if depth > 1 else rng.choice((2, 3))
+    for k in range(n):
+        da = math.radians(rng.uniform(16, 34)) * (1 if k % 2 else -1) + math.radians(rng.uniform(-8, 8))
+        _branches(c, rng, x1, y1, ang + da, ln * rng.uniform(0.62, 0.78), w * 0.68, depth - 1, tips, mids)
+
+
+def _cluster_leaves(c: Ink, rng, cx, cy, r, t_y, light=(-0.6, -0.8)):
+    """잎 뭉치의 잎 수백 장. 뭉치 안에서 빛 쪽은 밝고 반대쪽은 어둡다. t_y = 나무 안 높이(0 위 ~ 1 아래)."""
+    shade = mix(LEAF_SHADE, (80, 84, 48, 255), t_y * 0.6)
+    mid = mix(LEAF_MID, LEAF_SHADE, t_y * 0.5)
+    lit = mix(LEAF_LIT, LEAF_MID, t_y * 0.45)
+    lx, ly = light
+    leaves = []
+    for _ in range(int(r * r / 26)):
+        a = rng.uniform(0, math.tau)
+        d = math.sqrt(rng.uniform(0, 1))
+        px, py = cx + math.cos(a) * r * d, cy + math.sin(a) * r * 0.78 * d
+        side = (math.cos(a) * lx + math.sin(a) * ly) * d
+        leaves.append((side + rng.uniform(-0.25, 0.25), px, py))
+    leaves.sort()
+    for side, px, py in leaves:
+        col = lit if side > 0.35 else (mid if side > -0.15 else mix(shade, mid, 0.4))
+        if rng.random() < 0.14:
+            col = mix(col, LEAF_WARM, 0.7)  # 누렇게·붉게 물든 잎
+        ang = rng.uniform(0, math.tau) if rng.random() < 0.3 else math.radians(rng.uniform(40, 140))
+        L, W = rng.uniform(14, 22), rng.uniform(6, 9)
+        ux, uy = math.cos(ang), math.sin(ang)
+        pts = [(px - ux * L / 2, py - uy * L / 2), (px - ux * L * 0.1 + uy * W / 2, py - uy * L * 0.1 - ux * W / 2),
+               (px + ux * L / 2, py + uy * L / 2), (px - ux * L * 0.1 - uy * W / 2, py - uy * L * 0.1 + ux * W / 2)]
+        c.poly(pts, col, line=False)
+
+
+def apple_tree(c: Ink, rng, x, base, h=640, apples=18):
+    """사과나무 한 그루(세계 크기, 원점 = 밑동 가운데 땅). 높이 h, 폭은 약 1.2h.
+    줄기 → 굵은 가지 셋(휘어진다) → 잔가지 → 가지 끝과 가지 가운데에 잎 뭉치. 뭉치는 윤곽 → 바탕 → 잎 순서로
+    모두 한꺼번에 깔아 뭉치끼리 겹친 안쪽에는 선이 안 남고, 뭉치 사이로 가지와 하늘이 비친다."""
+    tw = 58
+    top = base - h * 0.3
+    flare = [(x - tw * 1.0, base), (x - tw * 0.62, base - 12), (x - tw * 0.5, base - 40)]
+    trunk = flare + [(x - tw * 0.44, top), (x + tw * 0.4, top), (x + tw * 0.48, base - 44), (x + tw * 0.6, base - 14), (x + tw * 1.05, base)]
+    c.grad(trunk, lite(BARK, 0.15), dark(BARK, 0.3), axis="x", lw=1.8, cast=True)
+    for k in range(5):
+        xx = x - tw * 0.3 + k * tw * 0.15
+        c.stroke([(xx, base - 6), (xx + rng.uniform(-5, 5), base - h * 0.15), (xx + rng.uniform(-4, 4), top + 6)], 1.1, alpha(dark(BARK, 0.4), 150))
+    tips, mids = [], []
+    for ang, ln in ((-124, h * 0.3), (-92, h * 0.33), (-58, h * 0.3)):
+        _branches(c, rng, x + (ang + 93) * 0.22, top + 10, math.radians(ang + rng.uniform(-5, 5)), ln, tw * 0.52, 2, tips, mids)
+    # 잎 뭉치 자리: 가지 끝(크게) + 가운데 가지 몇(채우기)
+    clusters = [(tx + rng.uniform(-8, 8), ty + rng.uniform(-4, 12), rng.uniform(70, 98)) for tx, ty, w in tips]
+    for mx, my, w in mids:
+        if my < top - h * 0.28 and rng.random() < 0.6:
+            clusters.append((mx, my - 10, rng.uniform(60, 80)))
+    ys = [q[1] for q in clusters]
+    y_top, y_bot = min(ys), max(ys)
+    blobs = [_blob(cx, cy, r * 0.82, rng, rough=0.16, squash=0.8) for cx, cy, r in clusters]
+    for (cx, cy, r), pts in zip(clusters, blobs):  # 1. 바깥 윤곽(조금 크게)
+        c.poly([(cx + (px - cx) * 1.05, cy + (py - cy) * 1.06) for px, py in pts], LINE, line=False)
+    for (cx, cy, r), pts in zip(clusters, blobs):  # 2. 그늘색 바탕
+        t_y = (cy - y_top) / max(1.0, y_bot - y_top)
+        c.poly(pts, mix(LEAF_SHADE, (80, 84, 48, 255), t_y * 0.6), line=False)
+    order = sorted(range(len(clusters)), key=lambda i: -clusters[i][1])  # 3. 잎(아래 뭉치부터)
+    apple_spots = []
+    for i in order:
+        cx, cy, r = clusters[i]
+        _cluster_leaves(c, rng, cx, cy, r, (cy - y_top) / max(1.0, y_bot - y_top))
+        a = rng.uniform(0.3, math.pi - 0.3)
+        apple_spots.append((cx + math.cos(a) * r * 0.55, cy + math.sin(a) * r * 0.42))
+        a = rng.uniform(0.3, math.pi - 0.3)
+        apple_spots.append((cx + math.cos(a) * r * 0.4, cy + math.sin(a) * r * 0.5))
+    rng.shuffle(apple_spots)
+    for ax, ay in apple_spots[:apples]:
+        rr = rng.uniform(8.5, 11.5)
+        c.stroke([(ax, ay - rr), (ax + 2, ay - rr - 7)], 1.6, (80, 58, 38, 255))
+        c.grad(ink.ellipse_pts(ax - rr, ay - rr, ax + rr, ay + rr * 0.95), (236, 74, 60, 255), (150, 26, 32, 255), lw=1.4)
+        c.ellipse(ax - rr * 0.55, ay - rr * 0.6, ax - rr * 0.15, ay - rr * 0.25, (255, 220, 200, 255), line=False)
+
 OBJECTS = {
     "armchair": (armchair, 420, 340), "side_table": (side_table, 200, 360), "yarn_basket": (yarn_basket, 160, 140),
     "ladder_chair": (ladder_chair, 200, 380), "dining_table": (dining_table, 420, 260), "rocking_chair": (rocking_chair, 320, 420),
     "newspapers": (newspapers, 140, 90),
     "apple": (lambda c, x, b: apple_tree_canopy(c, __import__("random").Random(3), x, b - 200), 640, 420),
+    "tree": (lambda c, x, b: apple_tree(c, __import__("random").Random(7), x, b), 900, 700),
     "plant": (lambda c, x, b: potted_plant(c, x, b, __import__("random").Random(5)), 520, 360),
 }
 

@@ -405,12 +405,7 @@ def furniture_layer(width: float, mk, rng) -> tuple[Image.Image, Image.Image, in
         ly = FLOOR_W - 42 - (k // 3) * 40
         c.grad(ink.ellipse_pts(lx, ly, lx + 44, ly + 40), (206, 166, 116, 255), (160, 120, 80, 255), lw=1.6, cast=True)
         c.ellipse(lx + 12, ly + 10, lx + 32, ly + 30, (150, 110, 70, 255), lw=1.0)
-    tx = mk("1-6", 7110.0) - 120
-    bark = (110, 78, 56, 255)
-    c.grad([(tx - 36, FLOOR_W + 4), (tx - 20, 560), (tx - 64, 360), (tx - 30, 356), (tx + 4, 520), (tx + 44, 340),
-            (tx + 76, 352), (tx + 26, 560), (tx + 38, FLOOR_W + 4)], (140, 104, 76, 255), (90, 62, 44, 255), axis="x", cast=True)
-    for k in range(5):
-        c.stroke([(tx - 18 + k * 9, 780), (tx - 12 + k * 7, 600)], 1.4, dark(bark, 0.3))
+    tx = mk("1-6", 7110.0) - 120  # 사과나무 밑동(나무는 따로 그린 그림 — _apple_tree, 바람에 살랑인다)
     for _ in range(5):
         ax2 = tx + rng.uniform(-200, 200)
         c.ellipse(ax2 - 11, FLOOR_W - 18, ax2 + 11, FLOOR_W + 2, (196, 44, 40, 255), lw=1.4)
@@ -433,12 +428,16 @@ def furniture_layer(width: float, mk, rng) -> tuple[Image.Image, Image.Image, in
     return ink.to_plane(img, FURN_S, w), canopy, w
 
 
+TREE_W, TREE_H, TREE_BASE = 1000, 760, 740  # 사과나무 그림 크기와 그림 안 밑동 높이(세계 크기)
+
+
 def _apple_canopy(rng, tx) -> Image.Image:
-    """사과나무 잎 덩어리(따로 그려 살랑이게). 세계 크기, 둘레 여백."""
+    """사과나무 한 그루(줄기·가지·잎·사과). 따로 그려 가구 층에 얹고 아래를 붙인 채 바람에 살랑이게 한다.
+    세계 크기, 밑동 = 그림 (TREE_W/2, TREE_BASE)."""
+    import random as _r
     import house_objects as O
-    W, Hh = 700, 420
-    c = Ink(W, Hh)
-    O.apple_tree_canopy(c, rng, W / 2, 230, 270, 150, 16)
+    c = Ink(TREE_W, TREE_H)
+    O.apple_tree(c, _r.Random(7), TREE_W / 2, TREE_BASE)
     return c.finish()
 
 
@@ -659,14 +658,21 @@ def front_world(width: float, mk, rng) -> Image.Image:
     import house_objects as O
     for px in (2700, 4300, 5880):  # 큰 화분(화면 아래 가장자리에서 잎이 올라온다)
         O.potted_plant(c, px, FLOOR_W + 60, rng, 1.0)
-    # 마당 사과나무 가지(위에서 늘어진다)
+    # 마당 사과나무 가지(화면 위에서 늘어진다): 나무와 같은 잎 뭉치
     ax = mk("1-6", 7110.0) + 40
-    c.stroke([(ax - 420, -20), (ax - 160, 40), (ax + 160, 20)], 18, (90, 64, 46, 255))
-    blobs = [(ax - 360 + k * 70 + rng.uniform(-20, 20), 50 + rng.uniform(-20, 40), rng.uniform(36, 56)) for k in range(10)]
-    O.leaf_mass(c, rng, blobs, [(176, 154, 72, 255), (226, 198, 104, 255), (108, 98, 54, 255)])
-    for _ in range(5):
-        bx, by = ax - 300 + rng.uniform(0, 460), rng.uniform(70, 120)
-        c.grad(ink.ellipse_pts(bx - 11, by - 11, bx + 11, by + 11), (232, 70, 60, 255), (160, 28, 32, 255), lw=1.4)
+    O._limb(c, ax - 460, -30, ax - 120, 40, 26, 16, bend=20)
+    O._limb(c, ax - 120, 40, ax + 180, 20, 16, 9, bend=-14)
+    br = random.Random(21)
+    spots = [(ax - 330, 40, 70), (ax - 170, 70, 80), (ax - 10, 60, 74), (ax + 140, 40, 64)]
+    blobs = [O._blob(x, y, r * 0.82, br, rough=0.16, squash=0.8) for x, y, r in spots]
+    for (x, y, r), pts in zip(spots, blobs):
+        c.poly([(x + (px - x) * 1.05, y + (py - y) * 1.06) for px, py in pts], O.LINE, line=False)
+    for pts in blobs:
+        c.poly(pts, O.LEAF_SHADE, line=False)
+    for x, y, r in spots:
+        O._cluster_leaves(c, br, x, y, r, 0.6)
+    for x, y in ((ax - 150, 120), (ax + 20, 112), (ax - 300, 96)):
+        c.grad(ink.ellipse_pts(x - 11, y - 11, x + 11, y + 11), (236, 74, 60, 255), (150, 26, 32, 255), lw=1.4)
     img = c.finish()
     lm = LightMap(WORLD_W, 0.55)
     img = ink.light(img, lm.array(), SUN, SHADE)
